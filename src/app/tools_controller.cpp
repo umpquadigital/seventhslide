@@ -117,14 +117,18 @@ QString ToolsController::toolsDir() const
     return QString::fromStdString(search_.tools_dir.string());
 }
 
+std::string ToolsController::version_lane(std::string_view name)
+{
+    return "version:" + std::string{name};
+}
+
 void ToolsController::probe(Tool& tool)
 {
     if (!tool.location) {
         return;  // not found: no version to read
     }
     ToolJobSpec spec;
-    // Its own lane: a version is read beside a conversion, not after it.
-    spec.tool = "version:" + tool.name;
+    spec.tool = version_lane(tool.name);
     spec.program = tool.location->path;
     spec.args = {version_flag(tool.name)};
     spec.display = tool.name;
@@ -134,7 +138,13 @@ void ToolsController::probe(Tool& tool)
     tool.error.clear();
     const std::string name = tool.name;
     const qint64 id = jobs_.start(std::move(spec), [this, name](const ToolJob& job) {
-        probes_.erase(std::remove(probes_.begin(), probes_.end(), job.id), probes_.end());
+        // A probe a refresh cancelled reports after the refresh's own has
+        // started; it must not answer for the tool found since.
+        const auto out = std::find(probes_.begin(), probes_.end(), job.id);
+        if (out == probes_.end()) {
+            return;
+        }
+        probes_.erase(out);
         const auto it = std::find_if(tools_.begin(), tools_.end(),
                                      [&name](const Tool& t) { return t.name == name; });
         if (it == tools_.end() || !it->probing) {

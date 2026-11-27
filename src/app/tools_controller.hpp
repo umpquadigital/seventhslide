@@ -76,6 +76,9 @@ public:
     [[nodiscard]] QString toolsDir() const;
 
     [[nodiscard]] ToolJobs& jobs() noexcept { return jobs_; }
+    /// The jobs' tool that reads ``name``'s version: a lane of its own, so a
+    /// version is read beside a conversion, not after it.
+    [[nodiscard]] static std::string version_lane(std::string_view name);
     [[nodiscard]] const platform::ToolSearch& search() const noexcept { return search_; }
     [[nodiscard]] YtdlpUpdater* ytdlp() noexcept { return ytdlp_.get(); }
 

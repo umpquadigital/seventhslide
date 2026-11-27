@@ -16,6 +16,10 @@
 // installed (pip, a package manager) is used when the app has none of its
 // own, and never updated by the app.
 //
+// ``uninstall`` deletes the app's own copy; downloads then use a yt-dlp the
+// system has, if any. It refuses while anything runs that copy, since
+// Windows will not delete a program that is running.
+//
 // ToolsController owns one: `session.tools.ytdlp`.
 //
 // Seam: Qt Core + Qt Network. Call on the GUI thread.
@@ -49,8 +53,13 @@ class YtdlpUpdater : public QObject {
 
     /// A check or a download is running.
     Q_PROPERTY(bool busy READ busy NOTIFY changed)
-    /// What the last check or update came to, or what it is doing now.
+    /// What a check, install or update is doing now; or what the last check,
+    /// update or uninstall came to, when that says more than ``installed``
+    /// does (up to date, updated, why it failed). Empty otherwise.
     Q_PROPERTY(QString status READ status NOTIFY changed)
+    /// The last check, install, update or uninstall failed; ``status`` says
+    /// why.
+    Q_PROPERTY(bool failed READ failed NOTIFY changed)
     /// The app's own copy is installed.
     Q_PROPERTY(bool installed READ installed NOTIFY changed)
     /// Check before a download, at most once a day. Kept on this computer.
@@ -82,6 +91,15 @@ public:
     /// reports once, from the event loop.
     Q_INVOKABLE void update();
 
+    /// Delete the app's own copy. Returns why it was not deleted (``status``
+    /// says it too, unless a check is running), or empty once it is gone or
+    /// was never there.
+    Q_INVOKABLE QString uninstall();
+
+    /// Forget what the last check, update or uninstall came to (Settings
+    /// does, as its page opens). Nothing while a check runs.
+    Q_INVOKABLE void clearStatus();
+
     /// Before a download: with ``autoUpdate`` on, the app's own copy
     /// installed and its last check a day or more ago, check (and update)
     /// first. ``then`` runs once, from the event loop, whatever the check
@@ -90,6 +108,7 @@ public:
 
     [[nodiscard]] bool busy() const noexcept { return reply_ != nullptr; }
     [[nodiscard]] QString status() const { return status_; }
+    [[nodiscard]] bool failed() const noexcept { return failed_; }
     [[nodiscard]] bool installed() const;
     [[nodiscard]] bool autoUpdate() const;
     void setAutoUpdate(bool on);
@@ -107,8 +126,12 @@ private:
     void fetch_build(const QString& asset, const QString& digest);
     void on_build_data();
     void on_build_done(const QString& digest);
-    /// The check is over: ``status`` says how, and every waiter runs.
-    void done(bool ok, const QString& status);
+    /// The check is over: ``finished`` reports ``message``, ``status`` keeps
+    /// it when it is ``news`` (more than whether yt-dlp is installed), and
+    /// every waiter runs.
+    void done(bool ok, const QString& message, bool news = true);
+    /// ``uninstall`` refused: ``why`` is its ``status``.
+    QString refuse_uninstall(const QString& why);
     [[nodiscard]] QUrl url_of(const QString& name) const;
     /// The platform set for tests, else the tools' own.
     [[nodiscard]] const std::string& platform_id() const;
@@ -125,6 +148,7 @@ private:
     std::unique_ptr<QFile> part_;
     std::unique_ptr<QCryptographicHash> hash_;
     QString status_;
+    bool failed_ = false;
     /// Runs once the check in progress is over.
     std::vector<std::function<void()>> waiting_;
 };

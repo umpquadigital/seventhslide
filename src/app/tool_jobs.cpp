@@ -144,6 +144,12 @@ std::optional<ToolJob> ToolJobs::running(std::string_view tool) const
     return std::nullopt;
 }
 
+bool ToolJobs::has_jobs(std::string_view tool) const
+{
+    return std::any_of(entries_.begin(), entries_.end(),
+                       [tool](const auto& entry) { return entry->job.tool == tool; });
+}
+
 void ToolJobs::pump()
 {
     for (auto& candidate : entries_) {

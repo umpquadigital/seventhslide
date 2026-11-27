@@ -109,6 +109,13 @@ struct Fixture {
         REQUIRE(finished.wait(10000));
         return {finished[0][0].toBool(), finished[0][1].toString()};
     }
+
+    /// Wait for the versions an install reads (it finds the tools again)
+    /// to be read: until then, uninstall refuses.
+    void settle()
+    {
+        REQUIRE(QTest::qWaitFor([this] { return !tools.jobs().busy(); }, 10000));
+    }
 };
 
 const std::string k_build_a = "#!/bin/sh\necho 2026.10.01\n";
@@ -233,4 +240,117 @@ TEST_CASE("With no copy of its own, the app checks nothing before a download",
     f.updater.when_fresh([&ran] { ran = true; });
     REQUIRE(QTest::qWaitFor([&ran] { return ran; }, 5000));
     CHECK_FALSE(f.updater.installed());
+}
+
+TEST_CASE("The app's own copy can be uninstalled, and installed again", "[ytdlp][updater]")
+{
+    Fixture f;
+    // Nothing to remove is no refusal.
+    CHECK(f.updater.uninstall().isEmpty());
+
+    publish(f.tmp.path / "release", k_build_a);
+    REQUIRE(f.update().first);
+    REQUIRE(f.updater.installed());
+    f.settle();
+
+    QSignalSpy changed(&f.updater, &YtdlpUpdater::changed);
+    CHECK(f.updater.uninstall().isEmpty());
+    CHECK_FALSE(f.updater.installed());
+    CHECK_FALSE(fs::exists(f.updater.managed_path()));
+    CHECK(f.updater.status().isEmpty());
+    CHECK_FALSE(f.updater.failed());
+    CHECK(changed.count() >= 1);
+    CHECK_FALSE(QSettings().contains(QStringLiteral("tools/ytdlpChecked")));
+    // No longer found as the app's own.
+    const auto found = f.tools.location("yt-dlp");
+    CHECK((!found || found->source != ToolSource::Managed));
+
+    const auto [ok, message] = f.update();
+    CHECK(ok);
+    CHECK(message == QStringLiteral("Installed"));
+    CHECK(f.updater.installed());
+}
+
+TEST_CASE("The app's own copy is not uninstalled while anything runs it", "[ytdlp][updater]")
+{
+    Fixture f;
+    publish(f.tmp.path / "release", k_build_a);
+    REQUIRE(f.update().first);
+
+    SECTION("a check")
+    {
+        QSignalSpy finished(&f.updater, &YtdlpUpdater::finished);
+        f.updater.update();
+        REQUIRE(f.updater.busy());
+        const QString status = f.updater.status();
+        CHECK_FALSE(f.updater.uninstall().isEmpty());
+        // The check's progress stays what the page shows.
+        CHECK(f.updater.status() == status);
+        REQUIRE(finished.wait(10000));
+    }
+    // A job is listed until it reports, from the event loop: it is there
+    // when uninstall asks, whether or not its program ran.
+    SECTION("a download or a look-up")
+    {
+        bool reported = false;
+        seventhslide::app::ToolJobSpec spec;
+        spec.tool = std::string{seventhslide::platform::k_tool_ytdlp};
+        spec.program = f.updater.managed_path();
+        f.tools.jobs().start(std::move(spec), [&reported](const auto&) { reported = true; });
+        const QString why = f.updater.uninstall();
+        CHECK(why.contains(QStringLiteral("downloading")));
+        CHECK(f.updater.status() == why);
+        CHECK(f.updater.failed());
+        REQUIRE(QTest::qWaitFor([&reported] { return reported; }, 10000));
+    }
+    SECTION("reading its version")
+    {
+        bool reported = false;
+        seventhslide::app::ToolJobSpec spec;
+        spec.tool = ToolsController::version_lane(seventhslide::platform::k_tool_ytdlp);
+        spec.program = f.updater.managed_path();
+        f.tools.jobs().start(std::move(spec), [&reported](const auto&) { reported = true; });
+        const QString why = f.updater.uninstall();
+        CHECK(why.contains(QStringLiteral("version")));
+        CHECK(f.updater.failed());
+        REQUIRE(QTest::qWaitFor([&reported] { return reported; }, 10000));
+    }
+    CHECK(f.updater.installed());
+
+    // Once nothing runs it, it goes, and the refusal is forgotten.
+    f.settle();
+    CHECK(f.updater.uninstall().isEmpty());
+    CHECK_FALSE(f.updater.installed());
+    CHECK_FALSE(f.updater.failed());
+    CHECK(f.updater.status().isEmpty());
+}
+
+TEST_CASE("The status says what is news beside whether yt-dlp is installed",
+          "[ytdlp][updater]")
+{
+    Fixture f;
+    publish(f.tmp.path / "release", k_build_a);
+
+    // Installed: the page says so by itself.
+    REQUIRE(f.update().first);
+    CHECK(f.updater.status().isEmpty());
+    CHECK_FALSE(f.updater.failed());
+
+    REQUIRE(f.update().first);
+    CHECK(f.updater.status() == QStringLiteral("Up to date"));
+    CHECK_FALSE(f.updater.failed());
+
+    fs::remove_all(f.tmp.path / "release");
+    CHECK_FALSE(f.update().first);
+    CHECK(f.updater.status().contains(QStringLiteral("Could not reach")));
+    CHECK(f.updater.failed());
+
+    // Forgotten as the page opens again.
+    QSignalSpy changed(&f.updater, &YtdlpUpdater::changed);
+    f.updater.clearStatus();
+    CHECK(f.updater.status().isEmpty());
+    CHECK_FALSE(f.updater.failed());
+    CHECK(changed.count() == 1);
+    f.updater.clearStatus();
+    CHECK(changed.count() == 1);
 }
