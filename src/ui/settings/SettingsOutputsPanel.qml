@@ -35,10 +35,8 @@ Item {
         PageHeader {
             Layout.fillWidth: true
             title: qsTr("Outputs")
-            text: qsTr("Each output is its own screen: the main screen in the room, a monitor "
-                       + "facing the platform, a livestream. Add one here, then open its settings "
-                       + "to choose its size, themes and where it is sent. One switched off is left "
-                       + "out of the show on this computer, and keeps all of it.")
+            text: qsTr("Outputs are the screens and streams that SeventhSlide shows slides on. An "
+                       + "output that is turned off keeps its settings until you turn it back on.")
         }
 
         // Up and Down for the one picked, then Settings, Delete and New, over

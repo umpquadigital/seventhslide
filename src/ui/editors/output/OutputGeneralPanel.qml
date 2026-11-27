@@ -17,10 +17,8 @@ ScrollPage {
     PageHeader {
         width: panel.columnWidth
         title: qsTr("General")
-        text: qsTr("Give this output a name, choose its size, and pick which stacks and "
-                   + "content it shows. "
-                   + "A screen facing the platform can keep showing the words even when the "
-                   + "main screen is blanked.")
+        text: qsTr("Give this output a name and size, and choose what it shows. A screen facing "
+                   + "the platform, for example, might show only the words.")
     }
 
     GroupHeading {

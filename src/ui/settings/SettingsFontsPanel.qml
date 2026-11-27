@@ -59,9 +59,8 @@ Item {
         PageHeader {
             Layout.fillWidth: true
             title: qsTr("Fonts")
-            text: qsTr("A library keeps its own fonts and takes them to every computer it syncs "
-                       + "to; fonts installed on a computer are not used. Only add fonts you have "
-                       + "the right to share: each of those computers gets a copy.")
+            text: qsTr("These are the fonts this library uses, and every computer it syncs to "
+                       + "gets a copy. Only add fonts you have the right to share.")
         }
 
         Text {

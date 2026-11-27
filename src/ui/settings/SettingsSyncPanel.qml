@@ -38,9 +38,8 @@ ScrollPage {
     PageHeader {
         width: panel.columnWidth
         title: qsTr("Sync")
-        text: qsTr("Keep a library the same on every computer that uses it: the main PC, a "
-                   + "laptop at home, the stage display. They sync with each other on the local "
-                   + "network, and through a computer that is always on when they are apart.")
+        text: qsTr("Sync keeps a library the same on every computer that uses it. Changes made on "
+                   + "one computer show up on the others.")
     }
 
     Text {

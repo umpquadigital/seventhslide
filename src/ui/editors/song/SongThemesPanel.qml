@@ -51,9 +51,7 @@ Item {
         PageHeader {
             Layout.fillWidth: true
             title: qsTr("Themes")
-            text: qsTr("Change the look part-way through a song. Add a theme change to the "
-                       + "order on the Lyrics page; from that point on it sets the look on each "
-                       + "screen. %1 keeps the service’s look.").arg(panel.dialog.themeInheritShort)
+            text: qsTr("Theme changes let a song’s look change part-way through.")
         }
 
         ListWell {

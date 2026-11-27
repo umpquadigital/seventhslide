@@ -290,7 +290,7 @@ Item {
         PageHeader {
             Layout.fillWidth: true
             title: qsTr("Lyrics")
-            text: qsTr("Type each verse on its own, then add the verses to the order they play in.")
+            text: qsTr("Write the song’s verses here, and set the order they are shown in.")
             tools: SegmentedControl {
                 options: [qsTr("Guided"), qsTr("XML")]
                 current: panel.dialog.lyricsMode === "raw" ? 1 : 0

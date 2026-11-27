@@ -170,9 +170,8 @@ Item {
             PageHeader {
                 width: themesPage.columnWidth
                 title: qsTr("Themes")
-                text: qsTr("The look of this service on each screen, for its songs, its Bible "
-                           + "passages and its pictures, videos and web pages. Leave one on "
-                           + "Output Default to keep its usual look.")
+                text: qsTr("Choose how this service looks on each screen. Anything left on Output "
+                           + "Default keeps the screen’s usual look.")
             }
 
             Text {

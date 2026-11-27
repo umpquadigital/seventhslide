@@ -37,22 +37,19 @@ ThemeGalleryView {
     hint: {
         switch (gallery.dialog.kind) {
         case "bg":
-            return qsTr("What sits behind the words on this screen: a color, a picture or a "
-                        + "video. Point at one and click Song or Bible to make it the default "
-                        + "for songs or Bible verses. Pictures, videos and web pages fill the "
-                        + "screen over black.")
+            return qsTr("Backgrounds sit behind the words on this screen, and can be a color, a "
+                        + "picture or a video. Mark one as the Song or Bible default to use it "
+                        + "every time.")
         case "bible":
-            return qsTr("How Bible verses look on this screen: the passage, its reference and "
-                        + "where they sit. Point at one and click Default to use it for verses "
-                        + "unless a service or the item picks another.")
+            return qsTr("Bible themes decide how verses and their references look on this screen. "
+                        + "The one marked Default is used unless a service or item picks another.")
         case "media":
-            return qsTr("Where pictures, videos, web pages and live video sit on this screen, "
-                        + "what goes over them, and how audio fades. Point at one and click "
-                        + "Default to use it unless a service or the item picks another.")
+            return qsTr("Media themes decide how pictures, videos and web pages fill this screen, "
+                        + "and how their audio fades in and out.")
         default:
-            return qsTr("How song lyrics and title slides look on this screen: the font, size, "
-                        + "color and where they sit. Point at one and click Default to use it "
-                        + "for songs unless a service or the song picks another.")
+            return qsTr("Song themes decide how lyrics look on this screen, from the font and "
+                        + "color to where the words sit. The one marked Default is used unless a "
+                        + "service or song picks another.")
         }
     }
 

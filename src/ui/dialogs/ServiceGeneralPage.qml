@@ -20,9 +20,7 @@ ScrollPage {
     PageHeader {
         width: page.columnWidth
         title: qsTr("General")
-        text: qsTr("The service’s title, when it is held, and its tags. The Services window "
-                   + "lists services by date and groups them by tag. Audio fades left empty "
-                   + "follow each output’s own.")
+        text: qsTr("This page holds the service’s title, date, tags and audio fades.")
     }
 
     GroupHeading {
