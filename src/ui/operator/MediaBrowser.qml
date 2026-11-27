@@ -207,7 +207,9 @@ LibraryTab {
     /// fill the inner row.
     readonly property int iconMinTileW: 80
     readonly property int iconGap: 6
-    readonly property int iconCaptionH: 28
+    /// One line of a tile's caption. Every tile lays its lines out at this
+    /// height, so all are the same height and a row's names start level.
+    readonly property int iconCaptionLineH: Math.ceil(captionMetrics.lineSpacing)
     readonly property real iconTileW: iconFlow && iconFlow.cellW > 0
                                       ? iconFlow.cellW : iconMinTileW
 
@@ -233,6 +235,11 @@ LibraryTab {
     property real dragPointerRootY: 0
     /// Preserve viewport after model reset on drop/reorder.
     property real restoreContentY: -1
+
+    FontMetrics {
+        id: captionMetrics
+        font.pixelSize: Style.fontCaption
+    }
 
     /// Browser tiles have their own solid glyphs (tile/folder, tile/video, ...).
     function iconSvg(kind, ink) {
