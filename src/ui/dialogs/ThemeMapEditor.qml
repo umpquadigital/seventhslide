@@ -23,10 +23,6 @@ QtObject {
     property var themeMap: ({})
     /// What an unset slot falls back to ("Use Service", "Output Default").
     property string inheritShort: ""
-    /// The picker's subtitle per theme library; empty keeps the picker's own
-    /// wording.
-    property string pickerTextSubtitle: ""
-    property string pickerBgSubtitle: ""
     /// Whether a slot may change the map right now (the song editor edits the
     /// map of the selected theme chip, so not while none is selected).
     property bool editable: true
@@ -86,8 +82,6 @@ QtObject {
         editor._pickerOutputId = outputId
         editor._pickerSlot = slot
         editor.picker.titleText = ""
-        editor.picker.subtitleText = slot.kind === "bg" ? editor.pickerBgSubtitle
-                                                        : editor.pickerTextSubtitle
         editor.picker.showInherit = true
         // The Inherit card is named as the slots name it; its thumbnail is
         // the same empty frame.

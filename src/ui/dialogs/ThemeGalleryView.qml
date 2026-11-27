@@ -8,18 +8,19 @@ import "../js/ThemeGallery.js" as ThemeGallery
 import "../js/ThemeMap.js" as ThemeMap
 
 // A scrolling gallery of theme cards: a search field fused with a filter
-// button (tags, sort, defaults only), then same-size cards, each a preview over
-// its name. The Output window's theme library pages and
-// the theme picker both show this; ThemeGallery.js holds the browsing rules.
+// button (tags, sort, defaults only) over a dark well of same-size cards, each
+// a preview over its name. The Output window's theme library pages and the
+// theme picker both show this; ThemeGallery.js holds the browsing rules.
 //
 // The view owns how the owner's themes are browsed (query, sort, tag filter,
 // its menus). The owner supplies the themes and the category defaults and owns
 // the selection: a click emits ``picked``, a double click ``activated``, and
 // ``selectedId`` is read back. With ``editable``, each card shows under the
 // pointer the Song / Bible chips it does not hold, a click on which makes it
-// that default (``defaultToggled``); the owner's tools act on the selection. With a ``title`` the view leads with a page
-// header and holds its cards in a dark well, whose bar has the search and
-// what is declared inside the view (the owner's New).
+// that default (``defaultToggled``); the owner's tools act on the selection.
+// What is declared inside the view (the owner's New) sits at the right of the
+// search; a ``title`` leads with a page header (the Output window's pages;
+// the picker has its window's title instead).
 Item {
     id: view
 
@@ -40,7 +41,7 @@ Item {
     property string inheritLabel: ""
     property string inheritCaption: ""
 
-    /// A page header over the gallery, or none (the picker).
+    /// A page header over the search, or none (the picker).
     property string title: ""
     property string hint: ""
 
@@ -74,11 +75,8 @@ Item {
         return s && s.canvasWidth > 0 && s.canvasHeight > 0 ? s.canvasWidth / s.canvasHeight : 16 / 9
     }
 
-    /// Titled: a page header, and the cards in a well (the Output window).
-    readonly property bool welled: view.title.length > 0
     readonly property bool menuOpen: filterMenu.visible
-    readonly property bool searchFocused: titleSearch.inputFocused || topSearch.inputFocused
-                                          || tagSearchField.activeFocus
+    readonly property bool searchFocused: search.inputFocused || tagSearchField.activeFocus
     readonly property bool filtered: view.searchText.trim().length > 0
                                      || view.tagFilter.length > 0
                                      || view.defaultsOnly
@@ -103,8 +101,7 @@ Item {
     }
 
     function releaseSearch() {
-        titleSearch.blur()
-        topSearch.blur()
+        search.blur()
     }
 
     function toggleFilterMenu(field) {
@@ -190,40 +187,27 @@ Item {
         spacing: 14
 
         PageHeader {
-            visible: view.welled
+            visible: view.title.length > 0
             Layout.fillWidth: true
             title: view.title
             text: view.hint
         }
-        // No title (the picker): the search runs across the top.
-        SearchFilterField {
-            id: topSearch
-            visible: view.title.length === 0
-            Layout.fillWidth: true
-            text: view.searchText
-            filtering: view.tagFilter.length > 0 || view.defaultsOnly
-            filterLabel: view.tagFilter
-            onEdited: function (v) { view.searchText = v }
-            onEscaped: view.searchEscaped()
-            onFilterClicked: view.toggleFilterMenu(topSearch)
-        }
 
-        // Titled (the Output window's pages): the search and the owner's
-        // tools over the well, as Settings' Stacks has its tools.
+        // The search and the owner's tools over the well, as Settings'
+        // Stacks has its tools.
         RowLayout {
-            visible: view.welled
             Layout.fillWidth: true
             spacing: 6
 
             SearchFilterField {
-                id: titleSearch
+                id: search
                 implicitWidth: 220
                 text: view.searchText
                 filtering: view.tagFilter.length > 0 || view.defaultsOnly
                 filterLabel: view.tagFilter
                 onEdited: function (v) { view.searchText = v }
                 onEscaped: view.searchEscaped()
-                onFilterClicked: view.toggleFilterMenu(titleSearch)
+                onFilterClicked: view.toggleFilterMenu(search)
             }
             Item { Layout.fillWidth: true }
             Row {
@@ -233,20 +217,16 @@ Item {
         }
 
         // ---- Cards ----
-        // Titled, the cards sit in a dark well whose bar is the height of
-        // Settings' wells' bars: what they are, and how many; bare (the
-        // picker), on the page under its search.
+        // In a dark well whose bar is the height of Settings' wells' bars:
+        // what they are, and how many.
         ListWell {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.topMargin: view.welled ? -4 : 0
-            color: view.welled ? Style.wellBg : "transparent"
-            border.width: view.welled ? 1 : 0
+            Layout.topMargin: -4
 
             WellPane {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                showHeader: view.welled
                 title: qsTr("Gallery")
                 tools: Text {
                     text: view.countText
@@ -259,7 +239,7 @@ Item {
                     id: grid
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    Layout.margins: view.welled ? 6 : 0
+                    Layout.margins: 6
                     clip: true
                     boundsBehavior: Flickable.StopAtBounds
                     flickableDirection: Flickable.VerticalFlick
@@ -267,13 +247,13 @@ Item {
                     contentHeight: flow.implicitHeight + grid.pad * 2
                     ScrollBar.vertical: AppScrollBar {}
 
-                    /// In the well, room round the cards (10 from its edge, with
-                    /// the 6 inset); bare, room for their outline.
-                    readonly property int pad: view.welled ? 4 : 1
+                    /// Room round the cards: 10 from the well's edge, with the
+                    /// 6 inset.
+                    readonly property int pad: 4
                     readonly property int gap: 12
-                    /// The narrowest a card gets before a column goes: in the
-                    /// Output window's well, four across at its size.
-                    readonly property int cardMin: view.welled ? 140 : 170
+                    /// The narrowest a card gets before a column goes: four
+                    /// across in the Output window's well and in the picker's.
+                    readonly property int cardMin: 140
                     readonly property int innerW: Math.max(0, width - Style.scrollGutter(grid) - pad * 2)
                     readonly property int cols: Math.max(1, Math.floor((innerW + gap) / (cardMin + gap)))
                     readonly property int cellW: Math.floor((innerW - gap * (cols - 1)) / cols)
@@ -442,7 +422,10 @@ Item {
                         }
                     }
 
+                    // On the Flickable, not in what it scrolls: with no
+                    // cards that is only their padding tall.
                     Column {
+                        parent: grid
                         anchors.centerIn: parent
                         visible: view.items.length === 0
                         spacing: 6
@@ -470,6 +453,7 @@ Item {
     AppMenu {
         id: filterMenu
         alignRight: true
+        keepAnchorClear: true
         minWidth: 220
         onClosed: view.tagSearch = ""
 

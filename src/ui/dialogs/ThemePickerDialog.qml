@@ -2,9 +2,9 @@ import QtQuick
 import SeventhSlide
 
 // Picks a theme of one kind (song, Bible, media or background) for one output
-// (song editor, service settings, Freeform fill), in a WindowShell: the theme gallery the output
-// dialog shows, led by an Inherit tile, with Cancel / Select. The caller's
-// hint (``subtitleText``) sits in the footer.
+// (song editor, service settings, Freeform fill), in a WindowShell: the theme
+// gallery the Output window shows, led by an Inherit tile, with Cancel /
+// Select.
 Item {
     id: root
     visible: open
@@ -21,7 +21,6 @@ Item {
     property string inheritLabel: qsTr("Inherit")
     property string inheritCaption: qsTr("Inherit")
     property string titleText: ""
-    property string subtitleText: ""
     property int galleryRevision: 0
     property var defaults: ({})
 
@@ -79,13 +78,6 @@ Item {
             return qsTr("Select Song Theme")
         }
     }
-    readonly property string resolvedSubtitle: {
-        if (root.subtitleText.length)
-            return root.subtitleText
-        return root.kind === "bg"
-            ? qsTr("Choose a background theme to apply on this output, or inherit from above.")
-            : qsTr("Choose a theme to apply on this output, or inherit from above.")
-    }
     anchors.fill: parent
 
     ModalScrim {
@@ -103,7 +95,6 @@ Item {
         width: Math.min(820, parent.width - 40)
         height: Math.min(640, parent.height - 40)
         title: root.resolvedTitle
-        note: root.resolvedSubtitle
         acceptLabel: qsTr("Select")
         onCanceled: {
             root.cancelled()

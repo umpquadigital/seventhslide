@@ -16,6 +16,7 @@
 #include <QUrl>
 #include <QVariant>
 
+#include <cmath>
 #include <functional>
 
 namespace {
@@ -127,6 +128,40 @@ TEST_CASE("Theme gallery view keeps its card list while only the selection moves
 
     g.view->setProperty("sortAsc", false);
     CHECK(!g.call_bool("stillHeld"));
+}
+
+TEST_CASE("Theme gallery view centres its empty state in the well", "[ui][gallery]")
+{
+    using seventhslide::test::visible_text_under;
+    GalleryWindow g;
+    g.view->setProperty("searchText", QStringLiteral("no such theme"));
+    auto* window = qobject_cast<QQuickWindow*>(g.window);
+    REQUIRE(window != nullptr);
+    QTest::qWait(50);
+
+    QQuickItem* grid = nullptr;
+    for (QQuickItem* item : g.view->findChildren<QQuickItem*>()) {
+        if (item->inherits("QQuickFlickable") && item->property("cardMin").isValid()) {
+            grid = item;
+        }
+    }
+    REQUIRE(grid != nullptr);
+    QQuickItem* title = visible_text_under(window->contentItem(), QStringLiteral("No matches"));
+    QQuickItem* caption = visible_text_under(window->contentItem(),
+                                             QStringLiteral("Nothing matches the search or filter."));
+    REQUIRE(title != nullptr);
+    REQUIRE(caption != nullptr);
+
+    // Centred in the cards' area, both lines inside it: not centred in what
+    // the area scrolls, which with no cards is only their padding tall.
+    QQuickItem* column = title->parentItem();
+    const QPointF centre = column->mapToItem(grid, QPointF(column->width() / 2, column->height() / 2));
+    CHECK(std::abs(centre.x() - grid->width() / 2) <= 1);
+    CHECK(std::abs(centre.y() - grid->height() / 2) <= 1);
+    const QRectF area(0, 0, grid->width(), grid->height());
+    for (QQuickItem* line : {title, caption}) {
+        CHECK(area.contains(line->mapRectToItem(grid, QRectF(0, 0, line->width(), line->height()))));
+    }
 }
 
 TEST_CASE("Theme gallery view tells its owner when it closes its menus", "[ui][gallery]")
