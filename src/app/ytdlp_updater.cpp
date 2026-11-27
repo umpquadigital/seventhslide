@@ -120,6 +120,62 @@ void YtdlpUpdater::update()
     fetch_sums();
 }
 
+QString YtdlpUpdater::uninstall()
+{
+    if (busy()) {
+        // ``status`` is the check's progress, and stays so.
+        return tr("yt-dlp is being checked or installed. Try again once that is done.");
+    }
+    const std::filesystem::path path = managed_path();
+    std::error_code ec;
+    if (!std::filesystem::exists(path, ec) && !ec) {
+        clearStatus();
+        return {};
+    }
+    // Windows will not delete a program that is running, and a download or
+    // a look-up would lose the program under it anywhere.
+    if (tools_.jobs().has_jobs(platform::k_tool_ytdlp)) {
+        return refuse_uninstall(tr("yt-dlp is downloading or looking up a link. Try again once "
+                                   "that is done."));
+    }
+    if (tools_.jobs().has_jobs(ToolsController::version_lane(platform::k_tool_ytdlp))) {
+        return refuse_uninstall(tr("yt-dlp’s version is still being read. Try again in a "
+                                   "moment."));
+    }
+    // remove_file waits a moment for a reader (a virus scanner) to let go.
+    if (!util::remove_file(path)) {
+        qWarning("SeventhSlide: could not remove %s",
+                 qUtf8Printable(QString::fromStdU16String(path.u16string())));
+        return refuse_uninstall(tr("Could not remove yt-dlp. Something may still be using it: "
+                                   "try again in a moment."));
+    }
+    QSettings().remove(k_checked_key);
+    status_.clear();
+    failed_ = false;
+    // Found again before ``changed``, so the page reads what downloads use now.
+    tools_.refresh();
+    emit changed();
+    return {};
+}
+
+QString YtdlpUpdater::refuse_uninstall(const QString& why)
+{
+    status_ = why;
+    failed_ = true;
+    emit changed();
+    return why;
+}
+
+void YtdlpUpdater::clearStatus()
+{
+    if (busy() || (status_.isEmpty() && !failed_)) {
+        return;
+    }
+    status_.clear();
+    failed_ = false;
+    emit changed();
+}
+
 void YtdlpUpdater::when_fresh(std::function<void()> then)
 {
     const QDateTime checked = last_check();
@@ -150,6 +206,7 @@ void YtdlpUpdater::fetch_sums()
         return;
     }
     status_ = tr("Checking for updates…");
+    failed_ = false;
     QNetworkRequest request(url_of(QString::fromLatin1(k_sums_name)));
     reply_ = network_->get(request);
     connect(reply_, &QNetworkReply::finished, this, &YtdlpUpdater::on_sums);
@@ -266,15 +323,17 @@ void YtdlpUpdater::on_build_done(const QString& digest)
     part_.reset();
     QSettings().setValue(k_checked_key, QDateTime::currentDateTimeUtc());
     tools_.refresh();
-    done(true, had ? tr("Updated") : tr("Installed"));
+    // A copy just installed is news ``installed`` tells by itself.
+    done(true, had ? tr("Updated") : tr("Installed"), had);
 }
 
-void YtdlpUpdater::done(bool ok, const QString& status)
+void YtdlpUpdater::done(bool ok, const QString& message, bool news)
 {
-    status_ = status;
+    status_ = news ? message : QString{};
+    failed_ = !ok;
     hash_.reset();
     emit changed();
-    emit finished(ok, status);
+    emit finished(ok, message);
     auto waiting = std::move(waiting_);
     waiting_.clear();
     for (auto& then : waiting) {

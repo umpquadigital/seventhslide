@@ -357,6 +357,26 @@ TEST_CASE("The tools controller finds the tools and reads their versions", "[too
     CHECK(tools.toolsDir() == QString::fromStdString((tmp.path / "tools").string()));
 }
 
+TEST_CASE("Refreshing while versions are read still reads each one", "[tools]")
+{
+    seventhslide::test::ensure_qt_application();
+    const seventhslide::test::TempDir tmp;
+    write_script(tmp.path / "bin" / "yt-dlp", "echo 2025.01.15\n");
+    ToolSearch search;
+    search.platform_id = seventhslide::test::tool_platform();
+    search.path_env = (tmp.path / "bin").string();
+    search.tools_dir = tmp.path / "tools";
+
+    ToolsController tools{search};
+    // The first refresh's probes are cancelled, and report after the
+    // second's have started: they must not answer for them.
+    tools.refresh();
+    tools.refresh();
+    REQUIRE(QTest::qWaitFor([&tools] { return !tools.probing(); }, seventhslide::test::k_tool_wait_ms));
+    CHECK(tools.found()[2].version == "2025.01.15");
+    CHECK(tools.found()[2].error.empty());
+}
+
 TEST_CASE("A tool that is there but will not run is found, with its error", "[tools]")
 {
     seventhslide::test::ensure_qt_application();

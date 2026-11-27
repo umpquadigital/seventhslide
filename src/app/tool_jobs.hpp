@@ -116,6 +116,9 @@ public:
     [[nodiscard]] bool busy() const noexcept { return !entries_.empty(); }
     /// The running job of ``tool``, if any.
     [[nodiscard]] std::optional<ToolJob> running(std::string_view tool) const;
+    /// A job of ``tool`` has not reported yet: queued, running, or cancelled
+    /// and still stopping.
+    [[nodiscard]] bool has_jobs(std::string_view tool) const;
 
 signals:
     /// A job was started, moved, or reported; a job's progress moved.
