@@ -7,6 +7,7 @@
 // that wrongly reports fresh serves the operator a picture of the old slide
 // until someone clears the folder by hand.
 
+#include "file_time_string.hpp"
 #include "test_qt_app.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -35,19 +36,6 @@ namespace fs = std::filesystem;
 using namespace seventhslide::app;
 
 using seventhslide::test::TempDir;
-
-// How Catch2 shows a file time when a comparison of two fails. Its own
-// chrono printing cannot do it on libc++, which counts file times in a
-// 128-bit integer that no stream operator takes.
-template <>
-struct Catch::StringMaker<fs::file_time_type> {
-    static std::string convert(const fs::file_time_type& time)
-    {
-        return std::to_string(
-                   std::chrono::duration_cast<std::chrono::nanoseconds>(time.time_since_epoch()).count())
-            + " ns";
-    }
-};
 
 namespace {
 
