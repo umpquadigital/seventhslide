@@ -5,6 +5,7 @@
 #include <seventhslide/canvas/layout.hpp>
 
 #include <utility>
+#include <vector>
 
 using Catch::Approx;
 using seventhslide::canvas::Align;
@@ -23,6 +24,8 @@ using seventhslide::canvas::normalized_rect;
 using seventhslide::canvas::nudge_rects;
 using seventhslide::canvas::point_in_rect;
 using seventhslide::canvas::rects_intersect;
+using seventhslide::canvas::snap_axis_targets;
+using seventhslide::canvas::snap_many;
 using seventhslide::canvas::union_bounds;
 using seventhslide::geom::CanvasSize;
 
@@ -158,4 +161,27 @@ TEST_CASE("point_in_rect follows a clockwise rotation", "[canvas][interact][layo
     const Rect box{"r", 100, 100, 80, 20, 90};
     REQUIRE(point_in_rect(140, 100, box));
     REQUIRE_FALSE(point_in_rect(170, 110, box));
+}
+
+TEST_CASE("snap_many meets the canvas edges with the whole selection", "[canvas][layout]")
+{
+    const CanvasSize canvas{1920, 1080};
+    const auto targets = snap_axis_targets(canvas, {}, {});
+    const std::vector<Rect> rects{{"a", 6, 300, 100, 50}, {"b", 206, 400, 100, 50}};
+
+    // Moving: the union's left edge meets 0 and both members shift by the same 6.
+    const auto moved = snap_many(rects, Handle::Move, targets, canvas, true);
+    REQUIRE(moved.rects.size() == 2);
+    CHECK(moved.v_guide == Approx(0));
+    CHECK(moved.rects[0].x == Approx(0));
+    CHECK(moved.rects[1].x == Approx(200));
+    CHECK(moved.rects[1].y == Approx(400));
+
+    // Resizing east: the union's right edge meets 1920 and the members scale.
+    const std::vector<Rect> wide{{"a", 100, 300, 100, 50}, {"b", 1800, 400, 114, 50}};
+    const auto east = snap_many(wide, Handle::E, targets, canvas, true);
+    REQUIRE(east.rects.size() == 2);
+    CHECK(east.v_guide == Approx(1920));
+    CHECK(east.rects[0].x == Approx(100));
+    CHECK(east.rects[1].x + east.rects[1].w == Approx(1920));
 }

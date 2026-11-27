@@ -265,8 +265,10 @@ AxisTargets snap_axis_targets(geom::CanvasSize canvas, const std::vector<Rect>& 
 {
     const auto [cw, ch] = geom::canvas_or_reference(canvas);
     AxisTargets out;
-    out.xs.push_back(cw / 2.0);
-    out.ys.push_back(ch / 2.0);
+    // Canvas targets come first, so on an equal-distance tie the canvas guide
+    // wins over a sibling's.
+    out.xs = {0.0, cw / 2.0, static_cast<double>(cw)};
+    out.ys = {0.0, ch / 2.0, static_cast<double>(ch)};
     for (const auto& obj : objects) {
         if (std::find(exclude_ids.begin(), exclude_ids.end(), obj.id) != exclude_ids.end()) {
             continue;

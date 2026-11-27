@@ -89,7 +89,7 @@ struct SnapResult {
 [[nodiscard]] Rect geometry_from_drag(Handle mode, const Rect& start, double dx, double dy,
                                       geom::CanvasSize canvas, const Limits& limits = {});
 
-/// Canvas centre plus every other object's edges and centres.
+/// Canvas edges and centre plus every other object's edges and centres.
 [[nodiscard]] AxisTargets snap_axis_targets(geom::CanvasSize canvas,
                                             const std::vector<Rect>& objects,
                                             const std::vector<std::string>& exclude_ids);
