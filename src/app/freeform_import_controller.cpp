@@ -53,11 +53,11 @@
 #include <system_error>
 #include <utility>
 
-Q_LOGGING_CATEGORY(lcImport, "seventhslide.import")
-
 namespace seventhslide::app {
 
 namespace {
+
+Q_LOGGING_CATEGORY(lcImport, "seventhslide.import")
 
 namespace fs = std::filesystem;
 using nlohmann::json;
@@ -339,8 +339,10 @@ void extract_files(Extracted& plan, const std::atomic<bool>& cancelled, const st
                 }
             }
         }
-        const auto& zip = need.loose ? *file.package : file.bundle;
-        const auto* entry = zip.find(need.entry);
+        // A row's own file is in the package; a file without one has no such
+        // row, and reads as damaged.
+        const auto* zip = need.loose ? (file.package ? &*file.package : nullptr) : &file.bundle;
+        const auto* entry = zip != nullptr ? zip->find(need.entry) : nullptr;
         if (entry == nullptr) {
             plan.error = FreeformImportController::tr("The file is damaged: some of its files are missing.");
             return;
@@ -348,7 +350,7 @@ void extract_files(Extracted& plan, const std::atomic<bool>& cancelled, const st
         Got got;
         got.staged = staging_in(dir);
         std::string why;
-        const auto copied = zip.extract(*entry, got.staged, progress, why);
+        const auto copied = zip->extract(*entry, got.staged, progress, why);
         if (copied == util::CopyOutcome::Stopped) {
             plan.stopped = true;
             return;
@@ -1251,7 +1253,12 @@ try {
     std::set<std::string> named;
     std::set<std::string> said;  // items already named in a note
     for (const auto i : chosen) {
-        auto adapted = exchange::adapt_document(*read_->items[i].document, m.outputs, outputs, mapping, entries);
+        // Only items that read are chosen (above).
+        const auto& document = read_->items[i].document;
+        if (!document) {
+            continue;
+        }
+        auto adapted = exchange::adapt_document(*document, m.outputs, outputs, mapping, entries);
         if (!adapted.document) {
             plan->notes.push_back(tr("“%1” was left out. %2").arg(q(m.items[i].name), q(adapted.refusal)));
             said.insert(m.items[i].entry);
