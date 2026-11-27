@@ -110,7 +110,7 @@ std::int64_t FreeformRepository::create_item(model::FreeformItem& item, std::str
           json_to_qstring(item.document),
           QString::fromStdString(item.thumb_output_id),
           QString::fromStdString(item.thumb_key),
-          uid.empty() ? QVariant() : QVariant(QString::fromUtf8(uid.data(), static_cast<qsizetype>(uid.size())))},
+          uid.empty() ? QVariant() : QVariant(QString::fromUtf8(uid))},
          "create freeform item");
     item.id = db_.last_insert_id();
     item.sort_order = sort_order;
