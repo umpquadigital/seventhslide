@@ -1,0 +1,58 @@
+name: Linux dependencies
+description: The system packages and the Qt 6.8 that SeventhSlide builds with on Linux.
+
+inputs:
+  webengine:
+    description: >-
+      'true' to add Qt WebEngine: the Qt modules it is made of, the system
+      libraries its pages run on and a display to draw them on. It is large,
+      so only the job that tests it asks.
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Install system dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          cmake ninja-build g++ pkg-config \
+          libmpv-dev libavformat-dev libavcodec-dev libavutil-dev \
+          libswresample-dev libswscale-dev libavdevice-dev libssl-dev \
+          libgl1-mesa-dev libegl1 \
+          libxkbcommon-dev libxkbcommon-x11-0 \
+          fonts-liberation libpipewire-0.3-dev \
+          libwayland-dev wayland-protocols libxfixes-dev
+
+    # What Qt WebEngine's library and its QtWebEngineProcess link that the
+    # packages above leave out (Chromium's NSS, ALSA and X11 extensions), and
+    # a display for its pages to be drawn on: Xvfb, Qt's xcb platform's
+    # libraries and Mesa's OpenGL in software, as the offscreen platform has
+    # no OpenGL to draw a page with.
+    - name: Install Qt WebEngine's system libraries
+      if: inputs.webengine == 'true'
+      shell: bash
+      run: |
+        sudo apt-get install -y \
+          libnss3 libnspr4 libasound2t64 libgbm1 libdrm2 libxshmfence1 \
+          libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxi6 libxkbfile1 \
+          xvfb xauth libgl1-mesa-dri libx11-xcb1 \
+          libxcb-cursor0 libxcb-glx0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+          libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-shm0 \
+          libxcb-sync1 libxcb-xfixes0 libxcb-xkb1
+
+    # apt ships Qt 6.4, below the 6.8 floor (see docs/BUILDING.md). Qt WebEngine is
+    # three modules: itself, and the WebChannel and Positioning it links.
+    - name: Install Qt 6.8
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: '6.8.3'
+        host: linux
+        target: desktop
+        arch: linux_gcc_64
+        modules: >-
+          qthttpserver qtwebsockets qtshadertools
+          ${{ inputs.webengine == 'true' && 'qtwebengine qtwebchannel qtpositioning' || '' }}
+        cache: true

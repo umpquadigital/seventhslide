@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<song>
+  <properties>
+    <titles>
+      <title>OpenSong Shaped</title>
+    </titles>
+    <authors>
+      <author>Writer One</author>
+    </authors>
+    <songbooks>
+      <songbook name="OS Book" entry="12"/>
+    </songbooks>
+    <key>D</key>
+  </properties>
+  <lyrics>
+    <verse name="v1">
+      <lines>Verse text</lines>
+    </verse>
+    <verse name="p1">
+      <lines>Pre chorus</lines>
+    </verse>
+    <verse name="e1">
+      <lines>Ending</lines>
+    </verse>
+    <verse name="i1">
+      <lines>Intro</lines>
+    </verse>
+  </lyrics>
+</song>

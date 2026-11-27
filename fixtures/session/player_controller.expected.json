@@ -1,0 +1,431 @@
+{
+  "schema": "seventhslide.player_controller.v1",
+  "nav_cases": [
+    {
+      "name": "uniform_line_per_slide",
+      "maps": {
+        "Main": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "total_lines": 4,
+      "actions": [
+        {
+          "op": "next"
+        },
+        {
+          "op": "next"
+        },
+        {
+          "op": "prev"
+        },
+        {
+          "op": "jump",
+          "line": 3
+        },
+        {
+          "op": "next"
+        }
+      ],
+      "frames": [
+        {
+          "op": "init",
+          "line_cursor": 0,
+          "indices": {
+            "Main": 0
+          }
+        },
+        {
+          "op": "next",
+          "line_cursor": 1,
+          "indices": {
+            "Main": 1
+          },
+          "ok": true
+        },
+        {
+          "op": "next",
+          "line_cursor": 2,
+          "indices": {
+            "Main": 2
+          },
+          "ok": true
+        },
+        {
+          "op": "prev",
+          "line_cursor": 1,
+          "indices": {
+            "Main": 1
+          },
+          "ok": true
+        },
+        {
+          "op": "jump",
+          "line_cursor": 3,
+          "indices": {
+            "Main": 3
+          },
+          "ok": true,
+          "line": 3
+        },
+        {
+          "op": "next",
+          "line_cursor": 3,
+          "indices": {
+            "Main": 3
+          },
+          "ok": false
+        }
+      ]
+    },
+    {
+      "name": "multi_output_asymmetric",
+      "maps": {
+        "Main": [
+          0,
+          0,
+          1,
+          1,
+          2,
+          2
+        ],
+        "Stage": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "total_lines": 6,
+      "actions": [
+        {
+          "op": "next"
+        },
+        {
+          "op": "next"
+        },
+        {
+          "op": "next"
+        },
+        {
+          "op": "prev"
+        },
+        {
+          "op": "prev"
+        },
+        {
+          "op": "jump",
+          "line": 5
+        },
+        {
+          "op": "prev"
+        }
+      ],
+      "frames": [
+        {
+          "op": "init",
+          "line_cursor": 0,
+          "indices": {
+            "Main": 0,
+            "Stage": 0
+          }
+        },
+        {
+          "op": "next",
+          "line_cursor": 1,
+          "indices": {
+            "Main": 0,
+            "Stage": 1
+          },
+          "ok": true
+        },
+        {
+          "op": "next",
+          "line_cursor": 2,
+          "indices": {
+            "Main": 1,
+            "Stage": 2
+          },
+          "ok": true
+        },
+        {
+          "op": "next",
+          "line_cursor": 3,
+          "indices": {
+            "Main": 1,
+            "Stage": 3
+          },
+          "ok": true
+        },
+        {
+          "op": "prev",
+          "line_cursor": 2,
+          "indices": {
+            "Main": 1,
+            "Stage": 2
+          },
+          "ok": true
+        },
+        {
+          "op": "prev",
+          "line_cursor": 1,
+          "indices": {
+            "Main": 0,
+            "Stage": 1
+          },
+          "ok": true
+        },
+        {
+          "op": "jump",
+          "line_cursor": 5,
+          "indices": {
+            "Main": 2,
+            "Stage": 5
+          },
+          "ok": true,
+          "line": 5
+        },
+        {
+          "op": "prev",
+          "line_cursor": 4,
+          "indices": {
+            "Main": 2,
+            "Stage": 4
+          },
+          "ok": true
+        }
+      ]
+    },
+    {
+      "name": "flat_then_edge",
+      "maps": {
+        "Main": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "total_lines": 4,
+      "actions": [
+        {
+          "op": "next"
+        },
+        {
+          "op": "jump",
+          "line": 2
+        },
+        {
+          "op": "prev"
+        },
+        {
+          "op": "prev"
+        }
+      ],
+      "frames": [
+        {
+          "op": "init",
+          "line_cursor": 0,
+          "indices": {
+            "Main": 0
+          }
+        },
+        {
+          "op": "next",
+          "line_cursor": 0,
+          "indices": {
+            "Main": 0
+          },
+          "ok": false
+        },
+        {
+          "op": "jump",
+          "line_cursor": 2,
+          "indices": {
+            "Main": 0
+          },
+          "ok": true,
+          "line": 2
+        },
+        {
+          "op": "prev",
+          "line_cursor": 0,
+          "indices": {
+            "Main": 0
+          },
+          "ok": true
+        },
+        {
+          "op": "prev",
+          "line_cursor": 0,
+          "indices": {
+            "Main": 0
+          },
+          "ok": false
+        }
+      ]
+    },
+    {
+      "name": "bounds",
+      "maps": {
+        "Main": [
+          0,
+          1
+        ]
+      },
+      "total_lines": 2,
+      "actions": [
+        {
+          "op": "prev"
+        },
+        {
+          "op": "next"
+        },
+        {
+          "op": "next"
+        },
+        {
+          "op": "jump",
+          "line": -1
+        },
+        {
+          "op": "jump",
+          "line": 99
+        },
+        {
+          "op": "jump",
+          "line": 0
+        }
+      ],
+      "frames": [
+        {
+          "op": "init",
+          "line_cursor": 0,
+          "indices": {
+            "Main": 0
+          }
+        },
+        {
+          "op": "prev",
+          "line_cursor": 0,
+          "indices": {
+            "Main": 0
+          },
+          "ok": false
+        },
+        {
+          "op": "next",
+          "line_cursor": 1,
+          "indices": {
+            "Main": 1
+          },
+          "ok": true
+        },
+        {
+          "op": "next",
+          "line_cursor": 1,
+          "indices": {
+            "Main": 1
+          },
+          "ok": false
+        },
+        {
+          "op": "jump",
+          "line_cursor": 1,
+          "indices": {
+            "Main": 1
+          },
+          "ok": false,
+          "line": -1
+        },
+        {
+          "op": "jump",
+          "line_cursor": 1,
+          "indices": {
+            "Main": 1
+          },
+          "ok": false,
+          "line": 99
+        },
+        {
+          "op": "jump",
+          "line_cursor": 0,
+          "indices": {
+            "Main": 0
+          },
+          "ok": true,
+          "line": 0
+        }
+      ]
+    },
+    {
+      "name": "short_map_safe",
+      "maps": {
+        "Main": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "Short": [
+          0,
+          1
+        ]
+      },
+      "total_lines": 4,
+      "actions": [
+        {
+          "op": "next"
+        },
+        {
+          "op": "next"
+        },
+        {
+          "op": "next"
+        }
+      ],
+      "frames": [
+        {
+          "op": "init",
+          "line_cursor": 0,
+          "indices": {
+            "Main": 0,
+            "Short": 0
+          }
+        },
+        {
+          "op": "next",
+          "line_cursor": 1,
+          "indices": {
+            "Main": 1,
+            "Short": 1
+          },
+          "ok": true
+        },
+        {
+          "op": "next",
+          "line_cursor": 2,
+          "indices": {
+            "Main": 2,
+            "Short": 1
+          },
+          "ok": true
+        },
+        {
+          "op": "next",
+          "line_cursor": 3,
+          "indices": {
+            "Main": 3,
+            "Short": 1
+          },
+          "ok": true
+        }
+      ]
+    }
+  ]
+}

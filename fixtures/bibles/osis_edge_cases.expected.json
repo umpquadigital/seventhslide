@@ -1,0 +1,54 @@
+{
+  "name": "Edge Cases",
+  "copyright": "",
+  "verses": [
+    {
+      "book": "Esther",
+      "chapter": 8,
+      "verse": 9,
+      "text": "in the month Sivan, on the twenty-third day"
+    },
+    {
+      "book": "Psalms",
+      "chapter": 51,
+      "verse": 1,
+      "text": "To the chief Musician when Nathan came."
+    },
+    {
+      "book": "Psalms",
+      "chapter": 51,
+      "verse": 2,
+      "text": "Wash me"
+    },
+    {
+      "book": "Song of Solomon",
+      "chapter": 1,
+      "verse": 2,
+      "text": "Let him kiss me."
+    },
+    {
+      "book": "Malachi",
+      "chapter": 4,
+      "verse": 6,
+      "text": "lest I come and smite the earth with a curse."
+    },
+    {
+      "book": "Matthew",
+      "chapter": 4,
+      "verse": 4,
+      "text": "He said, “It is written” and 'so'."
+    },
+    {
+      "book": "John",
+      "chapter": 3,
+      "verse": 16,
+      "text": "神愛世人。"
+    },
+    {
+      "book": "Odes",
+      "chapter": 1,
+      "verse": 1,
+      "text": "A book id with no English name."
+    }
+  ]
+}

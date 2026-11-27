@@ -1,0 +1,187 @@
+{
+  "books": [
+    "Genesis",
+    "Exodus",
+    "Leviticus",
+    "Numbers",
+    "Deuteronomy",
+    "Joshua",
+    "Judges",
+    "Ruth",
+    "1 Samuel",
+    "2 Samuel",
+    "1 Kings",
+    "2 Kings",
+    "1 Chronicles",
+    "2 Chronicles",
+    "Ezra",
+    "Nehemiah",
+    "Esther",
+    "Job",
+    "Psalms",
+    "Proverbs",
+    "Ecclesiastes",
+    "Song of Solomon",
+    "Isaiah",
+    "Jeremiah",
+    "Lamentations",
+    "Ezekiel",
+    "Daniel",
+    "Hosea",
+    "Joel",
+    "Amos",
+    "Obadiah",
+    "Jonah",
+    "Micah",
+    "Nahum",
+    "Habakkuk",
+    "Zephaniah",
+    "Haggai",
+    "Zechariah",
+    "Malachi",
+    "Matthew",
+    "Mark",
+    "Luke",
+    "John",
+    "Acts",
+    "Romans",
+    "1 Corinthians",
+    "2 Corinthians",
+    "Galatians",
+    "Ephesians",
+    "Philippians",
+    "Colossians",
+    "1 Thessalonians",
+    "2 Thessalonians",
+    "1 Timothy",
+    "2 Timothy",
+    "Titus",
+    "Philemon",
+    "Hebrews",
+    "James",
+    "1 Peter",
+    "2 Peter",
+    "1 John",
+    "2 John",
+    "3 John",
+    "Jude",
+    "Revelation"
+  ],
+  "cases": [
+    {
+      "input": "John 3:16",
+      "result": {
+        "book": "John",
+        "chapter": 3,
+        "verse_start": 16,
+        "verse_end": 16
+      }
+    },
+    {
+      "input": "Rom 8:28-30",
+      "result": {
+        "book": "Romans",
+        "chapter": 8,
+        "verse_start": 28,
+        "verse_end": 30
+      }
+    },
+    {
+      "input": "Rom 8:30-28",
+      "result": {
+        "book": "Romans",
+        "chapter": 8,
+        "verse_start": 28,
+        "verse_end": 30
+      }
+    },
+    {
+      "input": "1 Cor 13:4-7",
+      "result": {
+        "book": "1 Corinthians",
+        "chapter": 13,
+        "verse_start": 4,
+        "verse_end": 7
+      }
+    },
+    {
+      "input": "Ps 23",
+      "result": {
+        "book": "Psalms",
+        "chapter": 23,
+        "verse_start": null,
+        "verse_end": null
+      }
+    },
+    {
+      "input": "Psalm 23",
+      "result": {
+        "book": "Psalms",
+        "chapter": 23,
+        "verse_start": null,
+        "verse_end": null
+      }
+    },
+    {
+      "input": "I John 1:1",
+      "result": {
+        "book": "1 John",
+        "chapter": 1,
+        "verse_start": 1,
+        "verse_end": 1
+      }
+    },
+    {
+      "input": "1jn 1:1",
+      "result": {
+        "book": "1 John",
+        "chapter": 1,
+        "verse_start": 1,
+        "verse_end": 1
+      }
+    },
+    {
+      "input": "First John 1:1",
+      "result": {
+        "book": "1 John",
+        "chapter": 1,
+        "verse_start": 1,
+        "verse_end": 1
+      }
+    },
+    {
+      "input": "Jn 3.16",
+      "result": {
+        "book": "John",
+        "chapter": 3,
+        "verse_start": 16,
+        "verse_end": 16
+      }
+    },
+    {
+      "input": "Genesis 1:1–2",
+      "result": {
+        "book": "Genesis",
+        "chapter": 1,
+        "verse_start": 1,
+        "verse_end": 2
+      }
+    },
+    {
+      "input": "Nope 1:1",
+      "result": null
+    },
+    {
+      "input": "",
+      "result": null
+    },
+    {
+      "input": "Just words",
+      "result": null
+    },
+    {
+      "input": "John",
+      "result": null
+    }
+  ]
+}

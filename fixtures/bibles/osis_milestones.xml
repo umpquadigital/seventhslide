@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osis:osis xmlns:osis="http://www.bibletechnologies.net/2003/OSIS/namespace">
+  <osis:osisText osisIDWork="MS">
+    <osis:div type="book" osisID="Ps">
+      <osis:chapter sID="Ps.23" osisID="Ps.23"/>
+      <osis:title type="psalm">A Psalm of David.</osis:title>
+      <osis:lg>
+        <osis:l><osis:verse sID="Ps.23.1" osisID="Ps.23.1"/>The LORD is my shepherd;</osis:l><osis:l>I shall not want.<osis:verse eID="Ps.23.1"/></osis:l>
+        <osis:l><osis:verse sID="Ps.23.2" osisID="Ps.23.2"/>He maketh me to lie down<osis:lb/>in green pastures<osis:note>Heb. pastures of tender grass</osis:note>.<osis:verse eID="Ps.23.2"/></osis:l>
+      </osis:lg>
+      <osis:chapter eID="Ps.23"/>
+    </osis:div>
+    <osis:div type="book" osisID="Matt">
+      <osis:chapter sID="Matt.5" osisID="Matt.5"/>
+      <osis:p><osis:verse sID="Matt.5.3" osisID="Matt.5.3"/>Blessed are the poor in spirit:</osis:p>
+      <osis:p>for theirs is the kingdom of heaven.<osis:verse eID="Matt.5.3"/></osis:p>
+      <osis:p>Text outside any verse.</osis:p>
+      <osis:verse sID="Matt.5.3b" osisID="Matt.5.3"/>Again.<osis:verse eID="Matt.5.3b"/>
+      <osis:chapter eID="Matt.5"/>
+    </osis:div>
+  </osis:osisText>
+</osis:osis>

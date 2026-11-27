@@ -1,0 +1,458 @@
+/* The Controller: its head (title, stack strip, Auto, options), what is live
+   on this device's stack (lines, a gallery, a picture), the media clock, and
+   the transport; with a Preview, what is cued beside it and the take between
+   them. */
+
+/* --- Head ------------------------------------------------------------------ */
+.ctrl-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--dock-header-h);
+}
+/* The strip takes the slack; space alone separates it from the title. */
+.ctrl-title {
+  flex-shrink: 0;
+  margin-right: 6px;
+  color: var(--text-bright);
+  font-size: var(--font-ui);
+  font-weight: 700;
+}
+.ctrl-head-tools { flex-shrink: 0; display: flex; align-items: center; gap: 6px; position: relative; }
+.ctrl-menu { top: calc(100% + 4px); right: 0; min-width: 240px; }
+.ctrl-menu input[type="number"] {
+  width: 52px;
+  height: var(--control-h);
+  border: 1px solid var(--control-edge);
+  border-radius: var(--radius-small);
+  background: var(--field-face);
+  color: var(--search-ink);
+  font-size: var(--font-body);
+  text-align: center;
+}
+.ctrl-menu input[type="number"]:focus { outline: none; border-color: var(--focus-edge); }
+.menu-unit { color: var(--text-faint); font-size: var(--font-small); }
+
+/* --- Stack strip ------------------------------------------------------------
+   Tabs that do not fit go behind "+N more"; the fit reads width and stack
+   order only, so focusing a tab restyles it without moving anything. */
+.stack-strip {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.stack-tabs {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+.stack-tab {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--control-h);
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--btn-radius);
+  color: var(--stack-tab-ink);
+  font-size: var(--font-small);
+  white-space: nowrap;
+}
+.stack-tab.is-active {
+  background: linear-gradient(var(--btn-neutral-top), var(--btn-neutral-bot));
+  border-color: var(--btn-edge);
+  color: var(--text-strong);
+  font-weight: 600;
+}
+.stack-tab.is-blank { opacity: 0.55; }
+.stack-tab.is-frozen { box-shadow: inset 0 -2px 0 var(--btn-freeze-on-top); }
+.stack-tab img { display: block; width: 13px; height: 13px; }
+/* The label reserves its semibold width, so focus never widens a tab. */
+.stack-tab .tab-name {
+  display: inline-grid;
+  grid-template-columns: minmax(0, auto);
+  min-width: 0;
+  max-width: 132px;
+}
+.stack-tab .tab-name > span,
+.stack-tab .tab-name::after { grid-area: 1 / 1; white-space: nowrap; }
+.stack-tab .tab-name > span { overflow: hidden; text-overflow: ellipsis; }
+.stack-tab .tab-name::after {
+  content: attr(data-label);
+  height: 0;
+  overflow: hidden;
+  font-weight: 600;
+  visibility: hidden;
+}
+/* Advancing: one dot, the same corner on every tab, on a disc of the face. */
+.adv-dot {
+  position: absolute;
+  top: 0; left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--page-bg);
+}
+.stack-tab.is-active .adv-dot,
+.stack-more-btn.is-lit .adv-dot { background: var(--btn-neutral-top); }
+.adv-dot::after { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--focus-edge); }
+.stack-more { position: relative; flex-shrink: 0; display: flex; }
+.stack-more-btn { justify-content: center; width: 80px; gap: 5px; color: var(--glyph-ink); }
+.stack-more-btn .ic { width: 10px; height: 10px; }
+.stack-more-btn.is-lit {
+  background: linear-gradient(var(--btn-neutral-top), var(--btn-neutral-bot));
+  border-color: var(--btn-edge);
+  color: var(--text-strong);
+  font-weight: 600;
+}
+.stack-more-btn.is-lit::after {
+  content: '';
+  position: absolute;
+  left: 8px; right: 8px; bottom: 2px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+.stack-more-menu { top: calc(100% + 4px); left: 0; min-width: 200px; }
+@media (hover: hover) {
+  .stack-tab:not(.is-active):not(.is-lit):hover { background: var(--ghost-hover); color: var(--text-hover); }
+}
+@media (pointer: coarse) {
+  .ctrl-head { height: 44px; }
+  .stack-tab { height: 34px; padding: 0 10px; gap: 7px; font-size: var(--font-body); }
+  .stack-tab img { width: 16px; height: 16px; }
+  .stack-more-btn { width: 90px; }
+}
+
+/* --- The wells: Preview, the take, Program --------------------------------- */
+.wells {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 10px;
+}
+.well-col {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* A cued video or audio: Play / Pause and where it stands. */
+.preview-media {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.preview-media .btn { height: 38px; padding: 0 12px; }
+/* The take, between the wells, a little above their middle: two fifths of
+   the way down, as the console has it. */
+.take-col {
+  position: relative;
+  flex: 0 0 120px;
+  display: flex;
+  flex-direction: column;
+}
+.take-col::before { content: ''; flex: 2; }
+.take-col::after { content: ''; flex: 3; }
+/* Transition and its caret, one button split in two. */
+.take-split { position: relative; display: flex; }
+.take-split > .btn { height: 38px; min-width: 0; padding: 0 8px; }
+.take-split > .btn > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#btnTransition {
+  flex: 1;
+  border-right-width: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.take-caret {
+  flex: 0 0 30px;
+  border-left-color: var(--btn-primary-edge-hover);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.take-menu { top: calc(100% + 4px); right: 0; min-width: 220px; }
+.take-menu .menu-item > .menu-unit { margin-left: auto; }
+/* The Fade's length: typed, or a tenth of a second at a time. */
+.stepper { display: flex; align-items: center; gap: 4px; }
+.stepper .btn { width: 28px; padding: 0; font-size: var(--font-ui); }
+.stepper input[type="number"] {
+  width: 56px;
+  height: var(--control-h);
+  border: 1px solid var(--control-edge);
+  border-radius: var(--radius-small);
+  background: var(--field-face);
+  color: var(--search-ink);
+  font-size: var(--font-body);
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.stepper input[type="number"]::-webkit-inner-spin-button,
+.stepper input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.stepper input[type="number"]:focus { outline: none; border-color: var(--focus-edge); }
+/* The take will not show: the stack is frozen. Under Transition, which it
+   does not move. */
+.take-held {
+  position: absolute;
+  top: calc(40% + 25px);
+  left: 0;
+  right: 0;
+  color: var(--text-warning);
+  font-size: var(--font-caption);
+  text-align: center;
+}
+@media (pointer: coarse), (max-width: 1024px) {
+  .take-split > .btn, .preview-media .btn { height: var(--remote-touch-h); }
+  .stepper .btn { width: var(--remote-touch-h); height: var(--remote-touch-h); }
+}
+/* A phone: the Preview above what is live, and between them Transition
+   across the column. */
+@media (max-width: 760px) {
+  .wells.has-preview { flex-direction: column; }
+  .wells.has-preview .well-col.is-cued { flex: 0 0 34%; }
+  .take-col { flex: none; gap: 8px; }
+  .take-col::before, .take-col::after { display: none; }
+  .take-held { position: static; }
+}
+
+/* --- What is live: the well ------------------------------------------------ */
+.lyrics-map {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-anchor: none;
+  padding: 8px;
+  border: 1px solid var(--well-edge);
+  border-radius: var(--radius);
+  background: var(--well-bg);
+}
+.lyrics-map.is-gallery { padding: 6px; }
+.lyrics-map.is-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+}
+.lyrics-map > .empty { padding-top: 40px; }
+
+/* A line: its verse code, a rule, its words. */
+/* A long line wraps rather than being cut off: on a phone most do. */
+.lyric-line {
+  display: flex;
+  align-items: stretch;
+  min-height: 36px;
+  margin-bottom: 3px;
+  overflow: hidden;
+  border-radius: var(--radius-small);
+  background: var(--line-idle);
+  color: var(--line-ink);
+  font-size: var(--font-title);
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+}
+.line-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 42px;
+  padding: 0 2px;
+  overflow: hidden;
+  border-right: 1px solid var(--line-rule-idle);
+  color: inherit;
+  font-size: var(--font-caption);
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.line-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 8px 10px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.line-content.is-empty { opacity: 0.5; }
+.lyric-line.current { background: var(--line-live); color: var(--text-strong); }
+.lyric-line.current .line-content { font-weight: 600; }
+.lyric-line.current .line-label { border-right-color: var(--line-rule-live); }
+.lyric-line.visible:not(.current) { background: var(--line-shown); color: var(--line-ink-lit); }
+.lyric-line.visible:not(.current) .line-label { border-right-color: var(--list-accent-hover); }
+.lyric-line.next-line:not(.current) { background: var(--line-next); color: var(--line-ink-lit); }
+.lyric-line.next-line:not(.current) .line-label { border-right-color: var(--line-rule-next); }
+@media (hover: hover) {
+  .lyric-line:hover { background: var(--line-idle-hover); color: var(--line-ink-hover); }
+  .lyric-line.current:hover { background: var(--line-live-hover); color: var(--text-strong); }
+  .lyric-line.visible:not(.current):hover { background: var(--line-shown-hover); color: var(--line-ink-lit-hover); }
+  .lyric-line.next-line:not(.current):hover { background: var(--line-next-hover); color: var(--line-ink-lit-hover); }
+}
+
+/* A gallery: slides or pictures, the live one outlined. */
+.img-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  gap: 6px;
+}
+.img-thumb-ctrl {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: var(--radius-small);
+  background: var(--panel-row);
+}
+.img-thumb-ctrl img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  /* A slide comes in its output's shape: whole, letterboxed, never cut. */
+  object-fit: contain;
+  background: var(--preview-well);
+}
+.img-thumb-ctrl.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--live-thumb-edge); }
+.img-thumb-num {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 2px 0;
+  background: var(--thumb-label-bg);
+  color: var(--text-bright);
+  font-size: var(--font-small);
+  font-weight: 500;
+  text-align: center;
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .img-thumb-ctrl:not(.active):hover { border-color: var(--edge-strong); }
+}
+
+/* A picture whole: video, an image, a web page, a live source. */
+.media-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.media-fit {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 0;
+  line-height: 0;
+}
+.media-fit img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  background: var(--preview-well);
+}
+/* Before its first picture, the frame still holds its place; a web page's
+   or a live source's always does, so what it says over it has room. */
+.media-fit img:not([src]) { width: min(640px, 100%); aspect-ratio: 16 / 9; }
+.lyrics-map[data-mode="web"] .media-fit,
+.lyrics-map[data-mode="live"] .media-fit { width: min(640px, 100%); }
+.lyrics-map[data-mode="web"] .media-fit img,
+.lyrics-map[data-mode="live"] .media-fit img { width: 100%; aspect-ratio: 16 / 9; }
+.media-rim {
+  position: absolute;
+  inset: -2px;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-small);
+  pointer-events: none;
+}
+.media-rim.is-lost { border-color: var(--signal-lost); }
+/* Why the picture is not showing, over it. */
+.media-note {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--thumb-label-bg);
+  color: var(--text-bright);
+  font-size: var(--font-body);
+  line-height: 1.4;
+  text-align: center;
+}
+.media-address {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-caption);
+  font-size: var(--font-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Nothing live, a video or audio: the app's mark, faint, as the console's
+   Controller shows it (a fifth of the well across, at most 124px, in the
+   mark's own 902 x 626). */
+.well-mark { width: min(20%, 124px); color: var(--well-mark); line-height: 0; }
+.well-mark .ic { width: 100%; height: auto; aspect-ratio: 902 / 626; }
+
+/* --- The media clock ------------------------------------------------------- */
+.video-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+}
+.clock {
+  min-width: 40px;
+  color: var(--icon-soft);
+  font-size: var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+.seek { flex: 1; min-width: 0; height: 20px; accent-color: var(--accent); }
+
+/* --- Transport (ControllerTransportBar) ------------------------------------ */
+.transport {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.transport.is-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.transport .btn { height: 38px; min-width: 0; padding: 0 8px; }
+.transport .btn > span { overflow: hidden; text-overflow: ellipsis; }
+@media (pointer: coarse), (max-width: 1024px) {
+  .transport .btn { height: var(--remote-touch-h); }
+}
+/* A phone's four buttons share little room, as do the Program's beside a
+   Preview: the labels keep it. */
+.wells.has-preview .transport { gap: 6px; }
+.wells.has-preview .transport .btn { gap: 3px; padding: 0 4px; font-size: var(--font-body); }
+.wells.has-preview .transport .btn .ic {
+  width: var(--btn-standard-icon);
+  height: var(--btn-standard-icon);
+}
+@media (max-width: 480px) {
+  .transport { gap: 6px; }
+  .transport .btn { gap: 3px; padding: 0 4px; font-size: var(--font-body); }
+  .transport .btn .ic { width: var(--btn-standard-icon); height: var(--btn-standard-icon); }
+}

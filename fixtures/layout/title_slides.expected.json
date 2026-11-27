@@ -1,0 +1,293 @@
+[
+  {
+    "id": "prepend_blank",
+    "show_upcoming": false,
+    "base": {
+      "all_lines": [
+        "Hello",
+        "World"
+      ],
+      "verse_indices": [
+        0,
+        0
+      ],
+      "line_labels": [
+        "v1",
+        "v1"
+      ],
+      "verse_codes": [
+        "v1"
+      ],
+      "groups": [
+        {
+          "indices": [
+            0,
+            1
+          ],
+          "active_count": 2
+        }
+      ]
+    },
+    "result": {
+      "all_lines": [
+        "",
+        "Hello",
+        "World"
+      ],
+      "verse_indices": [
+        0,
+        1,
+        1
+      ],
+      "groups": [
+        {
+          "indices": [
+            0
+          ],
+          "active_count": 1,
+          "is_title": true
+        },
+        {
+          "indices": [
+            1,
+            2
+          ],
+          "active_count": 2
+        }
+      ],
+      "line_labels": [
+        "t1",
+        "v1",
+        "v1"
+      ],
+      "verse_codes": [
+        "t1",
+        "v1"
+      ]
+    }
+  },
+  {
+    "id": "prepend_upcoming",
+    "show_upcoming": true,
+    "base": {
+      "all_lines": [
+        "One",
+        "Two",
+        "Three",
+        "Four"
+      ],
+      "verse_indices": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "line_labels": [
+        "v1",
+        "v1",
+        "v1",
+        "v1"
+      ],
+      "verse_codes": [
+        "v1"
+      ],
+      "groups": [
+        {
+          "indices": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "active_count": 2
+        },
+        {
+          "indices": [
+            2,
+            3
+          ],
+          "active_count": 2
+        }
+      ]
+    },
+    "result": {
+      "all_lines": [
+        "",
+        "One",
+        "Two",
+        "Three",
+        "Four"
+      ],
+      "verse_indices": [
+        0,
+        1,
+        1,
+        1,
+        1
+      ],
+      "groups": [
+        {
+          "indices": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "active_count": 0,
+          "is_title": true
+        },
+        {
+          "indices": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "active_count": 2
+        },
+        {
+          "indices": [
+            3,
+            4
+          ],
+          "active_count": 2
+        }
+      ],
+      "line_labels": [
+        "t1",
+        "v1",
+        "v1",
+        "v1",
+        "v1"
+      ],
+      "verse_codes": [
+        "t1",
+        "v1"
+      ]
+    }
+  },
+  {
+    "id": "apply_upcoming_explicit_t1",
+    "base_groups": [
+      {
+        "indices": [
+          0
+        ],
+        "active_count": 1,
+        "is_title": true
+      },
+      {
+        "indices": [
+          1,
+          2
+        ],
+        "active_count": 2
+      }
+    ],
+    "result_groups": [
+      {
+        "indices": [
+          1,
+          2
+        ],
+        "active_count": 0,
+        "is_title": true
+      },
+      {
+        "indices": [
+          1,
+          2
+        ],
+        "active_count": 2
+      }
+    ],
+    "all_lines": [
+      "",
+      "Hi",
+      "There"
+    ],
+    "line_labels": [
+      "t1",
+      "v1",
+      "v1"
+    ]
+  },
+  {
+    "id": "apply_upcoming_title_only",
+    "base_groups": [
+      {
+        "indices": [
+          0
+        ],
+        "active_count": 1,
+        "is_title": true
+      }
+    ],
+    "result_groups": [
+      {
+        "indices": [
+          0
+        ],
+        "active_count": 1,
+        "is_title": true
+      }
+    ]
+  },
+  {
+    "id": "policy",
+    "cases": [
+      {
+        "verse_order": "",
+        "any_layout": true,
+        "title_mode": true,
+        "prepend": true,
+        "upcoming": true
+      },
+      {
+        "verse_order": "v1",
+        "any_layout": true,
+        "title_mode": false,
+        "prepend": false,
+        "upcoming": false
+      },
+      {
+        "verse_order": "t1 v1",
+        "any_layout": true,
+        "title_mode": true,
+        "prepend": false,
+        "upcoming": true
+      },
+      {
+        "verse_order": "",
+        "any_layout": false,
+        "title_mode": false,
+        "prepend": false,
+        "upcoming": false
+      },
+      {
+        "verse_order": "t1 v1",
+        "any_layout": true,
+        "follow": 0,
+        "show_lines": true,
+        "has_overlay": false,
+        "upcoming": false
+      },
+      {
+        "verse_order": "t1 v1",
+        "any_layout": true,
+        "follow": 2,
+        "show_lines": false,
+        "has_overlay": false,
+        "upcoming": false
+      },
+      {
+        "verse_order": "t1 v1",
+        "any_layout": true,
+        "follow": 2,
+        "show_lines": true,
+        "has_overlay": true,
+        "upcoming": false
+      }
+    ]
+  }
+]

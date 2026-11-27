@@ -1,0 +1,5 @@
+#!/bin/sh
+# `seventhslide` on a Mac's PATH, for the commands the server's help and
+# messages name (`seventhslide --server status`, ...): copy it to
+# /usr/local/bin. The program is inside the app, where Finder put it.
+exec /Applications/SeventhSlide.app/Contents/MacOS/SeventhSlide "$@"

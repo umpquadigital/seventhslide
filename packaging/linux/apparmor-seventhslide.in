@@ -1,0 +1,21 @@
+# /etc/apparmor.d/seventhslide, from the deb (the top-level CMakeLists.txt
+# fills it in from packaging/linux/apparmor-seventhslide.in).
+#
+# Ubuntu lets a program make a user namespace only when an AppArmor profile
+# allows it, and Qt WebEngine's sandbox (Chromium's) is made of them: without
+# this, web pages would not draw. Ubuntu names its own QtWebEngineProcess
+# (/usr/lib/.../qt6/libexec), not a program that uses it, nor a copy of it
+# elsewhere: so this names the program, and the deb's own copy of the
+# process where it carries one (/opt/seventhslide). Like Ubuntu's, these
+# confine nothing; they only name the programs and let them make user
+# namespaces.
+
+abi <abi/4.0>,
+include <tunables/global>
+
+profile seventhslide @SS_PROGRAM@ flags=(unconfined) {
+  userns,
+
+  include if exists <local/seventhslide>
+}
+@SS_WEBENGINE_PROFILE@

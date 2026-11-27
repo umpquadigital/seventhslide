@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=SeventhSlide
+GenericName=Presentation
+Comment=Lyrics and presentation software
+Exec=seventhslide
+Icon=seventhslide
+Terminal=false
+Categories=AudioVideo;Office;Presentation;
+Keywords=lyrics;worship;bible;slides;presentation;
+StartupNotify=true
+StartupWMClass=seventhslide

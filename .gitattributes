@@ -1,0 +1,18 @@
+# Text is LF in the repository and in every checkout, Windows included: the
+# fixtures are compared byte for byte, and a CRLF checkout would change them.
+* text=auto eol=lf
+
+# Kept exactly as they came: song files exported by other programs (CRLF
+# is what is being tested), and vendored code and fonts.
+fixtures/songs/import/** -text
+third_party/** -text
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.icns binary
+*.ttf binary
+*.ttc binary
+*.otf binary
+*.mp3 binary
+*.mp4 binary

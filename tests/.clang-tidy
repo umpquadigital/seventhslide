@@ -1,0 +1,5 @@
+# The tests keep misc-use-internal-linkage. A test reads an optional after
+# REQUIRE(x), which ends the test when x is empty; clang-tidy cannot see
+# that, so bugprone-unchecked-optional-access would report nearly every one.
+InheritParentConfig: true
+Checks: '-bugprone-unchecked-optional-access'

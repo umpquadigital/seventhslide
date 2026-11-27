@@ -1,0 +1,22 @@
+[
+  {
+    "title": "Amazing Grace",
+    "lyrics": "---[Verse:1]---\nAmazing grace! how sweet the sound\nThat saved a wretch like me!\n\n---[Chorus:1]---\nI once was lost, but now am found;\nWas blind, but now I see.\n\n---[Bridge:1]---\nBridge line one",
+    "verse_order": null,
+    "authors": [
+      {
+        "name": "John Newton",
+        "roles": []
+      },
+      {
+        "name": "Anon",
+        "roles": []
+      }
+    ],
+    "songbook_name": "Hymnal",
+    "songbook_entry": "45",
+    "key": "G",
+    "copyright": "",
+    "ccli_song_number": ""
+  }
+]

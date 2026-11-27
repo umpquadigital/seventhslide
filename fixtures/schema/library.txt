@@ -1,0 +1,564 @@
+user_version 15
+
+table app_settings
+  key TEXT pk1
+  value TEXT not-null
+
+table audio_files
+  filename TEXT pk1
+  display_name TEXT not-null
+  library_visible INTEGER default 1
+  audio_fades TEXT not-null default '{}'
+
+table audio_folder_items autoincrement
+  id INTEGER pk1
+  folder_id INTEGER not-null
+  filename TEXT not-null
+  sort_order INTEGER default 0
+  foreign key folder_id -> audio_folders(id) on update NO ACTION on delete CASCADE
+
+table audio_folders autoincrement
+  id INTEGER pk1
+  name TEXT not-null
+  sort_order INTEGER default 0
+  parent_id INTEGER
+  uid TEXT
+  foreign key parent_id -> audio_folders(id) on update NO ACTION on delete CASCADE
+
+table bibles autoincrement
+  id INTEGER pk1
+  name TEXT not-null
+  copyright TEXT
+  created_at TEXT default strftime('%Y-%m-%dT%H:%M:%S','now','localtime')
+  abbreviation TEXT not-null default ''
+  enabled INTEGER not-null default 1
+  uid TEXT
+
+table font_files
+  filename TEXT pk1
+  display_name TEXT not-null
+  family TEXT not-null
+  style TEXT not-null
+  bold INTEGER not-null default 0
+  italic INTEGER not-null default 0
+  variable INTEGER not-null default 0
+  added_at INTEGER not-null default 0
+
+table freeform_folders autoincrement
+  id INTEGER pk1
+  name TEXT not-null
+  sort_order INTEGER default 0
+  parent_id INTEGER
+  uid TEXT
+  foreign key parent_id -> freeform_folders(id) on update NO ACTION on delete CASCADE
+
+table freeform_items autoincrement
+  id INTEGER pk1
+  name TEXT not-null
+  folder_id INTEGER
+  sort_order INTEGER default 0
+  tags TEXT not-null default '[]'
+  document TEXT not-null default '{}'
+  thumb_output_id TEXT not-null default ''
+  thumb_key TEXT not-null default ''
+  uid TEXT
+  foreign key folder_id -> freeform_folders(id) on update NO ACTION on delete SET NULL
+
+table image_files
+  filename TEXT pk1
+  display_name TEXT not-null
+  library_visible INTEGER default 1
+
+table image_folder_items autoincrement
+  id INTEGER pk1
+  folder_id INTEGER not-null
+  filename TEXT not-null
+  sort_order INTEGER default 0
+  foreign key folder_id -> image_folders(id) on update NO ACTION on delete CASCADE
+
+table image_folders autoincrement
+  id INTEGER pk1
+  name TEXT not-null
+  sort_order INTEGER default 0
+  parent_id INTEGER
+  uid TEXT
+  foreign key parent_id -> image_folders(id) on update NO ACTION on delete CASCADE
+
+table library_meta
+  key TEXT pk1
+  value TEXT not-null
+
+table outputs autoincrement
+  id INTEGER pk1
+  order_num INTEGER not-null default 0
+  data TEXT not-null
+
+table service_items autoincrement
+  id INTEGER pk1
+  service_id INTEGER not-null
+  song_id INTEGER
+  order_num INTEGER not-null
+  item_type TEXT default 'song'
+  data TEXT
+  uid TEXT
+  foreign key song_id -> songs(id) on update NO ACTION on delete SET NULL
+  foreign key service_id -> services(id) on update NO ACTION on delete CASCADE
+
+table services autoincrement
+  id INTEGER pk1
+  name TEXT not-null
+  theme_map TEXT
+  sort_order INTEGER default 0
+  created_at TEXT default strftime('%Y-%m-%dT%H:%M:%S','now','localtime')
+  service_at TEXT default strftime('%Y-%m-%dT%H:%M:%S','now','localtime')
+  tags TEXT not-null default '[]'
+  uid TEXT
+  audio_fades TEXT not-null default '{}'
+
+table songs autoincrement
+  id INTEGER pk1
+  title TEXT not-null
+  lyrics TEXT not-null
+  verse_order TEXT
+  authors TEXT
+  songbook_name TEXT
+  songbook_entry TEXT
+  theme_map TEXT
+  copyright TEXT
+  ccli_song_number TEXT
+  show_copyright INTEGER default 0
+  key TEXT
+  topics TEXT not-null default '[]'
+  comments TEXT not-null default ''
+  uid TEXT
+
+table style_profiles autoincrement
+  id INTEGER pk1
+  name TEXT not-null
+  sort_order INTEGER default 0
+  data TEXT not-null default '{}'
+  uid TEXT
+
+table sync_applied
+  machine_id TEXT pk1
+  sequence INTEGER not-null
+
+table sync_held without-rowid
+  record_table TEXT not-null pk1
+  record_key TEXT not-null pk2
+  machine_id TEXT not-null pk3
+  sequence INTEGER not-null pk4
+  change TEXT not-null
+
+table sync_media without-rowid
+  path TEXT not-null pk1
+  size INTEGER not-null
+  sha256 TEXT not-null
+  counter INTEGER not-null
+  machine TEXT not-null
+
+table sync_outbox without-rowid
+  record_table TEXT not-null pk1
+  record_key TEXT not-null pk2
+
+table sync_shared without-rowid
+  record_table TEXT not-null pk1
+  record_key TEXT not-null pk2
+  document TEXT
+  versions TEXT not-null
+  id_here INTEGER
+
+table sync_state
+  key TEXT pk1
+  value TEXT not-null
+
+table verses autoincrement
+  id INTEGER pk1
+  bible_id INTEGER not-null
+  book TEXT not-null
+  chapter INTEGER not-null
+  verse_num INTEGER not-null
+  text TEXT not-null
+  foreign key bible_id -> bibles(id) on update NO ACTION on delete CASCADE
+
+table video_files
+  filename TEXT pk1
+  display_name TEXT not-null
+  library_visible INTEGER default 1
+
+table video_folder_items autoincrement
+  id INTEGER pk1
+  folder_id INTEGER not-null
+  filename TEXT not-null
+  sort_order INTEGER default 0
+  foreign key folder_id -> video_folders(id) on update NO ACTION on delete CASCADE
+
+table video_folders autoincrement
+  id INTEGER pk1
+  name TEXT not-null
+  sort_order INTEGER default 0
+  parent_id INTEGER
+  uid TEXT
+  foreign key parent_id -> video_folders(id) on update NO ACTION on delete CASCADE
+
+table web_folders autoincrement
+  id INTEGER pk1
+  name TEXT not-null
+  sort_order INTEGER default 0
+  parent_id INTEGER
+  uid TEXT
+  foreign key parent_id -> web_folders(id) on update NO ACTION on delete CASCADE
+
+table web_pages autoincrement
+  id INTEGER pk1
+  name TEXT not-null
+  url TEXT not-null
+  width INTEGER not-null default 1920
+  height INTEGER not-null default 1080
+  zoom REAL not-null default 1.0
+  folder_id INTEGER
+  sort_order INTEGER default 0
+  uid TEXT
+  foreign key folder_id -> web_folders(id) on update NO ACTION on delete SET NULL
+
+index idx_audio_folder_items_filename on audio_folder_items
+  CREATE INDEX idx_audio_folder_items_filename ON audio_folder_items(filename)
+
+index idx_audio_folder_items_folder on audio_folder_items
+  CREATE INDEX idx_audio_folder_items_folder ON audio_folder_items(folder_id)
+
+index idx_audio_folder_items_unique on audio_folder_items
+  CREATE UNIQUE INDEX idx_audio_folder_items_unique ON audio_folder_items(folder_id, filename)
+
+index idx_audio_folders_parent on audio_folders
+  CREATE INDEX idx_audio_folders_parent ON audio_folders(parent_id)
+
+index idx_audio_folders_uid on audio_folders
+  CREATE UNIQUE INDEX idx_audio_folders_uid ON audio_folders(uid)
+
+index idx_bibles_uid on bibles
+  CREATE UNIQUE INDEX idx_bibles_uid ON bibles(uid)
+
+index idx_freeform_folders_parent on freeform_folders
+  CREATE INDEX idx_freeform_folders_parent ON freeform_folders(parent_id)
+
+index idx_freeform_folders_uid on freeform_folders
+  CREATE UNIQUE INDEX idx_freeform_folders_uid ON freeform_folders(uid)
+
+index idx_freeform_items_folder on freeform_items
+  CREATE INDEX idx_freeform_items_folder ON freeform_items(folder_id)
+
+index idx_freeform_items_uid on freeform_items
+  CREATE UNIQUE INDEX idx_freeform_items_uid ON freeform_items(uid)
+
+index idx_image_folder_items_filename on image_folder_items
+  CREATE INDEX idx_image_folder_items_filename ON image_folder_items(filename)
+
+index idx_image_folder_items_folder on image_folder_items
+  CREATE INDEX idx_image_folder_items_folder ON image_folder_items(folder_id)
+
+index idx_image_folder_items_unique on image_folder_items
+  CREATE UNIQUE INDEX idx_image_folder_items_unique ON image_folder_items(folder_id, filename)
+
+index idx_image_folders_parent on image_folders
+  CREATE INDEX idx_image_folders_parent ON image_folders(parent_id)
+
+index idx_image_folders_uid on image_folders
+  CREATE UNIQUE INDEX idx_image_folders_uid ON image_folders(uid)
+
+index idx_service_items_service on service_items
+  CREATE INDEX idx_service_items_service ON service_items(service_id)
+
+index idx_service_items_song on service_items
+  CREATE INDEX idx_service_items_song ON service_items(song_id)
+
+index idx_service_items_type on service_items
+  CREATE INDEX idx_service_items_type ON service_items(item_type)
+
+index idx_service_items_uid on service_items
+  CREATE UNIQUE INDEX idx_service_items_uid ON service_items(uid)
+
+index idx_services_uid on services
+  CREATE UNIQUE INDEX idx_services_uid ON services(uid)
+
+index idx_songs_title on songs
+  CREATE INDEX idx_songs_title ON songs(title COLLATE NOCASE)
+
+index idx_songs_uid on songs
+  CREATE UNIQUE INDEX idx_songs_uid ON songs(uid)
+
+index idx_style_profiles_uid on style_profiles
+  CREATE UNIQUE INDEX idx_style_profiles_uid ON style_profiles(uid)
+
+index idx_verses_lookup on verses
+  CREATE UNIQUE INDEX idx_verses_lookup ON verses(bible_id, book, chapter, verse_num)
+
+index idx_video_folder_items_filename on video_folder_items
+  CREATE INDEX idx_video_folder_items_filename ON video_folder_items(filename)
+
+index idx_video_folder_items_folder on video_folder_items
+  CREATE INDEX idx_video_folder_items_folder ON video_folder_items(folder_id)
+
+index idx_video_folder_items_unique on video_folder_items
+  CREATE UNIQUE INDEX idx_video_folder_items_unique ON video_folder_items(folder_id, filename)
+
+index idx_video_folders_parent on video_folders
+  CREATE INDEX idx_video_folders_parent ON video_folders(parent_id)
+
+index idx_video_folders_uid on video_folders
+  CREATE UNIQUE INDEX idx_video_folders_uid ON video_folders(uid)
+
+index idx_web_folders_parent on web_folders
+  CREATE INDEX idx_web_folders_parent ON web_folders(parent_id)
+
+index idx_web_folders_uid on web_folders
+  CREATE UNIQUE INDEX idx_web_folders_uid ON web_folders(uid)
+
+index idx_web_pages_folder on web_pages
+  CREATE INDEX idx_web_pages_folder ON web_pages(folder_id)
+
+index idx_web_pages_uid on web_pages
+  CREATE UNIQUE INDEX idx_web_pages_uid ON web_pages(uid)
+
+trigger trg_app_settings_sync_delete on app_settings
+  CREATE TRIGGER trg_app_settings_sync_delete AFTER DELETE ON app_settings FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'app_settings', k FROM (SELECT OLD.key AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'app_settings' AND record_key = k); END
+
+trigger trg_app_settings_sync_insert on app_settings
+  CREATE TRIGGER trg_app_settings_sync_insert AFTER INSERT ON app_settings FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'app_settings', k FROM (SELECT NEW.key AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'app_settings' AND record_key = k); END
+
+trigger trg_app_settings_sync_update on app_settings
+  CREATE TRIGGER trg_app_settings_sync_update AFTER UPDATE ON app_settings FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'app_settings', k FROM (SELECT OLD.key AS k UNION SELECT NEW.key) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'app_settings' AND record_key = k); END
+
+trigger trg_audio_files_sync_delete on audio_files
+  CREATE TRIGGER trg_audio_files_sync_delete AFTER DELETE ON audio_files FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'audio_files', k FROM (SELECT OLD.filename AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'audio_files' AND record_key = k); END
+
+trigger trg_audio_files_sync_insert on audio_files
+  CREATE TRIGGER trg_audio_files_sync_insert AFTER INSERT ON audio_files FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'audio_files', k FROM (SELECT NEW.filename AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'audio_files' AND record_key = k); END
+
+trigger trg_audio_files_sync_update on audio_files
+  CREATE TRIGGER trg_audio_files_sync_update AFTER UPDATE ON audio_files FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'audio_files', k FROM (SELECT OLD.filename AS k UNION SELECT NEW.filename) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'audio_files' AND record_key = k); END
+
+trigger trg_audio_folder_items_sync_delete on audio_folder_items
+  CREATE TRIGGER trg_audio_folder_items_sync_delete AFTER DELETE ON audio_folder_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'audio_folder_items', k FROM (SELECT (SELECT uid FROM audio_folders WHERE id = OLD.folder_id) || '/' || OLD.filename AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'audio_folder_items' AND record_key = k); END
+
+trigger trg_audio_folder_items_sync_insert on audio_folder_items
+  CREATE TRIGGER trg_audio_folder_items_sync_insert AFTER INSERT ON audio_folder_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'audio_folder_items', k FROM (SELECT (SELECT uid FROM audio_folders WHERE id = NEW.folder_id) || '/' || NEW.filename AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'audio_folder_items' AND record_key = k); END
+
+trigger trg_audio_folder_items_sync_update on audio_folder_items
+  CREATE TRIGGER trg_audio_folder_items_sync_update AFTER UPDATE ON audio_folder_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'audio_folder_items', k FROM (SELECT (SELECT uid FROM audio_folders WHERE id = OLD.folder_id) || '/' || OLD.filename AS k UNION SELECT (SELECT uid FROM audio_folders WHERE id = NEW.folder_id) || '/' || NEW.filename) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'audio_folder_items' AND record_key = k); END
+
+trigger trg_audio_folders_sync_delete on audio_folders
+  CREATE TRIGGER trg_audio_folders_sync_delete AFTER DELETE ON audio_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'audio_folders', k FROM (SELECT OLD.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'audio_folders' AND record_key = k); END
+
+trigger trg_audio_folders_sync_insert on audio_folders
+  CREATE TRIGGER trg_audio_folders_sync_insert AFTER INSERT ON audio_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'audio_folders', k FROM (SELECT NEW.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'audio_folders' AND record_key = k); END
+
+trigger trg_audio_folders_sync_update on audio_folders
+  CREATE TRIGGER trg_audio_folders_sync_update AFTER UPDATE ON audio_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'audio_folders', k FROM (SELECT OLD.uid AS k UNION SELECT NEW.uid) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'audio_folders' AND record_key = k); END
+
+trigger trg_audio_folders_uid on audio_folders
+  CREATE TRIGGER trg_audio_folders_uid AFTER INSERT ON audio_folders FOR EACH ROW WHEN NEW.uid IS NULL BEGIN UPDATE audio_folders SET uid = lower(hex(randomblob(16))) WHERE rowid = NEW.rowid; END
+
+trigger trg_bibles_sync_delete on bibles
+  CREATE TRIGGER trg_bibles_sync_delete AFTER DELETE ON bibles FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'bibles', k FROM (SELECT OLD.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'bibles' AND record_key = k); END
+
+trigger trg_bibles_sync_insert on bibles
+  CREATE TRIGGER trg_bibles_sync_insert AFTER INSERT ON bibles FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'bibles', k FROM (SELECT NEW.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'bibles' AND record_key = k); END
+
+trigger trg_bibles_sync_update on bibles
+  CREATE TRIGGER trg_bibles_sync_update AFTER UPDATE ON bibles FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'bibles', k FROM (SELECT OLD.uid AS k UNION SELECT NEW.uid) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'bibles' AND record_key = k); END
+
+trigger trg_bibles_uid on bibles
+  CREATE TRIGGER trg_bibles_uid AFTER INSERT ON bibles FOR EACH ROW WHEN NEW.uid IS NULL BEGIN UPDATE bibles SET uid = lower(hex(randomblob(16))) WHERE rowid = NEW.rowid; END
+
+trigger trg_font_files_sync_delete on font_files
+  CREATE TRIGGER trg_font_files_sync_delete AFTER DELETE ON font_files FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'font_files', k FROM (SELECT OLD.filename AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'font_files' AND record_key = k); END
+
+trigger trg_font_files_sync_insert on font_files
+  CREATE TRIGGER trg_font_files_sync_insert AFTER INSERT ON font_files FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'font_files', k FROM (SELECT NEW.filename AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'font_files' AND record_key = k); END
+
+trigger trg_font_files_sync_update on font_files
+  CREATE TRIGGER trg_font_files_sync_update AFTER UPDATE ON font_files FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'font_files', k FROM (SELECT OLD.filename AS k UNION SELECT NEW.filename) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'font_files' AND record_key = k); END
+
+trigger trg_freeform_folders_sync_delete on freeform_folders
+  CREATE TRIGGER trg_freeform_folders_sync_delete AFTER DELETE ON freeform_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'freeform_folders', k FROM (SELECT OLD.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'freeform_folders' AND record_key = k); END
+
+trigger trg_freeform_folders_sync_insert on freeform_folders
+  CREATE TRIGGER trg_freeform_folders_sync_insert AFTER INSERT ON freeform_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'freeform_folders', k FROM (SELECT NEW.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'freeform_folders' AND record_key = k); END
+
+trigger trg_freeform_folders_sync_update on freeform_folders
+  CREATE TRIGGER trg_freeform_folders_sync_update AFTER UPDATE ON freeform_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'freeform_folders', k FROM (SELECT OLD.uid AS k UNION SELECT NEW.uid) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'freeform_folders' AND record_key = k); END
+
+trigger trg_freeform_folders_uid on freeform_folders
+  CREATE TRIGGER trg_freeform_folders_uid AFTER INSERT ON freeform_folders FOR EACH ROW WHEN NEW.uid IS NULL BEGIN UPDATE freeform_folders SET uid = lower(hex(randomblob(16))) WHERE rowid = NEW.rowid; END
+
+trigger trg_freeform_items_sync_delete on freeform_items
+  CREATE TRIGGER trg_freeform_items_sync_delete AFTER DELETE ON freeform_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'freeform_items', k FROM (SELECT OLD.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'freeform_items' AND record_key = k); END
+
+trigger trg_freeform_items_sync_insert on freeform_items
+  CREATE TRIGGER trg_freeform_items_sync_insert AFTER INSERT ON freeform_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'freeform_items', k FROM (SELECT NEW.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'freeform_items' AND record_key = k); END
+
+trigger trg_freeform_items_sync_update on freeform_items
+  CREATE TRIGGER trg_freeform_items_sync_update AFTER UPDATE ON freeform_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'freeform_items', k FROM (SELECT OLD.uid AS k UNION SELECT NEW.uid) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'freeform_items' AND record_key = k); END
+
+trigger trg_freeform_items_uid on freeform_items
+  CREATE TRIGGER trg_freeform_items_uid AFTER INSERT ON freeform_items FOR EACH ROW WHEN NEW.uid IS NULL BEGIN UPDATE freeform_items SET uid = lower(hex(randomblob(16))) WHERE rowid = NEW.rowid; END
+
+trigger trg_image_files_sync_delete on image_files
+  CREATE TRIGGER trg_image_files_sync_delete AFTER DELETE ON image_files FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'image_files', k FROM (SELECT OLD.filename AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'image_files' AND record_key = k); END
+
+trigger trg_image_files_sync_insert on image_files
+  CREATE TRIGGER trg_image_files_sync_insert AFTER INSERT ON image_files FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'image_files', k FROM (SELECT NEW.filename AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'image_files' AND record_key = k); END
+
+trigger trg_image_files_sync_update on image_files
+  CREATE TRIGGER trg_image_files_sync_update AFTER UPDATE ON image_files FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'image_files', k FROM (SELECT OLD.filename AS k UNION SELECT NEW.filename) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'image_files' AND record_key = k); END
+
+trigger trg_image_folder_items_sync_delete on image_folder_items
+  CREATE TRIGGER trg_image_folder_items_sync_delete AFTER DELETE ON image_folder_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'image_folder_items', k FROM (SELECT (SELECT uid FROM image_folders WHERE id = OLD.folder_id) || '/' || OLD.filename AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'image_folder_items' AND record_key = k); END
+
+trigger trg_image_folder_items_sync_insert on image_folder_items
+  CREATE TRIGGER trg_image_folder_items_sync_insert AFTER INSERT ON image_folder_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'image_folder_items', k FROM (SELECT (SELECT uid FROM image_folders WHERE id = NEW.folder_id) || '/' || NEW.filename AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'image_folder_items' AND record_key = k); END
+
+trigger trg_image_folder_items_sync_update on image_folder_items
+  CREATE TRIGGER trg_image_folder_items_sync_update AFTER UPDATE ON image_folder_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'image_folder_items', k FROM (SELECT (SELECT uid FROM image_folders WHERE id = OLD.folder_id) || '/' || OLD.filename AS k UNION SELECT (SELECT uid FROM image_folders WHERE id = NEW.folder_id) || '/' || NEW.filename) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'image_folder_items' AND record_key = k); END
+
+trigger trg_image_folders_sync_delete on image_folders
+  CREATE TRIGGER trg_image_folders_sync_delete AFTER DELETE ON image_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'image_folders', k FROM (SELECT OLD.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'image_folders' AND record_key = k); END
+
+trigger trg_image_folders_sync_insert on image_folders
+  CREATE TRIGGER trg_image_folders_sync_insert AFTER INSERT ON image_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'image_folders', k FROM (SELECT NEW.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'image_folders' AND record_key = k); END
+
+trigger trg_image_folders_sync_update on image_folders
+  CREATE TRIGGER trg_image_folders_sync_update AFTER UPDATE ON image_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'image_folders', k FROM (SELECT OLD.uid AS k UNION SELECT NEW.uid) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'image_folders' AND record_key = k); END
+
+trigger trg_image_folders_uid on image_folders
+  CREATE TRIGGER trg_image_folders_uid AFTER INSERT ON image_folders FOR EACH ROW WHEN NEW.uid IS NULL BEGIN UPDATE image_folders SET uid = lower(hex(randomblob(16))) WHERE rowid = NEW.rowid; END
+
+trigger trg_library_meta_sync_delete on library_meta
+  CREATE TRIGGER trg_library_meta_sync_delete AFTER DELETE ON library_meta FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'library_meta', k FROM (SELECT OLD.key AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'library_meta' AND record_key = k); END
+
+trigger trg_library_meta_sync_insert on library_meta
+  CREATE TRIGGER trg_library_meta_sync_insert AFTER INSERT ON library_meta FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'library_meta', k FROM (SELECT NEW.key AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'library_meta' AND record_key = k); END
+
+trigger trg_library_meta_sync_update on library_meta
+  CREATE TRIGGER trg_library_meta_sync_update AFTER UPDATE ON library_meta FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'library_meta', k FROM (SELECT OLD.key AS k UNION SELECT NEW.key) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'library_meta' AND record_key = k); END
+
+trigger trg_outputs_sync_delete on outputs
+  CREATE TRIGGER trg_outputs_sync_delete AFTER DELETE ON outputs FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'outputs', k FROM (SELECT '' AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'outputs' AND record_key = k); END
+
+trigger trg_outputs_sync_insert on outputs
+  CREATE TRIGGER trg_outputs_sync_insert AFTER INSERT ON outputs FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'outputs', k FROM (SELECT '' AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'outputs' AND record_key = k); END
+
+trigger trg_outputs_sync_update on outputs
+  CREATE TRIGGER trg_outputs_sync_update AFTER UPDATE ON outputs FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'outputs', k FROM (SELECT '' AS k UNION SELECT '') WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'outputs' AND record_key = k); END
+
+trigger trg_service_items_sync_delete on service_items
+  CREATE TRIGGER trg_service_items_sync_delete AFTER DELETE ON service_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'service_items', k FROM (SELECT OLD.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'service_items' AND record_key = k); END
+
+trigger trg_service_items_sync_insert on service_items
+  CREATE TRIGGER trg_service_items_sync_insert AFTER INSERT ON service_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'service_items', k FROM (SELECT NEW.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'service_items' AND record_key = k); END
+
+trigger trg_service_items_sync_update on service_items
+  CREATE TRIGGER trg_service_items_sync_update AFTER UPDATE ON service_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'service_items', k FROM (SELECT OLD.uid AS k UNION SELECT NEW.uid) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'service_items' AND record_key = k); END
+
+trigger trg_service_items_uid on service_items
+  CREATE TRIGGER trg_service_items_uid AFTER INSERT ON service_items FOR EACH ROW WHEN NEW.uid IS NULL BEGIN UPDATE service_items SET uid = lower(hex(randomblob(16))) WHERE rowid = NEW.rowid; END
+
+trigger trg_services_sync_delete on services
+  CREATE TRIGGER trg_services_sync_delete AFTER DELETE ON services FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'services', k FROM (SELECT OLD.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'services' AND record_key = k); END
+
+trigger trg_services_sync_insert on services
+  CREATE TRIGGER trg_services_sync_insert AFTER INSERT ON services FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'services', k FROM (SELECT NEW.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'services' AND record_key = k); END
+
+trigger trg_services_sync_update on services
+  CREATE TRIGGER trg_services_sync_update AFTER UPDATE ON services FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'services', k FROM (SELECT OLD.uid AS k UNION SELECT NEW.uid) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'services' AND record_key = k); END
+
+trigger trg_services_uid on services
+  CREATE TRIGGER trg_services_uid AFTER INSERT ON services FOR EACH ROW WHEN NEW.uid IS NULL BEGIN UPDATE services SET uid = lower(hex(randomblob(16))) WHERE rowid = NEW.rowid; END
+
+trigger trg_songs_sync_delete on songs
+  CREATE TRIGGER trg_songs_sync_delete AFTER DELETE ON songs FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'songs', k FROM (SELECT OLD.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'songs' AND record_key = k); END
+
+trigger trg_songs_sync_insert on songs
+  CREATE TRIGGER trg_songs_sync_insert AFTER INSERT ON songs FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'songs', k FROM (SELECT NEW.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'songs' AND record_key = k); END
+
+trigger trg_songs_sync_update on songs
+  CREATE TRIGGER trg_songs_sync_update AFTER UPDATE ON songs FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'songs', k FROM (SELECT OLD.uid AS k UNION SELECT NEW.uid) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'songs' AND record_key = k); END
+
+trigger trg_songs_uid on songs
+  CREATE TRIGGER trg_songs_uid AFTER INSERT ON songs FOR EACH ROW WHEN NEW.uid IS NULL BEGIN UPDATE songs SET uid = lower(hex(randomblob(16))) WHERE rowid = NEW.rowid; END
+
+trigger trg_style_profiles_sync_delete on style_profiles
+  CREATE TRIGGER trg_style_profiles_sync_delete AFTER DELETE ON style_profiles FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'style_profiles', k FROM (SELECT OLD.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'style_profiles' AND record_key = k); END
+
+trigger trg_style_profiles_sync_insert on style_profiles
+  CREATE TRIGGER trg_style_profiles_sync_insert AFTER INSERT ON style_profiles FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'style_profiles', k FROM (SELECT NEW.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'style_profiles' AND record_key = k); END
+
+trigger trg_style_profiles_sync_update on style_profiles
+  CREATE TRIGGER trg_style_profiles_sync_update AFTER UPDATE ON style_profiles FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'style_profiles', k FROM (SELECT OLD.uid AS k UNION SELECT NEW.uid) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'style_profiles' AND record_key = k); END
+
+trigger trg_style_profiles_uid on style_profiles
+  CREATE TRIGGER trg_style_profiles_uid AFTER INSERT ON style_profiles FOR EACH ROW WHEN NEW.uid IS NULL BEGIN UPDATE style_profiles SET uid = lower(hex(randomblob(16))) WHERE rowid = NEW.rowid; END
+
+trigger trg_verses_sync_delete on verses
+  CREATE TRIGGER trg_verses_sync_delete AFTER DELETE ON verses FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'bibles', k FROM (SELECT (SELECT uid FROM bibles WHERE id = OLD.bible_id) AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'bibles' AND record_key = k); END
+
+trigger trg_verses_sync_insert on verses
+  CREATE TRIGGER trg_verses_sync_insert AFTER INSERT ON verses FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'bibles', k FROM (SELECT (SELECT uid FROM bibles WHERE id = NEW.bible_id) AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'bibles' AND record_key = k); END
+
+trigger trg_verses_sync_update on verses
+  CREATE TRIGGER trg_verses_sync_update AFTER UPDATE ON verses FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'bibles', k FROM (SELECT (SELECT uid FROM bibles WHERE id = OLD.bible_id) AS k UNION SELECT (SELECT uid FROM bibles WHERE id = NEW.bible_id)) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'bibles' AND record_key = k); END
+
+trigger trg_video_files_sync_delete on video_files
+  CREATE TRIGGER trg_video_files_sync_delete AFTER DELETE ON video_files FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'video_files', k FROM (SELECT OLD.filename AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'video_files' AND record_key = k); END
+
+trigger trg_video_files_sync_insert on video_files
+  CREATE TRIGGER trg_video_files_sync_insert AFTER INSERT ON video_files FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'video_files', k FROM (SELECT NEW.filename AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'video_files' AND record_key = k); END
+
+trigger trg_video_files_sync_update on video_files
+  CREATE TRIGGER trg_video_files_sync_update AFTER UPDATE ON video_files FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'video_files', k FROM (SELECT OLD.filename AS k UNION SELECT NEW.filename) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'video_files' AND record_key = k); END
+
+trigger trg_video_folder_items_sync_delete on video_folder_items
+  CREATE TRIGGER trg_video_folder_items_sync_delete AFTER DELETE ON video_folder_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'video_folder_items', k FROM (SELECT (SELECT uid FROM video_folders WHERE id = OLD.folder_id) || '/' || OLD.filename AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'video_folder_items' AND record_key = k); END
+
+trigger trg_video_folder_items_sync_insert on video_folder_items
+  CREATE TRIGGER trg_video_folder_items_sync_insert AFTER INSERT ON video_folder_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'video_folder_items', k FROM (SELECT (SELECT uid FROM video_folders WHERE id = NEW.folder_id) || '/' || NEW.filename AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'video_folder_items' AND record_key = k); END
+
+trigger trg_video_folder_items_sync_update on video_folder_items
+  CREATE TRIGGER trg_video_folder_items_sync_update AFTER UPDATE ON video_folder_items FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'video_folder_items', k FROM (SELECT (SELECT uid FROM video_folders WHERE id = OLD.folder_id) || '/' || OLD.filename AS k UNION SELECT (SELECT uid FROM video_folders WHERE id = NEW.folder_id) || '/' || NEW.filename) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'video_folder_items' AND record_key = k); END
+
+trigger trg_video_folders_sync_delete on video_folders
+  CREATE TRIGGER trg_video_folders_sync_delete AFTER DELETE ON video_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'video_folders', k FROM (SELECT OLD.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'video_folders' AND record_key = k); END
+
+trigger trg_video_folders_sync_insert on video_folders
+  CREATE TRIGGER trg_video_folders_sync_insert AFTER INSERT ON video_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'video_folders', k FROM (SELECT NEW.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'video_folders' AND record_key = k); END
+
+trigger trg_video_folders_sync_update on video_folders
+  CREATE TRIGGER trg_video_folders_sync_update AFTER UPDATE ON video_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'video_folders', k FROM (SELECT OLD.uid AS k UNION SELECT NEW.uid) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'video_folders' AND record_key = k); END
+
+trigger trg_video_folders_uid on video_folders
+  CREATE TRIGGER trg_video_folders_uid AFTER INSERT ON video_folders FOR EACH ROW WHEN NEW.uid IS NULL BEGIN UPDATE video_folders SET uid = lower(hex(randomblob(16))) WHERE rowid = NEW.rowid; END
+
+trigger trg_web_folders_sync_delete on web_folders
+  CREATE TRIGGER trg_web_folders_sync_delete AFTER DELETE ON web_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'web_folders', k FROM (SELECT OLD.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'web_folders' AND record_key = k); END
+
+trigger trg_web_folders_sync_insert on web_folders
+  CREATE TRIGGER trg_web_folders_sync_insert AFTER INSERT ON web_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'web_folders', k FROM (SELECT NEW.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'web_folders' AND record_key = k); END
+
+trigger trg_web_folders_sync_update on web_folders
+  CREATE TRIGGER trg_web_folders_sync_update AFTER UPDATE ON web_folders FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'web_folders', k FROM (SELECT OLD.uid AS k UNION SELECT NEW.uid) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'web_folders' AND record_key = k); END
+
+trigger trg_web_folders_uid on web_folders
+  CREATE TRIGGER trg_web_folders_uid AFTER INSERT ON web_folders FOR EACH ROW WHEN NEW.uid IS NULL BEGIN UPDATE web_folders SET uid = lower(hex(randomblob(16))) WHERE rowid = NEW.rowid; END
+
+trigger trg_web_pages_sync_delete on web_pages
+  CREATE TRIGGER trg_web_pages_sync_delete AFTER DELETE ON web_pages FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'web_pages', k FROM (SELECT OLD.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'web_pages' AND record_key = k); END
+
+trigger trg_web_pages_sync_insert on web_pages
+  CREATE TRIGGER trg_web_pages_sync_insert AFTER INSERT ON web_pages FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'web_pages', k FROM (SELECT NEW.uid AS k) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'web_pages' AND record_key = k); END
+
+trigger trg_web_pages_sync_update on web_pages
+  CREATE TRIGGER trg_web_pages_sync_update AFTER UPDATE ON web_pages FOR EACH ROW BEGIN INSERT INTO sync_outbox (record_table, record_key) SELECT 'web_pages', k FROM (SELECT OLD.uid AS k UNION SELECT NEW.uid) WHERE k IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE record_table = 'web_pages' AND record_key = k); END
+
+trigger trg_web_pages_uid on web_pages
+  CREATE TRIGGER trg_web_pages_uid AFTER INSERT ON web_pages FOR EACH ROW WHEN NEW.uid IS NULL BEGIN UPDATE web_pages SET uid = lower(hex(randomblob(16))) WHERE rowid = NEW.rowid; END

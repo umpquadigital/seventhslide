@@ -1,0 +1,10 @@
+{
+  "schema": "seventhslide.scene_dump",
+  "schema_version": 1,
+  "fixtures": [
+    "song_simple_v1",
+    "song_multi_verse",
+    "song_forced_break",
+    "song_follow_lines"
+  ]
+}

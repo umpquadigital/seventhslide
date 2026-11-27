@@ -1,0 +1,177 @@
+/* The app's look, for the remote: Style.qml's tokens it uses, under the same
+ * names in kebab case and with the same values. tools/remote_tokens.py holds
+ * each to Style.qml; no other stylesheet writes a colour itself. The remote's
+ * own measures (a touch target, the phone's safe areas) are --remote-*. */
+:root {
+  /* Surfaces */
+  --page-bg: #0d0d0d;
+  --panel-bg: #141414;
+  --header-bg: #1b1b1b;
+  --dock-header-hover: #232323;
+  --library-tabs-bg: #181818;
+  --well-bg: #101010;
+  --well-edge: #2a2a2a;
+  --thumb-well: #141414;
+  --preview-well: #000000;
+  --menu-bg: #1e1e1e;
+  --menu-edge: #3a3a3a;
+  --menu-hover: #2a2a2a;
+  --menu-chosen: #093e73;
+  --menu-chosen-hover: #0b4a86;
+  --dialog-bg: #161616;
+  --border: #252525;
+  --rule: #3a3a3a;
+  --menu-rule: rgba(255, 255, 255, 0.08);
+  --divider-row: #181818;
+  --well-mark: #1a1a1a;
+  --shadow: #000000;
+  --modal-scrim: rgba(0, 0, 0, 0.533);
+  --thumb-label-bg: rgba(0, 0, 0, 0.6);
+
+  /* Rows */
+  --panel-row: #1a1a1a;
+  --panel-row-hover: #242424;
+  --panel-row-sel: #252525;
+  --panel-row-sel-hover: #363636;
+  --live-row: #093e73;
+  --live-row-hover: #0b4a86;
+  --list-accent-hover: #404040;
+  --list-accent-sel: #808080;
+  --list-accent-sel-hover: #9a9a9a;
+  --count-ink-sel: #c8d8ef;
+
+  /* Controller lines */
+  --line-live: #003976;
+  --line-live-hover: #0c4e90;
+  --line-next: #1a2a1a;
+  --line-next-hover: #1f3220;
+  --line-shown: #242424;
+  --line-shown-hover: #2a2a2a;
+  --line-idle: #141414;
+  --line-idle-hover: #1e1e1e;
+  --line-ink-lit: #e8e8e8;
+  --line-ink-lit-hover: #f2f2f2;
+  --line-ink: #8a8a8a;
+  --line-ink-hover: #a0a0a0;
+  --line-rule-live: rgba(255, 255, 255, 0.18);
+  --line-rule-next: rgba(14, 138, 14, 0.45);
+  --line-rule-idle: #2a2a2a;
+  --live-thumb-edge: rgba(0, 71, 145, 0.55);
+  --edge-strong: #555555;
+
+  /* Ink */
+  --text: #d4d4d4;
+  --text-strong: #ffffff;
+  --text-bright: #dddddd;
+  --text-hover: #d0d0d0;
+  --text-soft: #a8a8a8;
+  --text-muted: #8a8a8a;
+  --text-caption: #8a8a8a;
+  --text-faint: #666666;
+  --text-on-accent: #ffffff;
+  --text-danger: #c07070;
+  --text-warning: #c9a227;
+  --icon-idle: #9a9a9a;
+  --icon-soft: #cccccc;
+  --glyph-ink: #b4b4b4;
+  --search-ink: #e0e0e0;
+  --menu-ink: #cccccc;
+  --folder-ink: #c9a227;
+  --parent-glyph: #a0a0a0;
+  --stack-tab-ink: #9a9a9a;
+  --btn-ink-hover: #dcdcdc;
+  --signal-ok: #3f9d5a;
+  --signal-lost: #e8912d;
+  --field-placeholder: #8a8a8a;
+
+  /* Accent, focus, switched on */
+  --accent: #004791;
+  --focus-edge: #3a8ad8;
+  --tab-hover-bg: rgba(255, 255, 255, 0.03);
+  --ghost-hover: rgba(255, 255, 255, 0.035);
+  --on-tint: rgba(0, 71, 145, 0.28);
+  --on-edge: #2a5a8a;
+  --on-ink: #dbe9f8;
+  --status-tag-bg: #0e2c4d;
+  --status-tag-ink: #8dbdf0;
+
+  /* Fields and switches */
+  --field-face: #101010;
+  --field-face-focus: #161616;
+  --control-edge: #333333;
+  --control-edge-hover: #4a4a4a;
+  --toggle-off: #333333;
+  --toggle-off-edge: #4a4a4a;
+  --knob: #ffffff;
+  --scroll-thumb: #3a3a3a;
+  --scroll-thumb-hover: #505050;
+
+  /* Buttons (AppButton) */
+  --btn-edge: rgba(255, 255, 255, 0.1);
+  --btn-edge-hover: rgba(255, 255, 255, 0.2);
+  --btn-neutral-top: #252525;
+  --btn-neutral-bot: #202020;
+  --btn-neutral-hover-top: #2c2c2c;
+  --btn-neutral-hover-bot: #282828;
+  --btn-neutral-press-top: #1f1f1f;
+  --btn-neutral-press-bot: #1c1c1c;
+  --btn-danger-hover: #2a1818;
+  --btn-danger-edge: #5a3030;
+  --btn-danger-ink-hover: #d88888;
+  --btn-primary-top: #05509c;
+  --btn-primary-bot: #004791;
+  --btn-primary-hover-top: #0a5cad;
+  --btn-primary-hover-bot: #0055a8;
+  --btn-primary-press-top: #003f82;
+  --btn-primary-press-bot: #003a75;
+  --btn-primary-edge: #00356e;
+  --btn-primary-edge-hover: #002a58;
+  --btn-blank-on-top: #c94444;
+  --btn-blank-on-bot: #a83030;
+  --btn-blank-on-hover-top: #d65a5a;
+  --btn-blank-on-hover-bot: #b83a3a;
+  --btn-blank-on-edge: #7a1f1f;
+  --btn-freeze-on-top: #2f92c4;
+  --btn-freeze-on-bot: #1f6f9c;
+  --btn-freeze-on-hover-top: #3aa0d0;
+  --btn-freeze-on-hover-bot: #2680b0;
+  --btn-freeze-on-edge: #175572;
+  --sheen: #ffffff;
+
+  /* Type */
+  --font-caption: 10px;
+  --font-small: 11px;
+  --font-body: 12px;
+  --font-ui: 13px;
+  --font-title: 14px;
+  --font-heading: 15px;
+
+  /* Measures */
+  --radius-small: 3px;
+  --radius: 5px;
+  --btn-radius: 3px;
+  --control-h: 26px;
+  --btn-compact-h: 24px;
+  --btn-standard-h: 28px;
+  --btn-command-h: 36px;
+  --btn-compact-icon: 12px;
+  --btn-standard-icon: 14px;
+  --btn-command-icon: 16px;
+  --list-row-h: 32px;
+  --list-row-tall-h: 44px;
+  --dock-header-h: 36px;
+  --scroll-size: 10px;
+
+  /* The remote's own */
+  --remote-touch-h: 44px;
+  --remote-row-gap: 3px;
+  --remote-list-pad: 6px;
+  --remote-left-w: 320px;
+  --remote-nav-h: 48px;
+  --remote-safe-top: env(safe-area-inset-top, 0px);
+  --remote-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --remote-safe-left: env(safe-area-inset-left, 0px);
+  --remote-safe-right: env(safe-area-inset-right, 0px);
+  --remote-font: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Roboto,
+    'Noto Sans', Arial, sans-serif;
+}

@@ -1,0 +1,88 @@
+{
+  "schema": "seventhslide.freeform",
+  "schema_version": 3,
+  "name": "A Mighty Fortress (edit)",
+  "line_control": true,
+  "next_id": 40,
+  "cues": [
+    { "id": "c1", "text": "A mighty fortress is our God," },
+    { "id": "c2", "text": "A bulwark never failing;" },
+    { "id": "c3", "text": "Our helper He, amid the flood" },
+    { "id": "c4", "text": "Of mortal ills prevailing." },
+    { "id": "c5", "text": "For still our ancient foe" },
+    { "id": "c6", "text": "Doth seek to work us woe;" },
+    { "id": "c7", "text": "His craft and power are great," },
+    { "id": "c8", "text": "And, armed with cruel hate," }
+  ],
+  "fields": {},
+  "decks": [
+    {
+      "output": "out-main",
+      "line_to_slide": [0, 0, 0, 0, 1, 1, 1, 1],
+      "slides": [
+        {
+          "id": "s1",
+          "objects": [
+            {
+              "id": "o1",
+              "type": "text",
+              "x": 154,
+              "y": 194,
+              "w": 1612,
+              "h": 692,
+              "rotation": 0,
+              "opacity": 1,
+              "z": 0,
+              "text": "A mighty fortress is our God,\nA bulwark never failing;\nOur helper He, amid the flood\nOf mortal ills prevailing.",
+              "font_family": "Helvetica",
+              "font_size": 48,
+              "font_color": "#ffffff",
+              "bold": true,
+              "italic": false,
+              "text_align": "center",
+              "vertical_align": "middle",
+              "line_height": 1.35,
+              "line_gap": 0
+            }
+          ]
+        },
+        { "id": "s2", "objects": [] }
+      ]
+    },
+    {
+      "output": "out-lt",
+      "line_to_slide": [0, 0, 1, 1, 2, 2, 3, 3],
+      "slides": [
+        {
+          "id": "s3",
+          "objects": [
+            {
+              "id": "o2",
+              "type": "text",
+              "x": 80,
+              "y": 860,
+              "w": 1760,
+              "h": 160,
+              "rotation": 0,
+              "opacity": 1,
+              "z": 0,
+              "text": "A mighty fortress is our God,\nA bulwark never failing;",
+              "font_family": "Helvetica",
+              "font_size": 32,
+              "font_color": "#ffffff",
+              "bold": true,
+              "italic": false,
+              "text_align": "center",
+              "vertical_align": "middle",
+              "line_height": 1.2,
+              "line_gap": 0
+            }
+          ]
+        },
+        { "id": "s4", "objects": [] },
+        { "id": "s5", "objects": [] },
+        { "id": "s6", "objects": [] }
+      ]
+    }
+  ]
+}

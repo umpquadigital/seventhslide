@@ -1,0 +1,7 @@
+Fetched by tools/fetch_bundled_bibles.py. Each is in the public domain.
+Abbreviation, title, source, how it was made, when, and the SHA-256 of
+what was downloaded:
+
+KJV	King James Version	https://raw.githubusercontent.com/bzerangue/osis-bibles/455e1913afae458445b49102d3e0375158dfba03/en/kjv.xml	as served	fetched 2026-11-26	SHA-256 28a1cfa2f5260093f3befe70b1da9b2662add052dfeba44e9251925c97dd1732
+BSB	Berean Standard Bible	https://bereanbible.com/bsb.txt	written out as OSIS	fetched 2026-11-26	SHA-256 2ac3af1de52d4e68261cba91d85c320b7eadc6560e830d99e591767b8ff5ca96
+ASV	American Standard Version	https://raw.githubusercontent.com/bzerangue/osis-bibles/455e1913afae458445b49102d3e0375158dfba03/en/asv.xml	as served	fetched 2026-11-26	SHA-256 a54b0fb622cef09041c05c0f489db78ee31c2ca2c153db73793fd8d634638e29

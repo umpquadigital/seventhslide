@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0d0d0d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>SeventhSlide Remote</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/controls.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/lists.css">
+  <link rel="stylesheet" href="/css/controller.css">
+</head>
+<body>
+  <!-- The app's glyphs (src/app/glyphs.cpp), inlined here by the server:
+       <use href="external.svg#id"> does not resolve in Chrome or Safari. -->
+  <!-- glyphs -->
+
+  <section id="gate" class="gate" hidden>
+    <form id="gateForm" class="gate-card" autocomplete="off">
+      <svg class="ic gate-mark"><use href="#ic-lock"></use></svg>
+      <h1>SeventhSlide Remote</h1>
+      <p class="gate-hint">Enter the PIN shown in Settings &rsaquo; Web Remote.</p>
+      <input id="gatePin" class="gate-pin" type="password" inputmode="numeric" autocomplete="off"
+             aria-label="PIN" placeholder="PIN">
+      <p id="gateError" class="gate-error" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary">Connect</button>
+    </form>
+  </section>
+
+  <div id="app" hidden>
+    <div id="offline" class="offline" hidden role="status">Reconnecting&hellip;</div>
+
+    <div class="mobile-nav" id="mobileNav">
+      <button type="button" class="btn btn-control mobile-nav-btn" id="btnDrawer"
+              aria-label="Open Service and Library" aria-expanded="false">
+        <svg class="ic"><use href="#ic-list"></use></svg><span>Library</span>
+      </button>
+      <span class="mobile-nav-title" id="mobileNavTitle">Controller</span>
+    </div>
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+    <div class="main-container">
+      <div class="col-left" id="colLeft">
+        <!-- The rundown of the service the console has open, under its title
+             bar and no toolbar: the remote plays it; choosing and editing a
+             service stay on the console. -->
+        <div class="left-panel-top">
+          <div class="dock-title" id="svcHeader">Service</div>
+          <div class="panel-body">
+            <div id="serviceItems" class="scroll-list" role="listbox" tabindex="0" aria-label="Service"></div>
+          </div>
+        </div>
+
+        <div class="panel-divider" id="leftPanelDivider"
+             role="separator" aria-orientation="horizontal"></div>
+
+        <div class="left-panel-bottom">
+          <div class="dock-title" id="libHeader">Library</div>
+          <div class="panel-body">
+            <nav class="tab-strip" id="libTabs" aria-label="Library"></nav>
+            <div class="lib-toolbar" id="libToolbar">
+              <div class="lib-toolbar-row">
+                <div class="field" id="libSearchField">
+                  <svg class="ic"><use href="#ic-search"></use></svg>
+                  <input id="libSearch" type="search" placeholder="Search Songs…"
+                         autocomplete="off" enterkeyhint="search" aria-label="Search library">
+                  <button type="button" class="field-clear" id="libSearchClear" hidden
+                          aria-label="Clear search">×</button>
+                </div>
+                <div class="bible-select-wrap" id="bibleSelectWrap" hidden>
+                  <button type="button" class="field field-select" id="bibleSelectBtn"
+                          aria-haspopup="menu" aria-expanded="false">
+                    <span id="bibleSelectLabel">Select bible…</span>
+                    <svg class="ic"><use href="#ic-chevronDown"></use></svg>
+                  </button>
+                  <div class="menu bible-menu" id="bibleMenu" role="menu"></div>
+                </div>
+              </div>
+              <div class="field" id="bibleSearchField" hidden>
+                <svg class="ic"><use href="#ic-search"></use></svg>
+                <input id="bibleQuickRef" type="search" placeholder="Search a reference…"
+                       autocomplete="off" enterkeyhint="search" aria-label="Search a reference">
+                <button type="button" class="field-clear" id="bibleSearchClear" hidden
+                        aria-label="Clear search">×</button>
+                <div class="menu bible-suggest" id="bibleSuggest" role="listbox"></div>
+              </div>
+            </div>
+            <div id="libBody" class="panel-body"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-center">
+        <div class="ctrl-head">
+          <span class="ctrl-title">Controller</span>
+          <!-- The strip lives in the title row. Every tab shows its name; the
+               stacks that don't fit go behind "+N more", chosen by width and
+               order only, so a focus change never moves a tab. -->
+          <div class="stack-strip" id="stackStrip">
+            <nav id="stackTabs" class="stack-tabs" hidden></nav>
+            <div class="stack-more" id="stackMore" hidden>
+              <button type="button" class="stack-tab stack-more-btn" id="stackMoreBtn"
+                      aria-haspopup="menu" aria-expanded="false">
+                <span id="stackMoreLabel"></span>
+                <svg class="ic"><use href="#ic-caret"></use></svg>
+              </button>
+              <div class="menu stack-more-menu" id="stackMoreMenu" role="menu"></div>
+            </div>
+          </div>
+          <div class="ctrl-head-tools">
+            <button type="button" class="btn btn-compact" id="btnAutoAdvance">
+              <svg class="ic"><use href="#ic-advance"></use></svg><span>Auto</span>
+            </button>
+            <button type="button" class="btn btn-compact btn-icon" id="ctrlSettingsBtn"
+                    aria-label="Controller settings" aria-haspopup="menu" aria-expanded="false">
+              <svg class="ic"><use href="#ic-more"></use></svg>
+            </button>
+            <div class="menu ctrl-menu" id="ctrlDropdown" role="menu">
+              <div class="menu-heading">Line Controller</div>
+              <div class="menu-row">
+                <label for="autoScroll">Follow live line</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="autoScroll" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="menu-rule"></div>
+              <div class="menu-heading">Auto-advance</div>
+              <div class="menu-row">
+                <label for="autoAdvanceInterval">Interval</label>
+                <input type="number" id="autoAdvanceInterval" min="1" max="3600">
+                <span class="menu-unit">s</span>
+              </div>
+              <div class="menu-row">
+                <label for="autoAdvanceLoop">Loop</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="autoAdvanceLoop">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="menu-row">
+                <label for="autoAdvanceThrough">Continue through the service</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="autoAdvanceThrough">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="menu-hint">Skips items that belong to other stacks.</div>
+              <div class="menu-row">
+                <label for="autoAdvanceAtDividers">Stop at dividers</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="autoAdvanceAtDividers">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <!-- Clearing lives here rather than on the strip: it is
+                   housekeeping, not a peer of the tabs, and mid-service it is
+                   the one action a second tap cannot undo. On touch this is
+                   the only route to it, so the labels have to teach it. -->
+              <div id="ctrlMenuStacks" hidden>
+                <div class="menu-rule"></div>
+                <div class="menu-heading">Stacks</div>
+                <button type="button" class="menu-item is-danger" id="menuClearStack" role="menuitem">Clear Stack</button>
+                <button type="button" class="menu-item is-danger" id="menuClearAllStacks" role="menuitem">Clear all stacks</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- A stack with a Preview: what is cued beside what is live (above
+             it on a phone), and the take between them. -->
+        <div class="wells" id="wells">
+          <section class="well-col is-cued" id="previewCol" aria-label="Preview" hidden>
+            <div id="p_lines" class="lyrics-map"></div>
+            <div class="preview-media" id="previewMedia" hidden>
+              <button type="button" class="btn btn-command" id="btnPreviewPlay">
+                <svg class="ic"><use href="#ic-play"></use></svg><span>Play</span>
+              </button>
+              <span id="previewClock" class="clock" aria-label="Position and length">0:00 / 0:00</span>
+            </div>
+            <!-- What is cued: blanked, it goes live blanked. -->
+            <div class="transport is-pair" id="previewControls">
+              <button type="button" class="btn btn-command" id="btnPreviewBlank"
+                      aria-label="Blank Preview"><span>Blank</span></button>
+              <button type="button" class="btn btn-command" id="btnPreviewClear"
+                      aria-label="Clear Preview"><span>Clear</span></button>
+            </div>
+          </section>
+          <div class="take-col" id="takeCol" role="group" aria-label="Take" hidden>
+            <!-- Transition takes by the theme's transition; its caret, by a
+                 Cut or a Fade, and how long the Fade takes. -->
+            <div class="take-split">
+              <button type="button" class="btn btn-command btn-primary" id="btnTransition">
+                <span>Transition</span>
+              </button>
+              <button type="button" class="btn btn-command btn-primary btn-icon take-caret"
+                      id="btnTakeMenu" aria-label="Take by" aria-haspopup="menu"
+                      aria-expanded="false">
+                <svg class="ic"><use href="#ic-caret"></use></svg>
+              </button>
+              <div class="menu take-menu" id="takeMenu" role="menu">
+                <button type="button" class="menu-item" id="takeCut" role="menuitem">
+                  <span class="menu-label">Cut</span>
+                </button>
+                <button type="button" class="menu-item" id="takeFade" role="menuitem">
+                  <span class="menu-label">Fade</span><span class="menu-unit" id="takeFadeShown"></span>
+                </button>
+                <div class="menu-rule"></div>
+                <div class="menu-row">
+                  <label for="takeFadeSec">Fade length</label>
+                  <span class="stepper">
+                    <button type="button" class="btn btn-compact" id="takeFadeLess"
+                            aria-label="Shorter">&minus;</button>
+                    <input type="number" id="takeFadeSec" min="0.1" max="10" step="0.1">
+                    <button type="button" class="btn btn-compact" id="takeFadeMore"
+                            aria-label="Longer">+</button>
+                  </span>
+                  <span class="menu-unit">s</span>
+                </div>
+              </div>
+            </div>
+            <div class="take-held" id="takeHeld" hidden></div>
+          </div>
+          <section class="well-col" id="programCol" aria-label="Program">
+            <div id="u_lines" class="lyrics-map"></div>
+            <div id="videoBar" class="video-bar" hidden>
+              <span id="videoPos" class="clock">0:00</span>
+              <input id="videoSeek" class="seek" type="range" min="0" max="1000" value="0" aria-label="Seek">
+              <span id="videoDur" class="clock">0:00</span>
+            </div>
+            <div class="transport" id="slideControls">
+              <button type="button" class="btn btn-command btn-primary" id="btnPrev">
+                <svg class="ic"><use href="#ic-chevronLeft"></use></svg><span>Previous</span>
+              </button>
+              <button type="button" class="btn btn-command" id="btnBlank"><span>Blank</span></button>
+              <button type="button" class="btn btn-command" id="btnFreeze"><span>Freeze</span></button>
+              <button type="button" class="btn btn-command btn-primary" id="btnNext">
+                <span>Next</span><svg class="ic"><use href="#ic-chevronRight"></use></svg>
+              </button>
+            </div>
+            <div class="transport" id="videoControls" hidden>
+              <button type="button" class="btn btn-command btn-primary" id="btnVideoPlay">
+                <svg class="ic"><use href="#ic-play"></use></svg><span>Play</span>
+              </button>
+              <button type="button" class="btn btn-command" id="btnBlankVideo"><span>Blank</span></button>
+              <button type="button" class="btn btn-command" id="btnFreezeVideo"><span>Freeze</span></button>
+              <button type="button" class="btn btn-command btn-primary" id="btnVideoRestart">
+                <svg class="ic"><use href="#ic-reset"></use></svg><span>Restart</span>
+              </button>
+            </div>
+            <!-- A web page live: the page before (after a link) and Reload where
+                 the slides' Previous and Next are. -->
+            <div class="transport" id="webControls" hidden>
+              <button type="button" class="btn btn-command btn-primary" id="btnWebBack">
+                <svg class="ic"><use href="#ic-chevronLeft"></use></svg><span>Previous</span>
+              </button>
+              <button type="button" class="btn btn-command" id="btnBlankWeb"><span>Blank</span></button>
+              <button type="button" class="btn btn-command" id="btnFreezeWeb"><span>Freeze</span></button>
+              <button type="button" class="btn btn-command btn-primary" id="btnWebReload">
+                <svg class="ic"><use href="#ic-reload"></use></svg><span>Reload</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toasts" class="app-toasts" aria-live="polite"></div>
+  <script src="/js/main.js" type="module"></script>
+</body>
+</html>

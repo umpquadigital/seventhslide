@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osis xmlns="http://www.bibletechnologies.net/2003/OSIS/namespace">
+  <osisCorpus>
+    <osisText osisIDWork="EDGE">
+      <header>
+        <work osisWork="EDGE">
+          <title>Edge <hi type="bold">Cases</hi></title>
+        </work>
+      </header>
+      <div type="book" osisID="Esth">
+        <chapter osisID="Esth.8">
+          <verse osisID="EDGE:Esth.8.9!a">in the month Sivan <note>June</note>, on the twenty-third day</verse>
+          <verse osisID="Esth.8">Not a verse id.</verse>
+        </chapter>
+      </div>
+      <div type="book" osisID="Ps">
+        <chapter sID="Ps.51" osisID="Ps.51"/>
+        <title type="psalm" canonical="true"><verse sID="Ps.51.1" osisID="Ps.51.1"/>To the chief Musician</title>when Nathan came.<verse eID="Ps.51.1"/>
+        <title><verse sID="Ps.51.2" osisID="Ps.51.2"/>A heading</title>Wash me<verse eID="Ps.51.2"/>
+        <verse eID="Ps.51.2"/>Text after an end with no verse open.
+        <chapter eID="Ps.51"/>
+      </div>
+      <div type="book" osisID="Song">
+        <chapter osisID="Song.1">
+          <verse osisID="Song.1.2"><speaker>The Bride</speaker>Let him kiss me.</verse>
+        </chapter>
+      </div>
+      <div type="book" osisID="Mal">
+        <chapter osisID="Mal.4">
+          <verse sID="Mal.4.6" osisID="Mal.4.6"/>lest I come and smite the earth with a curse.
+        </chapter>
+      </div>
+      <div type="book" osisID="Matt">
+        <div type="introduction"><p>An introduction, in no verse.</p></div>
+        <chapter osisID="Matt.4">
+          <verse osisID="Matt.4.4">He said, <q marker="&#x201C;" sID="q1"/>It is written<q marker="&#x201D;" eID="q1"/> and <q marker="'">so</q>.</verse>
+        </chapter>
+      </div>
+      <div type="book" osisID="John">
+        <chapter osisID="John.3">
+          <verse osisID="John.3.16">神愛世人<note>n</note> 。</verse>
+        </chapter>
+      </div>
+      <div type="book" osisID="Odes">
+        <chapter osisID="Odes.1">
+          <verse osisID="Odes.1.1">A book id with no English name.</verse>
+        </chapter>
+      </div>
+    </osisText>
+  </osisCorpus>
+</osis>

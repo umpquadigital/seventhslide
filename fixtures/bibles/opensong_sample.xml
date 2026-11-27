@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bible name="Test OpenSong" copyright="© Test">
+  <b n="Psalms">
+    <c n="23">
+      <v n="1">The LORD is my shepherd; I shall not want.</v>
+      <v n="2">He maketh me to lie down in green pastures.</v>
+    </c>
+  </b>
+  <b n="1 John">
+    <c n="1">
+      <v n="1">That which was from the beginning.</v>
+    </c>
+  </b>
+</bible>

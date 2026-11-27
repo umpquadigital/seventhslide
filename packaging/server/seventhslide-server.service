@@ -1,0 +1,48 @@
+# SeventhSlide as a server, run by systemd (docs/SERVER.md, "Linux").
+#
+#   sudo useradd --system --home-dir /var/lib/seventhslide-server --shell /usr/sbin/nologin seventhslide
+#   sudo cp seventhslide-server.service /etc/systemd/system/
+#   sudo systemctl enable --now seventhslide-server
+#
+# So the commands find its data folder (server.json, beside this file):
+#
+#   sudo mkdir -p /etc/seventhslide && sudo cp server.json /etc/seventhslide/
+#
+# The settings screen and the commands run as the same user:
+#
+#   sudo -u seventhslide seventhslide --server config
+
+[Unit]
+Description=SeventhSlide server: keeps synced libraries and passes them between computers
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=seventhslide
+Group=seventhslide
+# Its name, addresses and port are the settings screen's: a flag here would override
+# them at every start.
+ExecStart=/usr/local/bin/seventhslide --server --data /var/lib/seventhslide-server
+Restart=on-failure
+RestartSec=10
+# Stopping waits for a library being applied to finish.
+TimeoutStopSec=120
+
+StateDirectory=seventhslide-server
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictNamespaces=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

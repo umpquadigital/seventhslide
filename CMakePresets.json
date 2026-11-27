@@ -1,0 +1,196 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {"major": 3, "minor": 21, "patch": 0},
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "linux",
+      "displayName": "Linux (GCC or Clang)",
+      "description": "Qt from the distribution or aqt: add its folder to CMAKE_PREFIX_PATH in CMakeUserPresets.json.",
+      "inherits": "base",
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux"}
+    },
+    {
+      "name": "linux-ci",
+      "displayName": "Linux CI (Release, warnings are errors)",
+      "inherits": "linux",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "SEVENTHSLIDE_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "linux-asan",
+      "displayName": "Linux with AddressSanitizer and UBSan (the tests)",
+      "description": "Its own build folder, build-asan; ctest --preset linux-asan runs the tests it builds. Warnings are not errors here: GCC warns of bounds in its own headers under the sanitizers, and linux-ci holds the code to its warnings. GCC finds no constant in a constexpr comparison with nullptr under the null checks (db/sync_tables.hpp), so they are off; AddressSanitizer still reports a null read.",
+      "inherits": "linux",
+      "binaryDir": "${sourceDir}/build-asan",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_FLAGS": "-fsanitize=address,undefined -fno-sanitize=null,nonnull-attribute,returns-nonnull-attribute -fno-omit-frame-pointer",
+        "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -fno-sanitize=null,nonnull-attribute,returns-nonnull-attribute -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined",
+        "CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=address,undefined",
+        "CMAKE_MODULE_LINKER_FLAGS": "-fsanitize=address,undefined"
+      }
+    },
+    {
+      "name": "macos",
+      "displayName": "macOS (AppleClang, Homebrew)",
+      "description": "brew install cmake ninja pkg-config qt mpv ffmpeg openssl. HOMEBREW_PREFIX comes from `brew shellenv`. Homebrew's openssl is keg-only, so it is named here: the one Qt's TLS backend loads, not a versioned openssl@N.",
+      "inherits": "base",
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin"},
+      "cacheVariables": {
+        "OPENSSL_ROOT_DIR": "$env{HOMEBREW_PREFIX}/opt/openssl"
+      }
+    },
+    {
+      "name": "macos-ci",
+      "displayName": "macOS CI (Release, warnings are errors)",
+      "inherits": "macos",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "SEVENTHSLIDE_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "ubuntu-24.04-deb",
+      "displayName": "The Ubuntu 24.04 .deb (Release, its own Qt)",
+      "description": "What the release workflow packages, on Ubuntu 24.04: Qt from aqt (add its folder to CMAKE_PREFIX_PATH), carried with the program in /opt/seventhslide, as Ubuntu's is below the 6.8 floor. cpack --config build-package/CPackConfig.cmake makes build-package/deploy/seventhslide-ubuntu-24.04-amd64.deb.",
+      "inherits": "linux",
+      "binaryDir": "${sourceDir}/build-package",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INSTALL_PREFIX": "/opt/seventhslide",
+        "SEVENTHSLIDE_BUILD_TESTS": "OFF",
+        "SEVENTHSLIDE_PACKAGE": "deb",
+        "SEVENTHSLIDE_DEB_FOR": "ubuntu-24.04",
+        "SEVENTHSLIDE_BUNDLE_QT": "ON"
+      }
+    },
+    {
+      "name": "ubuntu-26.04-deb",
+      "displayName": "The Ubuntu 26.04 .deb (Release, Ubuntu's Qt)",
+      "description": "What the release workflow packages, on Ubuntu 26.04 with the packages docs/BUILDING.md lists and Ubuntu's Qt 6 development packages, in /usr. cpack --config build-package/CPackConfig.cmake makes build-package/deploy/seventhslide-ubuntu-26.04-amd64.deb.",
+      "inherits": "linux",
+      "binaryDir": "${sourceDir}/build-package",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INSTALL_PREFIX": "/usr",
+        "SEVENTHSLIDE_BUILD_TESTS": "OFF",
+        "SEVENTHSLIDE_PACKAGE": "deb",
+        "SEVENTHSLIDE_DEB_FOR": "ubuntu-26.04"
+      }
+    },
+    {
+      "name": "fedora-rpm",
+      "displayName": "The Fedora .rpm (Release, Fedora's Qt)",
+      "description": "What the release workflow packages, on Fedora with the packages docs/BUILDING.md lists and rpm-build. cpack --config build-package/CPackConfig.cmake makes build-package/deploy/seventhslide-fedora-x86_64.rpm.",
+      "inherits": "linux",
+      "binaryDir": "${sourceDir}/build-package",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INSTALL_PREFIX": "/usr",
+        "SEVENTHSLIDE_BUILD_TESTS": "OFF",
+        "SEVENTHSLIDE_PACKAGE": "rpm"
+      }
+    },
+    {
+      "name": "macos-dmg",
+      "displayName": "The macOS disk image (Release)",
+      "description": "What the release workflow packages: cmake --build build-package --target macos_app makes build-package/deploy/SeventhSlide.dmg.",
+      "inherits": "macos",
+      "binaryDir": "${sourceDir}/build-package",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "SEVENTHSLIDE_BUILD_TESTS": "OFF",
+        "SEVENTHSLIDE_PACKAGE": "dmg"
+      }
+    },
+    {
+      "name": "windows-msvc",
+      "displayName": "Windows (MSVC)",
+      "description": "Run from a Visual Studio x64 developer prompt. Without pkg-config, set SEVENTHSLIDE_MPV_ROOT and SEVENTHSLIDE_FFMPEG_ROOT (or CMAKE_PREFIX_PATH) in CMakeUserPresets.json; with vcpkg, set CMAKE_TOOLCHAIN_FILE there.",
+      "inherits": "base",
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows"},
+      "architecture": {"value": "x64", "strategy": "external"},
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl"
+      }
+    },
+    {
+      "name": "windows-mingw",
+      "displayName": "Windows (MSYS2 UCRT64, GCC)",
+      "description": "Run from the MSYS2 UCRT64 shell, with mingw-w64-ucrt-x86_64-{qt6,mpv,ffmpeg,openssl,pkgconf,cmake,ninja}.",
+      "inherits": "base",
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows"},
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "windows-exe",
+      "displayName": "The Windows installer (MSYS2 UCRT64, Release)",
+      "description": "What the release workflow packages, from the MSYS2 UCRT64 shell: packaging/windows/deploy.sh gathers the program and every DLL it needs, and packaging/windows/seventhslide.iss (Inno Setup) makes the installer.",
+      "inherits": "windows-mingw",
+      "binaryDir": "${sourceDir}/build-package",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "SEVENTHSLIDE_BUILD_TESTS": "OFF",
+        "SEVENTHSLIDE_PACKAGE": "exe"
+      }
+    }
+  ],
+  "buildPresets": [
+    {"name": "linux", "configurePreset": "linux", "jobs": 2},
+    {"name": "linux-ci", "configurePreset": "linux-ci"},
+    {"name": "linux-asan", "configurePreset": "linux-asan",
+     "targets": ["seventhslide_tests_core", "seventhslide_tests_media", "seventhslide_tests_sync"]},
+    {"name": "macos", "configurePreset": "macos", "jobs": 2},
+    {"name": "windows-msvc", "configurePreset": "windows-msvc", "jobs": 2},
+    {"name": "windows-mingw", "configurePreset": "windows-mingw", "jobs": 2},
+    {"name": "ubuntu-24.04-deb", "configurePreset": "ubuntu-24.04-deb"},
+    {"name": "ubuntu-26.04-deb", "configurePreset": "ubuntu-26.04-deb"},
+    {"name": "fedora-rpm", "configurePreset": "fedora-rpm"},
+    {"name": "macos-dmg", "configurePreset": "macos-dmg", "targets": ["macos_app"]},
+    {"name": "windows-exe", "configurePreset": "windows-exe"}
+  ],
+  "testPresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "output": {"outputOnFailure": true},
+      "environment": {"QT_QPA_PLATFORM": "offscreen"}
+    },
+    {"name": "linux", "inherits": "base", "configurePreset": "linux"},
+    {"name": "linux-ci", "inherits": "base", "configurePreset": "linux-ci"},
+    {
+      "name": "linux-asan",
+      "description": "The core, media and sync tests under the sanitizers, each given 300 seconds, as on macOS. Leaks are not looked for: Qt, fontconfig and mpv keep what they allocate until the process ends. Left out: the test that uses up every file descriptor, as UBSan then cannot open the pipe it reads memory through, and says a sound object has no vptr; and those that give the player or the link a fixed time, which the sanitizers' slowness outruns (mpv's calls in 50 ms; a snapshot's parts checked within a run of 400 ms). Each is named whole, so a test whose name starts as one does is still run.",
+      "inherits": "base",
+      "configurePreset": "linux-asan",
+      "environment": {
+        "ASAN_OPTIONS": "detect_leaks=0:abort_on_error=1:strict_string_checks=1",
+        "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1"
+      },
+      "filter": {
+        "include": {"label": "^(core|media|sync)$"},
+        "exclude": {"name": "^(A computer that ran out of open files takes connections again once it has some|No player call waits on mpv while a video starts, seeks or loops|A large join through the node keeps waiting while its snapshot's parts come|A file too large to pass between computers is not sent, and is said once|A snapshot's parts are asked for at once, not behind the media asked for|A part damaged where it is sent from is set aside there, and said missing|A snapshot whose sender sends no part for a while is fetched from another)$"}
+      },
+      "execution": {"timeout": 300}
+    },
+    {"name": "macos", "inherits": "base", "configurePreset": "macos"},
+    {"name": "windows-msvc", "inherits": "base", "configurePreset": "windows-msvc"},
+    {"name": "windows-mingw", "inherits": "base", "configurePreset": "windows-mingw"}
+  ]
+}

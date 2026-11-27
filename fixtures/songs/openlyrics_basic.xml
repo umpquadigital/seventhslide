@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<song xmlns="http://openlyrics.info/namespace/2009/song" version="0.8" createdIn="SeventhSlide-test">
+  <properties>
+    <titles>
+      <title>Amazing Grace</title>
+    </titles>
+    <authors>
+      <author>John Newton</author>
+      <author>Anon</author>
+    </authors>
+    <songbooks>
+      <songbook name="Hymnal" entry="45"/>
+      <songbook name="Other" entry="9"/>
+    </songbooks>
+    <key>G</key>
+  </properties>
+  <lyrics>
+    <verse name="v1">
+      <lines>Amazing grace! how sweet the sound<br/>That saved a wretch like me!</lines>
+    </verse>
+    <verse name="c1">
+      <lines>I once was lost, but now am found;<br/>Was blind, but now I see.</lines>
+    </verse>
+    <verse name="b1">
+      <lines>Bridge line one</lines>
+    </verse>
+  </lyrics>
+</song>

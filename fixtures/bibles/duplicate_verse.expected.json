@@ -1,0 +1,9 @@
+{
+  "name": "Duplicate Verse",
+  "copyright": "Public Domain",
+  "verses": [
+    {"book": "1 Corinthians", "chapter": 10, "verse": 28, "text": "But if eny man saye unto you:"},
+    {"book": "1 Corinthians", "chapter": 10, "verse": 29, "text": "The erth is the lordes and all that there in is. Conscience I saye not thyne: but the coscieuce of that other."},
+    {"book": "1 Corinthians", "chapter": 10, "verse": 30, "text": "For yf I take my parte with thankes:"}
+  ]
+}

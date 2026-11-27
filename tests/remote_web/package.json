@@ -1,0 +1,16 @@
+{
+  "name": "seventhslide-remote-web-tests",
+  "private": true,
+  "description": "Browser tests for SeventhSlide's web remote (see README.md).",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "lint": "node lint.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
+    "eslint": "10.13.0",
+    "globals": "17.13.0"
+  }
+}

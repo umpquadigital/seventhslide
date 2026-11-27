@@ -1,0 +1,185 @@
+{
+  "schema": "seventhslide.style_profiles.v1",
+  "snapshot_live": {
+    "outputs": {
+      "Main": {
+        "song": {
+          "theme": "t1",
+          "bg": "b1"
+        },
+        "bible": {
+          "theme": "tb"
+        }
+      },
+      "Stage": {
+        "song": {
+          "theme": "ts",
+          "bg": "bs"
+        }
+      }
+    },
+    "songs": {
+      "1": {
+        "Main": {
+          "song": {
+            "theme": "song_t"
+          }
+        }
+      },
+      "3": {
+        "Stage": {
+          "song": {
+            "bg": "x"
+          }
+        }
+      }
+    }
+  },
+  "blank_from_live": {
+    "outputs": {
+      "Main": {
+        "song": {
+          "theme": "t1",
+          "bg": "b1"
+        },
+        "bible": {
+          "theme": "tb"
+        }
+      },
+      "Stage": {
+        "song": {
+          "theme": "ts",
+          "bg": "bs"
+        }
+      }
+    },
+    "songs": {}
+  },
+  "apply": {
+    "profile": {
+      "outputs": {
+        "Main": {
+          "song": {
+            "theme": "t_new",
+            "bg": "b_new"
+          }
+        }
+      },
+      "songs": {
+        "2": {
+          "Main": {
+            "song": {
+              "theme": "now"
+            }
+          }
+        }
+      },
+      "ann_items": {
+        "11": {
+          "Main": {
+            "layout": "L2"
+          }
+        }
+      }
+    },
+    "before": {
+      "outputs": {
+        "Main": {
+          "song": {
+            "theme": "t1",
+            "bg": "b1"
+          },
+          "bible": {
+            "theme": "tb"
+          }
+        },
+        "Stage": {
+          "song": {
+            "theme": "ts",
+            "bg": "bs"
+          }
+        }
+      },
+      "songs": {
+        "1": {
+          "Main": {
+            "song": {
+              "theme": "song_t"
+            }
+          }
+        },
+        "2": {},
+        "3": {
+          "Stage": {
+            "song": {
+              "bg": "x"
+            }
+          }
+        }
+      }
+    },
+    "after": {
+      "outputs": {
+        "Main": {
+          "song": {
+            "theme": "t_new",
+            "bg": "b_new"
+          }
+        },
+        "Stage": {
+          "song": {
+            "theme": "ts",
+            "bg": "bs"
+          }
+        }
+      },
+      "songs": {
+        "1": {},
+        "2": {
+          "Main": {
+            "song": {
+              "theme": "now"
+            }
+          }
+        },
+        "3": {}
+      }
+    },
+    "song_deltas": [
+      {
+        "id": 1,
+        "theme_map": {}
+      },
+      {
+        "id": 2,
+        "theme_map": {
+          "Main": {
+            "song": {
+              "theme": "now"
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "theme_map": {}
+      }
+    ],
+    "ann_deltas": [
+      {
+        "id": 10,
+        "theme_map": {}
+      },
+      {
+        "id": 11,
+        "theme_map": {
+          "Main": {
+            "layout": "L2"
+          }
+        }
+      }
+    ],
+    "noop_second_apply_song_writes": [],
+    "noop_second_apply_ann_writes": []
+  }
+}

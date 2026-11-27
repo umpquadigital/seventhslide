@@ -1,0 +1,29 @@
+[
+  {
+    "title": "First",
+    "lyrics": "---[Verse:1]---\nOne",
+    "verse_order": null,
+    "authors": [
+      {
+        "name": "A",
+        "roles": []
+      }
+    ],
+    "songbook_name": "",
+    "songbook_entry": "",
+    "key": "",
+    "copyright": "",
+    "ccli_song_number": ""
+  },
+  {
+    "title": "Second",
+    "lyrics": "---[Chorus:1]---\nTwo",
+    "verse_order": null,
+    "authors": [],
+    "songbook_name": "",
+    "songbook_entry": "",
+    "key": "",
+    "copyright": "",
+    "ccli_song_number": ""
+  }
+]

@@ -1,0 +1,7 @@
+# tools/clang_tidy.py runs these over the project's sources (CI runs it;
+# docs/BUILDING.md says how). It also picks the headers checked, the project's
+# own, by the checkout's and the build folder's paths, which a regex here
+# could not know: not Qt's or the system's, nor third_party/, nor what a
+# build makes (moc, QML type registrations, the fetched dependencies).
+Checks: '-*,misc-use-internal-linkage,bugprone-unchecked-optional-access'
+WarningsAsErrors: 'misc-use-internal-linkage,bugprone-unchecked-optional-access'

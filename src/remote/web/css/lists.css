@@ -1,0 +1,284 @@
+/* The lists: the rundown and the library, their rows, the library's tab
+   strip and toolbar, and the Bible tab's verses. */
+
+/* A list in the panel's dark well. */
+.scroll-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--remote-list-pad);
+  background: var(--well-bg);
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-list:focus-visible { outline-offset: -2px; }
+
+/* --- Rows (the rundown's and the library's) --------------------------------
+   Style.listRowH high, panelRow, the bar at the left edge listAccent; a
+   service row on the output is liveRow, with the accent bar. */
+.list-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--list-row-h);
+  margin-bottom: var(--remote-row-gap);
+  padding: 0 10px 0 11px;
+  border-radius: var(--radius-small);
+  background: var(--panel-row);
+  color: var(--text);
+  font-size: var(--font-body);
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+}
+.list-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: 1px;
+  background: transparent;
+}
+.list-item.marquee-selected { background: var(--panel-row-sel); }
+.list-item.marquee-selected::before { background: var(--list-accent-sel); }
+.list-item.playing { background: var(--live-row); color: var(--text-strong); }
+.list-item.playing::before { background: var(--accent); }
+.list-item .row-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-item .row-num { flex: none; color: var(--text-muted); }
+.list-item .row-sub { flex: none; color: var(--text-muted); font-size: var(--font-small); }
+.list-item .row-ic { width: 14px; height: 14px; color: var(--icon-idle); }
+.list-item.playing .row-num,
+.list-item.playing .row-ic { color: var(--text-strong); }
+.list-item.playing .row-sub { color: var(--count-ink-sel); }
+@media (hover: hover) {
+  .list-item:hover { background: var(--panel-row-hover); }
+  .list-item:hover::before { background: var(--list-accent-hover); }
+  .list-item.marquee-selected:hover { background: var(--panel-row-sel-hover); }
+  .list-item.marquee-selected:hover::before { background: var(--list-accent-sel-hover); }
+  .list-item.playing:hover { background: var(--live-row-hover); }
+  .list-item.playing:hover::before { background: var(--accent); }
+}
+@media (pointer: coarse) {
+  .list-item { min-height: 40px; }
+}
+
+/* --- The rundown ----------------------------------------------------------- */
+
+/* A rundown row's marks after its title: a folder's count, a link, its stack. */
+.svc-mark { width: 14px; height: 14px; color: var(--text-hover); }
+.list-item.playing .svc-mark { color: var(--text-strong); }
+.svc-mark-img { width: 14px; height: 14px; flex: none; }
+.folder-chevron {
+  flex: none;
+  width: 12px;
+  color: var(--text-caption);
+  font-size: var(--font-small);
+  text-align: center;
+}
+.list-item.playing .folder-chevron { color: var(--text-strong); }
+/* An image folder's pictures, opened in place. */
+.list-item.svc-picture {
+  min-height: 28px;
+  margin-left: 18px;
+  font-size: var(--font-small);
+}
+.svc-picture img {
+  width: 36px;
+  height: 20px;
+  flex: none;
+  border-radius: 2px;
+  object-fit: cover;
+  background: var(--thumb-well);
+}
+
+/* A divider: its label and a rule to the row's end (SectionTitle). */
+.service-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 26px;
+  margin-bottom: var(--remote-row-gap);
+  padding: 0 8px;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: var(--divider-row);
+  color: var(--text-caption);
+  font-size: var(--font-caption);
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  user-select: none;
+}
+.service-divider .divider-label { flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.service-divider::after {
+  content: '';
+  flex: 1 0 12px;
+  height: 1px;
+  background: var(--rule);
+}
+
+/* --- The library's tab strip (PanelTabStrip) ------------------------------- */
+.tab-strip {
+  position: relative;
+  flex: none;
+  height: 26px;
+  /* Clipped, never scrolled: focusing a tab must not slide the page. */
+  overflow: clip;
+  border-bottom: 1px solid var(--border);
+  background: var(--library-tabs-bg);
+}
+/* Two pages, each the strip's width; the arrow slides one out and the other
+   in. */
+.tab-pages { position: relative; height: 100%; }
+.tab-page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  transition: transform 0.16s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.tab-page.is-more { transform: translateX(100%); }
+.tab-strip.on-more .tab-page { transform: translateX(-100%); }
+.tab-strip.on-more .tab-page.is-more { transform: none; }
+.tab-btn {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  padding: 0 4px;
+  color: var(--text-muted);
+  font-size: var(--font-small);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Behind the arrow, each tab as wide as one of the first page's five
+   (library.js STRIP_TABS), beside the 28px arrow. */
+.tab-page.is-more .tab-btn { flex: 0 0 calc((100% - 28px) / 5); }
+.tab-btn::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+}
+.tab-btn.active { color: var(--text); font-weight: 700; }
+.tab-btn.active::after { background: var(--accent); }
+.tab-arrow {
+  flex: 0 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+}
+.tab-arrow .ic { width: 12px; height: 12px; stroke-width: 2; }
+@media (hover: hover) {
+  .tab-btn:not(.active):hover { background: var(--tab-hover-bg); color: var(--text-hover); }
+  .tab-arrow:hover { background: var(--tab-hover-bg); color: var(--text); }
+}
+@media (pointer: coarse) {
+  .tab-strip { height: 36px; }
+  .tab-btn { font-size: var(--font-body); }
+}
+
+/* --- The library's toolbar ------------------------------------------------- */
+.lib-toolbar {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border-bottom: 1px solid var(--well-edge);
+  background: var(--panel-bg);
+}
+.lib-toolbar-row { display: flex; align-items: center; gap: 6px; }
+/* The search field fills its row; the Bible tab's reference field is a row
+   of its own, at the field's height. */
+.lib-toolbar-row .field { flex: 1; }
+@media (pointer: coarse) {
+  .lib-toolbar .field { height: 36px; }
+  .lib-toolbar .field input { font-size: var(--font-ui); }
+}
+
+.bible-select-wrap { position: relative; flex: 1; min-width: 0; }
+.bible-menu, .bible-suggest { left: 0; right: 0; top: calc(100% + 2px); min-width: 0; }
+
+/* --- Library rows ----------------------------------------------------------
+   A media row: a 16:9 box for its picture or glyph, then its title. */
+.list-item.lib-media { gap: 8px; padding-left: 8px; }
+.lib-thumb-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 40px;
+  height: 22px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--thumb-well);
+}
+.lib-thumb-box img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+.lib-thumb-box img.is-loading { opacity: 0; }
+.lib-thumb-box .ic { width: 16px; height: 16px; color: var(--icon-idle); stroke-width: 2; }
+.lib-thumb-box .ic-folder-fill { color: var(--folder-ink); --ic-fill: currentColor; --ic-stroke: none; }
+.lib-thumb-box .ic-parent { color: var(--parent-glyph); }
+.list-item.playing .lib-thumb-box .ic { color: var(--text-strong); }
+
+/* A song: its title over its authors. */
+.list-item.lib-song {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 3px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+.list-item.lib-song .row-title { flex: none; color: var(--text-bright); font-weight: 600; }
+.list-item.lib-song .row-sub {
+  overflow: hidden;
+  color: var(--text-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-item.lib-song .row-sub.is-lyric { font-style: italic; }
+.list-item.lib-song.marquee-selected .row-title { color: var(--text-strong); }
+.list-item.lib-song.marquee-selected .row-sub { color: var(--text-soft); }
+
+/* A live source: its signal by its name, its detail under it. */
+.lib-two-line { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lib-two-line .row-title { flex: none; display: flex; align-items: center; gap: 6px; }
+.lib-two-line .row-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-item.lib-live { min-height: var(--list-row-tall-h); }
+.list-item.lib-live .lib-thumb-box { width: 64px; height: 36px; }
+.signal-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--signal-ok); }
+.signal-dot.is-lost { background: var(--signal-lost); }
+.lib-group-head {
+  padding: 8px 4px 4px;
+  color: var(--text-caption);
+  font-size: var(--font-caption);
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.lib-group-head:first-child { padding-top: 2px; }
+
+/* The end of what has been read: the next page is asked for near it. */
+.lib-more {
+  min-height: 1px;
+  padding: 8px 0;
+  color: var(--text-caption);
+  font-size: var(--font-small);
+  text-align: center;
+}
+.lib-more:empty { padding: 0; }
+.lib-more-retry { color: var(--status-tag-ink); text-decoration: underline; }
+
+/* A verse: its number, then its text, wrapped. */
+.list-item.verse-item { align-items: baseline; gap: 12px; padding: 7px 12px 7px 14px; }
+.verse-item .verse-num { flex: none; color: var(--text); font-weight: 700; }
+.verse-item .row-title { white-space: normal; line-height: 1.35; overflow: visible; }

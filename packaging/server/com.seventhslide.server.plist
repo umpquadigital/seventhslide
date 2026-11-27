@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- SeventhSlide as a server, run by launchd at startup (docs/SERVER.md,
+     "macOS: as a service"), as a user of its own:
+
+       sudo sysadminctl -addUser _seventhslide -fullName "SeventhSlide server" -UID 450 -roleAccount
+       sudo mkdir -p "/Library/Application Support/SeventhSlide Server" /Library/Logs/SeventhSlide
+       sudo chown _seventhslide "/Library/Application Support/SeventhSlide Server" /Library/Logs/SeventhSlide
+       sudo chmod 700 "/Library/Application Support/SeventhSlide Server"
+       sudo cp com.seventhslide.server.plist /Library/LaunchDaemons/
+       sudo launchctl bootstrap system /Library/LaunchDaemons/com.seventhslide.server.plist
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.seventhslide.server</string>
+	<!-- Its name, addresses and port are the settings screen's: a flag here
+	     would override them at every start. -->
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Applications/SeventhSlide.app/Contents/MacOS/SeventhSlide</string>
+		<string>--server</string>
+		<string>--data</string>
+		<string>/Library/Application Support/SeventhSlide Server</string>
+	</array>
+	<key>UserName</key>
+	<string>_seventhslide</string>
+	<key>RunAtLoad</key>
+	<true/>
+	<!-- Started again if it stops on its own, not after a clean stop. -->
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
+	<key>ThrottleInterval</key>
+	<integer>10</integer>
+	<!-- Stopping waits for a library being applied to finish; launchd's own
+	     wait is 20 seconds, then it kills it. -->
+	<key>ExitTimeOut</key>
+	<integer>120</integer>
+	<!-- 0077: what it writes is its own. -->
+	<key>Umask</key>
+	<integer>63</integer>
+	<key>WorkingDirectory</key>
+	<string>/Library/Application Support/SeventhSlide Server</string>
+	<key>StandardOutPath</key>
+	<string>/Library/Logs/SeventhSlide/server.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Library/Logs/SeventhSlide/server.log</string>
+</dict>
+</plist>

@@ -1,0 +1,391 @@
+{
+  "greedy_runs": {
+    "words": [
+      "one",
+      "two",
+      "three",
+      "four",
+      "five",
+      "six"
+    ],
+    "box_w": 10,
+    "runs": [
+      {
+        "start": 0,
+        "end": 2
+      },
+      {
+        "start": 2,
+        "end": 4
+      },
+      {
+        "start": 4,
+        "end": 6
+      }
+    ]
+  },
+  "wrap_html": [
+    {
+      "text": "hello world",
+      "w": 20,
+      "html": "hello world",
+      "n": 1
+    },
+    {
+      "text": "one two three four five six",
+      "w": 10,
+      "html": "one two<br/>three four<br/>five six",
+      "n": 3
+    },
+    {
+      "text": "<b>one two three four</b> five",
+      "w": 10,
+      "html": "<b>one two</b><br/><b>three four</b><br/>five",
+      "n": 3
+    },
+    {
+      "text": "start <b>mid end</b> tail more words here",
+      "w": 12,
+      "html": "start <b>mid</b><br/><b>end</b> tail<br/>more words<br/>here",
+      "n": 4
+    },
+    {
+      "text": "aa",
+      "w": 5,
+      "html": "aa",
+      "n": 1
+    },
+    {
+      "text": "aaaaa bbbbb ccccc ddddd eeeee fffff",
+      "w": 17,
+      "html": "aaaaa bbbbb ccccc<br/>ddddd eeeee fffff",
+      "n": 2
+    }
+  ],
+  "widths": [
+    {
+      "plain": "hello",
+      "box_w": 20,
+      "min_even": 20,
+      "topheavy": 20,
+      "natural_n": 1
+    },
+    {
+      "plain": "one two three four five six",
+      "box_w": 10,
+      "min_even": 10,
+      "topheavy": 10,
+      "natural_n": 3
+    },
+    {
+      "plain": "aaaa bbbb cccc dddd eeee",
+      "box_w": 8,
+      "min_even": 4.5,
+      "topheavy": 4.0,
+      "natural_n": 5
+    },
+    {
+      "plain": "The quick brown fox jumps over the lazy dog tonight",
+      "box_w": 20,
+      "min_even": 18.375,
+      "topheavy": 19.0,
+      "natural_n": 3
+    },
+    {
+      "plain": "short line",
+      "box_w": 40,
+      "min_even": 40,
+      "topheavy": 40,
+      "natural_n": 1
+    },
+    {
+      "plain": "abcdefghijklmnopqrstuvwxyz words after",
+      "box_w": 15,
+      "min_even": 15,
+      "topheavy": 15,
+      "natural_n": 2
+    },
+    {
+      "plain": "aaaaa bbbbb ccccc ddddd eeeee fffff",
+      "box_w": 20,
+      "min_even": 17.1875,
+      "topheavy": 17.0,
+      "natural_n": 2
+    },
+    {
+      "plain": "alpha beta gamma delta epsilon zeta eta",
+      "box_w": 18,
+      "min_even": 16.28125,
+      "topheavy": 16.0,
+      "natural_n": 3
+    }
+  ],
+  "search": {
+    "ideal": 10.0,
+    "box_w": 20.0,
+    "cap": 80.0,
+    "result": 14.0625,
+    "result_when_ideal_fits": 10.0
+  },
+  "even_one": [
+    {
+      "name": "single_bake",
+      "input": [
+        {
+          "plain": "aaaaa bbbbb ccccc ddddd eeeee fffff",
+          "lh": 10,
+          "extra": 0,
+          "ev": true
+        }
+      ],
+      "indices": [
+        0
+      ],
+      "box_w": 20,
+      "cap": 100,
+      "strength": 1.0,
+      "output": [
+        "aaaaa bbbbb ccccc<br/>ddddd eeeee fffff"
+      ]
+    },
+    {
+      "name": "single_strength_half",
+      "input": [
+        {
+          "plain": "aaaaa bbbbb ccccc ddddd eeeee fffff",
+          "lh": 10,
+          "extra": 0,
+          "ev": true
+        }
+      ],
+      "indices": [
+        0
+      ],
+      "box_w": 20,
+      "cap": 100,
+      "strength": 0.5,
+      "output": [
+        "aaaaa bbbbb ccccc<br/>ddddd eeeee fffff"
+      ]
+    },
+    {
+      "name": "single_strength_zero",
+      "input": [
+        {
+          "plain": "aaaaa bbbbb ccccc ddddd eeeee fffff",
+          "lh": 10,
+          "extra": 0,
+          "ev": true
+        }
+      ],
+      "indices": [
+        0
+      ],
+      "box_w": 20,
+      "cap": 100,
+      "strength": 0.0,
+      "output": [
+        "aaaaa bbbbb ccccc ddddd eeeee fffff"
+      ]
+    },
+    {
+      "name": "no_slack",
+      "input": [
+        {
+          "plain": "aaaaa bbbbb ccccc ddddd eeeee fffff",
+          "lh": 10,
+          "extra": 0,
+          "ev": true
+        }
+      ],
+      "indices": [
+        0
+      ],
+      "box_w": 20,
+      "cap": 20,
+      "strength": 1.0,
+      "output": [
+        "aaaaa bbbbb ccccc<br/>ddddd eeeee fffff"
+      ]
+    },
+    {
+      "name": "fits_one",
+      "input": [
+        {
+          "plain": "hello world",
+          "lh": 10,
+          "extra": 0,
+          "ev": true
+        }
+      ],
+      "indices": [
+        0
+      ],
+      "box_w": 20,
+      "cap": 100,
+      "strength": 1.0,
+      "output": [
+        "hello world"
+      ]
+    },
+    {
+      "name": "skip_chords",
+      "input": [
+        {
+          "plain": "[C]chord line stays",
+          "lh": 18,
+          "extra": 0,
+          "ev": false
+        },
+        {
+          "plain": "aaaaa bbbbb ccccc ddddd eeeee fffff",
+          "lh": 10,
+          "extra": 0,
+          "ev": true
+        }
+      ],
+      "indices": [
+        0,
+        1
+      ],
+      "box_w": 20,
+      "cap": 120,
+      "strength": 1.0,
+      "output": [
+        "[C]chord line stays",
+        "aaaaa bbbbb ccccc<br/>ddddd eeeee fffff"
+      ]
+    },
+    {
+      "name": "multi",
+      "input": [
+        {
+          "plain": "alpha beta gamma delta epsilon zeta",
+          "lh": 10,
+          "extra": 0,
+          "ev": true
+        },
+        {
+          "plain": "aaaaa bbbbb ccccc ddddd eeeee",
+          "lh": 10,
+          "extra": 0,
+          "ev": true
+        },
+        {
+          "plain": "short",
+          "lh": 10,
+          "extra": 0,
+          "ev": true
+        }
+      ],
+      "indices": [
+        0,
+        1,
+        2
+      ],
+      "box_w": 18,
+      "cap": 80,
+      "strength": 1.0,
+      "output": [
+        "alpha beta gamma delta epsilon zeta",
+        "aaaaa bbbbb ccccc ddddd eeeee",
+        "short"
+      ]
+    },
+    {
+      "name": "markup",
+      "input": [
+        {
+          "plain": "<b>aaaaa bbbbb ccccc ddddd eeeee fffff</b>",
+          "lh": 10,
+          "extra": 0,
+          "ev": true
+        }
+      ],
+      "indices": [
+        0
+      ],
+      "box_w": 20,
+      "cap": 100,
+      "strength": 1.0,
+      "output": [
+        "<b>aaaaa bbbbb ccccc</b><br/><b>ddddd eeeee fffff</b>"
+      ]
+    },
+    {
+      "name": "word_each",
+      "input": [
+        {
+          "plain": "aaaa bbbb cccc dddd eeee",
+          "lh": 10,
+          "extra": 0,
+          "ev": true
+        }
+      ],
+      "indices": [
+        0
+      ],
+      "box_w": 8,
+      "cap": 100,
+      "strength": 1.0,
+      "output": [
+        "aaaa<br/>bbbb<br/>cccc<br/>dddd<br/>eeee"
+      ]
+    }
+  ],
+  "even_slides": {
+    "groups": [
+      {
+        "indices": [
+          0,
+          1
+        ]
+      },
+      {
+        "indices": [
+          2
+        ]
+      }
+    ],
+    "input": [
+      "aaaaa bbbbb ccccc ddddd eeeee fffff",
+      "alpha beta gamma delta epsilon",
+      "zzzzz yyyyy xxxxx wwwww vvvvv uuuuu"
+    ],
+    "line_meta_lh": 10,
+    "box_w": 20,
+    "cap": 60,
+    "strength": 1.0,
+    "output": [
+      "aaaaa bbbbb ccccc<br/>ddddd eeeee fffff",
+      "alpha beta gamma<br/>delta epsilon",
+      "zzzzz yyyyy xxxxx<br/>wwwww vvvvv uuuuu"
+    ]
+  },
+  "strength_scale": [
+    {
+      "strength": 0.0,
+      "box_w": 100.0,
+      "target": 60.0,
+      "scaled": 100.0
+    },
+    {
+      "strength": 0.25,
+      "box_w": 100.0,
+      "target": 60.0,
+      "scaled": 90.0
+    },
+    {
+      "strength": 0.5,
+      "box_w": 100.0,
+      "target": 60.0,
+      "scaled": 80.0
+    },
+    {
+      "strength": 1.0,
+      "box_w": 100.0,
+      "target": 60.0,
+      "scaled": 60.0
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+#!/bin/sh
+# The deb's AppArmor profile (/etc/apparmor.d/seventhslide) in force now,
+# not only from the next start: where AppArmor runs, which is not everywhere.
+set -e
+
+if [ "$1" = configure ] && command -v apparmor_parser >/dev/null 2>&1 \
+    && [ -d /sys/kernel/security/apparmor ]; then
+    apparmor_parser -r -T -W /etc/apparmor.d/seventhslide || true
+fi
+
+exit 0

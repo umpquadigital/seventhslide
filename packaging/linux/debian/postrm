@@ -1,0 +1,10 @@
+#!/bin/sh
+# The deb's AppArmor profile taken out of the kernel when it is removed.
+set -e
+
+if [ "$1" = remove ] && command -v apparmor_parser >/dev/null 2>&1 \
+    && [ -d /sys/kernel/security/apparmor ] && [ -f /etc/apparmor.d/seventhslide ]; then
+    apparmor_parser -R /etc/apparmor.d/seventhslide || true
+fi
+
+exit 0

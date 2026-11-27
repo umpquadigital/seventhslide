@@ -1,0 +1,18 @@
+[
+  {
+    "title": "OpenSong Shaped",
+    "lyrics": "---[Verse:1]---\nVerse text\n\n---[Pre-Chorus:1]---\nPre chorus\n\n---[Ending:1]---\nEnding\n\n---[Intro:1]---\nIntro",
+    "verse_order": null,
+    "authors": [
+      {
+        "name": "Writer One",
+        "roles": []
+      }
+    ],
+    "songbook_name": "OS Book",
+    "songbook_entry": "12",
+    "key": "D",
+    "copyright": "",
+    "ccli_song_number": ""
+  }
+]

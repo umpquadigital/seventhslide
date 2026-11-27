@@ -1,0 +1,309 @@
+{
+  "chunk_verse": [
+    {
+      "id": "fits",
+      "chapter": 1,
+      "v": 1,
+      "text": "In the beginning was the Word and the Word was with God.",
+      "outputs": [
+        {
+          "w": 80,
+          "h": 100,
+          "size": 10,
+          "pad": 0
+        }
+      ],
+      "chunks": [
+        "1:1 In the beginning was the Word and the Word was with God."
+      ]
+    },
+    {
+      "id": "split",
+      "chapter": 3,
+      "v": 16,
+      "text": "In the beginning was the Word and the Word was with God.",
+      "outputs": [
+        {
+          "w": 20,
+          "h": 24,
+          "size": 10,
+          "pad": 0
+        }
+      ],
+      "chunks": [
+        "3:16 In the beginning was the",
+        "Word and the Word was with God."
+      ]
+    },
+    {
+      "id": "restrictive",
+      "chapter": 3,
+      "v": 16,
+      "text": "For God so loved the world that he gave his only Son that whoever believes in him should not perish but have eternal life.",
+      "outputs": [
+        {
+          "w": 100,
+          "h": 120,
+          "size": 10,
+          "pad": 0
+        },
+        {
+          "w": 18,
+          "h": 36,
+          "size": 10,
+          "pad": 0
+        }
+      ],
+      "chunks": [
+        "3:16 For God so loved the world that he gave his",
+        "only Son that whoever believes in him should not",
+        "perish but have eternal life."
+      ]
+    },
+    {
+      "id": "no_outputs",
+      "chapter": 1,
+      "v": 1,
+      "text": "Hello",
+      "outputs": [],
+      "chunks": [
+        "1:1 Hello"
+      ]
+    },
+    {
+      "id": "padding",
+      "chapter": 2,
+      "v": 5,
+      "text": "For God so loved the world that he gave his only Son that whoever believes in him should not perish but have eternal life.",
+      "outputs": [
+        {
+          "w": 44,
+          "h": 44,
+          "size": 10,
+          "pad": 2
+        }
+      ],
+      "chunks": [
+        "2:5 For God so loved the world that he gave his only Son that whoever believes in him should not perish but have eternal life."
+      ]
+    }
+  ],
+  "build_slides": [
+    {
+      "id": "Wide_plain",
+      "chapter": 3,
+      "show_verse_numbers": false,
+      "oc": {
+        "w": 100,
+        "h": 120,
+        "size": 10,
+        "pad": 0
+      },
+      "verse_chunks": [
+        {
+          "verse_num": 16,
+          "chunks": [
+            "3:16 For God so loved the world that he gave his",
+            "only Son that whoever believes in him should not",
+            "perish but have eternal life."
+          ]
+        },
+        {
+          "verse_num": 17,
+          "chunks": [
+            "3:17 For God did not send his Son into the world to",
+            "condemn the world."
+          ]
+        }
+      ],
+      "slides": [
+        "For God so loved the world that he gave his only Son that whoever believes in him should not perish but have eternal life.",
+        "For God did not send his Son into the world to condemn the world."
+      ],
+      "line_to_slide": [
+        0,
+        0,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "Narrow_plain",
+      "chapter": 3,
+      "show_verse_numbers": false,
+      "oc": {
+        "w": 18,
+        "h": 36,
+        "size": 10,
+        "pad": 0
+      },
+      "verse_chunks": [
+        {
+          "verse_num": 16,
+          "chunks": [
+            "3:16 For God so loved the world that he gave his",
+            "only Son that whoever believes in him should not",
+            "perish but have eternal life."
+          ]
+        },
+        {
+          "verse_num": 17,
+          "chunks": [
+            "3:17 For God did not send his Son into the world to",
+            "condemn the world."
+          ]
+        }
+      ],
+      "slides": [
+        "For God so loved the world that he gave his",
+        "only Son that whoever believes in him should not",
+        "perish but have eternal life.",
+        "For God did not send his Son into the world to",
+        "condemn the world."
+      ],
+      "line_to_slide": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "Wide_nums",
+      "chapter": 3,
+      "show_verse_numbers": true,
+      "oc": {
+        "w": 100,
+        "h": 120,
+        "size": 10,
+        "pad": 0
+      },
+      "verse_chunks": [
+        {
+          "verse_num": 16,
+          "chunks": [
+            "3:16 For God so loved the world that he gave his",
+            "only Son that whoever believes in him should not",
+            "perish but have eternal life."
+          ]
+        },
+        {
+          "verse_num": 17,
+          "chunks": [
+            "3:17 For God did not send his Son into the world to",
+            "condemn the world."
+          ]
+        }
+      ],
+      "slides": [
+        "3:16 For God so loved the world that he gave his only Son that whoever believes in him should not perish but have eternal life.",
+        "3:17 For God did not send his Son into the world to condemn the world."
+      ],
+      "line_to_slide": [
+        0,
+        0,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "Narrow_nums",
+      "chapter": 3,
+      "show_verse_numbers": true,
+      "oc": {
+        "w": 18,
+        "h": 36,
+        "size": 10,
+        "pad": 0
+      },
+      "verse_chunks": [
+        {
+          "verse_num": 16,
+          "chunks": [
+            "3:16 For God so loved the world that he gave his",
+            "only Son that whoever believes in him should not",
+            "perish but have eternal life."
+          ]
+        },
+        {
+          "verse_num": 17,
+          "chunks": [
+            "3:17 For God did not send his Son into the world to",
+            "condemn the world."
+          ]
+        }
+      ],
+      "slides": [
+        "3:16 For God so loved the world that he gave his",
+        "only Son that whoever believes in him should not",
+        "perish but have eternal life.",
+        "3:17 For God did not send his Son into the world to",
+        "condemn the world."
+      ],
+      "line_to_slide": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  ],
+  "plan": [
+    {
+      "id": "gen1",
+      "chapter": 1,
+      "verses": [
+        {
+          "verse_num": 1,
+          "text": "In the beginning God created the heavens and the earth."
+        },
+        {
+          "verse_num": 2,
+          "text": "The earth was without form and void."
+        }
+      ],
+      "outputs": [
+        {
+          "w": 25,
+          "h": 36,
+          "size": 10,
+          "pad": 0
+        }
+      ],
+      "verse_chunks": [
+        {
+          "verse_num": 1,
+          "chunks": [
+            "1:1 In the beginning God created the heavens and the earth."
+          ]
+        },
+        {
+          "verse_num": 2,
+          "chunks": [
+            "1:2 The earth was without form and void."
+          ]
+        }
+      ],
+      "plain_lines": [
+        "1:1 In the beginning God created the heavens and the earth.",
+        "1:2 The earth was without form and void."
+      ],
+      "line_labels": [
+        "1:1",
+        "1:2"
+      ],
+      "slides": [
+        "In the beginning God created the heavens and the earth.",
+        "The earth was without form and void."
+      ],
+      "line_to_slide": [
+        0,
+        1
+      ]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "name": "Test OpenSong",
+  "copyright": "© Test",
+  "verses": [
+    {
+      "book": "Psalms",
+      "chapter": 23,
+      "verse": 1,
+      "text": "The LORD is my shepherd; I shall not want."
+    },
+    {
+      "book": "Psalms",
+      "chapter": 23,
+      "verse": 2,
+      "text": "He maketh me to lie down in green pastures."
+    },
+    {
+      "book": "1 John",
+      "chapter": 1,
+      "verse": 1,
+      "text": "That which was from the beginning."
+    }
+  ]
+}

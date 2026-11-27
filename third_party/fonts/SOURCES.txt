@@ -1,0 +1,34 @@
+Fetched from Google Fonts by tools/fetch_bundled_fonts.py, as served,
+except where a line says otherwise.
+The licence of each family is the OFL.txt in its folder.
+
+Abril Fatface	Version 1.001
+Anton	Version 2.116
+Archivo Black	Version 1.006
+Bebas Neue	Version 2.000
+Bitter	Version 3.021
+Caladea	Version 1.001
+Carlito	Version 1.104
+Caveat	Version 2.000
+Comic Neue	Version 2.003
+Dancing Script	Version 2.001
+EB Garamond	Regular and Italic: EB Garamond 08 Version 0.016 (Georg Duffner, 2012); Bold and Bold Italic: Version 1.003 from Google Fonts
+Gelasio	Version 1.008
+Great Vibes	Version 1.103
+Libre Baskerville	Version 2.005
+Lobster	Version 2.100
+Lora	Version 3.008
+Merriweather	Version 2.100
+Montserrat	Version 9.000
+Montserrat Light	Version 9.000
+Montserrat Medium	Version 9.000
+Nunito	Version 3.602
+Open Sans	Version 3.003
+Open Sans Light	Version 3.003
+Open Sans SemiBold	Version 3.003
+Oswald	Version 4.103
+Pacifico	Version 3.001
+Playfair Display	Version 1.203
+Poppins	4.004
+Raleway	Version 4.026
+Roboto	Version 3.015

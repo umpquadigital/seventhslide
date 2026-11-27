@@ -1,0 +1,247 @@
+# SeventhSlide QML operator UI.
+
+set_source_files_properties(
+    Style.qml
+    Modals.qml
+    ContentTypes.qml
+    TransitionKinds.qml
+    PROPERTIES QT_QML_SINGLETON_TYPE TRUE
+)
+
+qt_add_library(seventhslide_ui STATIC)
+
+# The QML files sit in folders by area (controls/, dialogs/, editors/...); Qt
+# gives each folder a qmldir that imports the module, so they see each other.
+qt_policy(SET QTP0004 NEW)
+
+qt_add_qml_module(seventhslide_ui
+    URI SeventhSlide
+    VERSION 1.0
+    OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/qml/SeventhSlide"
+    # The C++ item types (OutputPreviewItem, CanvasInteract, ...); see
+    # src/app/CMakeLists.txt.
+    IMPORTS SeventhSlide.Native
+    QML_FILES
+        Main.qml
+        Style.qml
+        ContentTypes.qml
+        TransitionKinds.qml
+        controls/AppButton.qml
+        controls/AppScrollBar.qml
+        dialogs/AppDialog.qml
+        dialogs/AppPromptDialog.qml
+        dialogs/DiscardConfirm.qml
+        dialogs/ConvertDialog.qml
+        dialogs/SongImportDialog.qml
+        dialogs/DownloadDialog.qml
+        dialogs/ExportImagesDialog.qml
+        dialogs/FreeformImportDialog.qml
+        dialogs/WebPageDialog.qml
+        dialogs/AudioFileDialog.qml
+        dialogs/StreamDialog.qml
+        controls/ModalScrim.qml
+        controls/OutputPickField.qml
+        controls/SearchField.qml
+        Modals.qml
+        controls/ColorPicker.qml
+        operator/ServicePanel.qml
+        operator/ServiceItemList.qml
+        operator/ServiceToolButton.qml
+        operator/ServiceToolbar.qml
+        operator/LibraryPanel.qml
+        operator/LibraryTab.qml
+        operator/LibraryRowPress.qml
+        operator/LibraryMarqueeArea.qml
+        operator/SongsTab.qml
+        operator/BiblesTab.qml
+        operator/MediaBrowser.qml
+        operator/MediaBrowserEntryArea.qml
+        operator/MediaBrowserRow.qml
+        operator/MediaBrowserTile.qml
+        operator/ControllerAddressBar.qml
+        operator/ControllerArrivalNote.qml
+        operator/ControllerColumn.qml
+        operator/ControllerMenuDangerRow.qml
+        operator/ControllerMenuOptionRow.qml
+        operator/ControllerOptionsMenu.qml
+        operator/ControllerSeekBar.qml
+        operator/ControllerStackStrip.qml
+        operator/ControllerTakeColumn.qml
+        operator/ControllerTransportBar.qml
+        operator/ControllerWell.qml
+        operator/TakeTransitionMenu.qml
+        operator/MediaPreviewFrame.qml
+        operator/LiveSourcesTab.qml
+        operator/OutputsPanel.qml
+        operator/DockArea.qml
+        operator/DockPanel.qml
+        operator/DockTitleBar.qml
+        operator/AppBar.qml
+        editors/song/SongEditDialog.qml
+        editors/song/SongEditState.qml
+        dialogs/ThemePickerDialog.qml
+        dialogs/SaveAsFreeformDialog.qml
+        dialogs/ServicePickerDialog.qml
+        dialogs/ServicesState.qml
+        dialogs/ServiceTableRow.qml
+        dialogs/ServiceSettingsDialog.qml
+        dialogs/ServiceGeneralPage.qml
+        dialogs/ServiceGeneralState.qml
+        dialogs/ServiceExportPage.qml
+        dialogs/ServiceExportState.qml
+        editors/output/OutputEditDialog.qml
+        editors/output/OutputEditState.qml
+        editors/output/OutputDestinationsState.qml
+        editors/output/OutputGeneralPanel.qml
+        editors/output/OutputDestinationMenu.qml
+        editors/output/DestinationPicker.qml
+        editors/shared/StageBox.qml
+        editors/shared/CanvasStage.qml
+        controls/TransparencyGrid.qml
+        settings/AppSettingsDialog.qml
+        settings/BibleTableRow.qml
+        controls/TableGroove.qml
+        controls/TableHeaderBar.qml
+        controls/TableColumnHead.qml
+        controls/TableRow.qml
+        controls/TableTextCell.qml
+        controls/DialogField.qml
+        controls/DropdownField.qml
+        controls/SettingRow.qml
+        controls/IconToggleRow.qml
+        controls/IconToolButton.qml
+        dialogs/ThemeSlot.qml
+        dialogs/ScreenThemeSlots.qml
+        controls/SectionTitle.qml
+        dialogs/ThemeMapEditor.qml
+        controls/ToggleSwitch.qml
+        controls/CheckMark.qml
+        controls/StackTargetButton.qml
+        controls/StackMenuRow.qml
+        controls/StackSendMenu.qml
+        controls/MarqueeRect.qml
+        controls/LazyLoader.qml
+        controls/ListSelection.qml
+        controls/ReorderDrag.qml
+        controls/ReorderMouseArea.qml
+        controls/MenuDismissArea.qml
+        editors/shared/CanvasEditorKeys.qml
+        editors/slide/SlideEditorWindow.qml
+        editors/slide/SlideEditState.qml
+        editors/slide/SlideStage.qml
+        editors/slide/SlideSorter.qml
+        editors/slide/SlideSidebar.qml
+        editors/slide/SidebarSection.qml
+        editors/slide/SidebarRow.qml
+        editors/slide/SidebarLineType.qml
+        editors/slide/SidebarNumber.qml
+        editors/slide/SidebarToggle.qml
+        editors/slide/SidebarColor.qml
+        editors/slide/SidebarChoice.qml
+        editors/slide/SidebarStyle.qml
+        editors/slide/FieldsWindow.qml
+        editors/slide/RibbonBar.qml
+        editors/slide/RibbonHome.qml
+        editors/slide/RibbonInsert.qml
+        editors/slide/RibbonDesign.qml
+        editors/slide/RibbonTransitions.qml
+        editors/slide/RibbonCues.qml
+        editors/slide/RibbonGroup.qml
+        editors/slide/RibbonButton.qml
+        editors/slide/RibbonStrip.qml
+        editors/slide/RibbonChoice.qml
+        editors/slide/RibbonMenuButton.qml
+        editors/slide/RibbonGallery.qml
+        editors/slide/RibbonShapes.qml
+        editors/slide/RibbonAnimations.qml
+        editors/slide/RibbonField.qml
+        editors/slide/RibbonDropdown.qml
+        editors/slide/RibbonSwatch.qml
+        controls/AppMenu.qml
+        controls/ChecklistField.qml
+        controls/DateField.qml
+        controls/FormRow.qml
+        controls/GroupHeading.qml
+        controls/GroupList.qml
+        controls/GroupOpenBody.qml
+        controls/GroupRow.qml
+        controls/GroupDisclosureRow.qml
+        controls/EmptyListNote.qml
+        controls/ListRowAccent.qml
+        controls/HandleTile.qml
+        controls/IconPickerButton.qml
+        controls/PicturePickerButton.qml
+        controls/Avatar.qml
+        controls/BadgeText.qml
+        controls/ListWell.qml
+        controls/MenuHeading.qml
+        controls/MenuItemRow.qml
+        controls/MenuRule.qml
+        controls/MenuSection.qml
+        controls/PageHeader.qml
+        controls/PanelTabStrip.qml
+        controls/VerticalFader.qml
+        operator/AudioMixerPanel.qml
+        dialogs/CollaborationWindow.qml
+        dialogs/CollaborationPanel.qml
+        operator/MixerStrip.qml
+        controls/OptionField.qml
+        controls/PickRow.qml
+        controls/ArrivalMark.qml
+        controls/PicturePlaceholder.qml
+        controls/ProgressRing.qml
+        controls/ScrollPage.qml
+        controls/SearchFilterField.qml
+        controls/SegmentedControl.qml
+        controls/StatusBadge.qml
+        controls/TagChip.qml
+        controls/TagField.qml
+        controls/WellPane.qml
+        controls/WindowShell.qml
+        dialogs/ThemeGalleryView.qml
+        editors/output/OutputThemeGallery.qml
+        editors/output/OutputDestinationsPanel.qml
+        editors/output/OutputStreamSettings.qml
+        settings/ComputerEditDialog.qml
+        settings/SettingsGeneralPanel.qml
+        settings/SettingsGeneralState.qml
+        settings/SettingsLibraryPanel.qml
+        settings/SettingsOutputsPanel.qml
+        settings/SettingsOutputsState.qml
+        settings/SettingsLibraryState.qml
+        settings/SettingsStacksPanel.qml
+        settings/SettingsRemotePanel.qml
+        settings/SettingsRemoteState.qml
+        settings/SettingsSyncPanel.qml
+        settings/SettingsSyncState.qml
+        settings/SettingsBiblesPanel.qml
+        settings/SettingsBiblesState.qml
+        settings/SettingsFontsPanel.qml
+        settings/SettingsFontsState.qml
+        settings/SettingsStacksState.qml
+        settings/SettingsToolsPanel.qml
+        editors/song/SongLyricsPanel.qml
+        editors/song/SongTitleOrder.qml
+        editors/song/SongVerseEditor.qml
+        editors/song/SongVerseList.qml
+        editors/song/SongVersePicker.qml
+        editors/song/SongVerseTools.qml
+        editors/song/SongDetailsPanel.qml
+        editors/song/SongTopicsPanel.qml
+        editors/song/SongThemesPanel.qml
+        js/Reorder.js
+        js/LibraryTabs.js
+        js/ThemeGallery.js
+        js/ThemeMap.js
+        js/MultiSelect.js
+        js/Stacks.js
+)
+
+target_link_libraries(seventhslide_ui
+    PUBLIC
+        Qt6::Quick
+        Qt6::QuickLayouts
+        Qt6::QuickDialogs2
+)
+
+add_library(SeventhSlide::ui ALIAS seventhslide_ui)

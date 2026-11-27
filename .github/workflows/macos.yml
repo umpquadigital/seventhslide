@@ -1,0 +1,60 @@
+name: macOS
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    # macOS 26 at least: the app needs it (CMakeLists.txt,
+    # CMAKE_OSX_DEPLOYMENT_TARGET), and Homebrew's bottles there are built
+    # for it.
+    runs-on: macos-26
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The tool scripts run on macOS's own Python too (3.9).
+      - name: Layering, unused and tests
+        run: |
+          /usr/bin/python3 tools/core_layers.py
+          /usr/bin/python3 tools/controller_deps.py
+          /usr/bin/python3 tools/qml_unused.py
+          /usr/bin/python3 tools/test_sleeps.py
+          /usr/bin/python3 tools/hidden_tags.py
+
+      - name: Install dependencies
+        run: |
+          brew install cmake ninja pkgconf qt mpv ffmpeg openssl
+          echo "HOMEBREW_PREFIX=$(brew --prefix)" >> "$GITHUB_ENV"
+
+      # Linux answers at all of 127.0.0.0/8; macOS only at the addresses on
+      # lo0. The network tests that play other computers need these.
+      - name: Loopback addresses for the network tests
+        run: |
+          sudo ifconfig lo0 alias 127.0.0.2 up
+          for i in 1 2 3 4 5 6 7 8; do sudo ifconfig lo0 alias "127.0.1.$i" up; done
+
+      - name: Configure
+        run: cmake --preset macos-ci -DCMAKE_PREFIX_PATH="$HOMEBREW_PREFIX/opt/qt"
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --test-dir build --output-on-failure --timeout 300 --parallel 3
+
+      # SeventhSlide.app with Qt and the Homebrew libraries inside it, signed
+      # ad hoc (no Developer ID): what another Mac runs.
+      - name: Package
+        run: cmake --build build --target macos_app
+
+      - name: Keep the disk image
+        uses: actions/upload-artifact@v4
+        with:
+          name: SeventhSlide-macOS
+          path: build/deploy/SeventhSlide.dmg
+          if-no-files-found: error

@@ -1,0 +1,393 @@
+{
+  "token_key": [
+    {
+      "in": "Title",
+      "out": "title"
+    },
+    {
+      "in": " song-title ",
+      "out": "song-title"
+    },
+    {
+      "in": "CCLI-Number",
+      "out": "ccli-number"
+    }
+  ],
+  "substitute": [
+    {
+      "text": "Hello",
+      "song_vars": {
+        "song-title": "Amazing Grace",
+        "authors": "Newton"
+      },
+      "out": "Hello"
+    },
+    {
+      "text": "{song-title}",
+      "song_vars": {
+        "song-title": "Amazing Grace",
+        "authors": "Newton"
+      },
+      "out": "Amazing Grace"
+    },
+    {
+      "text": "{song-title} — {authors}",
+      "song_vars": {
+        "song-title": "Amazing Grace",
+        "authors": "Newton"
+      },
+      "out": "Amazing Grace — Newton"
+    },
+    {
+      "text": "{songbook} - #{songbook-number}",
+      "song_vars": {
+        "song-title": "Amazing Grace",
+        "authors": "Newton"
+      },
+      "out": " - #"
+    },
+    {
+      "text": "Hymn #{songbook-number}",
+      "song_vars": {
+        "song-title": "Amazing Grace",
+        "authors": "Newton"
+      },
+      "out": "Hymn #"
+    },
+    {
+      "text": "Hymn #{-songbook-number}",
+      "song_vars": {
+        "song-title": "Amazing Grace",
+        "authors": "Newton"
+      },
+      "out": ""
+    },
+    {
+      "text": "{song-title}\nHymn #{songbook-number}",
+      "song_vars": {
+        "song-title": "Amazing Grace",
+        "authors": "Newton"
+      },
+      "out": "Amazing Grace\nHymn #"
+    },
+    {
+      "text": "{song-title}\nHymn #{-songbook-number}",
+      "song_vars": {
+        "song-title": "Amazing Grace",
+        "authors": "Newton"
+      },
+      "out": "Amazing Grace"
+    },
+    {
+      "text": "literal and {unknown}",
+      "song_vars": {
+        "song-title": "Amazing Grace",
+        "authors": "Newton"
+      },
+      "out": "literal and {unknown}"
+    },
+    {
+      "text": "{song-title}\n{authors}",
+      "song_vars": {
+        "song-title": "Amazing Grace",
+        "authors": "Newton"
+      },
+      "out": "Amazing Grace\nNewton"
+    }
+  ],
+  "layout_id": [
+    {
+      "map": {
+        "Main": {
+          "layout": 7
+        }
+      },
+      "out": 7
+    },
+    {
+      "map": {
+        "Other": {
+          "layout": 7
+        }
+      },
+      "out": null
+    },
+    {
+      "map": {},
+      "out": null
+    }
+  ],
+  "theme_title_boxes": [
+    {
+      "theme": {
+        "title_slide": {
+          "text_boxes": [
+            {
+              "x": 1
+            }
+          ]
+        }
+      },
+      "out": [
+        {
+          "x": 1
+        }
+      ]
+    },
+    {
+      "theme": {},
+      "out": []
+    },
+    {
+      "theme": {
+        "title_slide": {}
+      },
+      "out": []
+    }
+  ],
+  "title_scene": {
+    "boxes": [
+      {
+        "x": 100,
+        "y": 200,
+        "w": 800,
+        "h": 200,
+        "font_family": "Helvetica",
+        "font_size": 72,
+        "font_color": "#ffffff",
+        "text_align": "center",
+        "vertical_align": "middle",
+        "line_height": 1.1,
+        "line_gap": 0,
+        "lines": [
+          {
+            "text": "{song-title}",
+            "scale": 100,
+            "bold": true,
+            "italic": false,
+            "color": ""
+          },
+          {
+            "text": "{authors}",
+            "scale": 50,
+            "bold": false,
+            "italic": true,
+            "color": "#cccccc"
+          },
+          {
+            "text": "{songbook} - #{songbook-number}",
+            "scale": 40,
+            "bold": false,
+            "italic": false,
+            "color": ""
+          }
+        ]
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 100,
+        "h": 50,
+        "font_family": "Arial",
+        "font_size": 20,
+        "font_color": "#fff",
+        "text_align": "left",
+        "vertical_align": "top",
+        "line_height": 1.15,
+        "line_gap": 10,
+        "lines": [
+          {
+            "text": "always visible",
+            "scale": 100,
+            "bold": false,
+            "italic": false,
+            "color": ""
+          }
+        ]
+      }
+    ],
+    "song_vars": {
+      "song-title": "Be Thou My Vision",
+      "authors": "Irish traditional",
+      "songbook": "",
+      "songbook-number": ""
+    },
+    "scene": {
+      "boxes": [
+        {
+          "x": 100.0,
+          "y": 200.0,
+          "w": 800.0,
+          "h": 200.0,
+          "font_family": "Helvetica",
+          "font_size": 72,
+          "font_color": "#ffffff",
+          "text_align": "center",
+          "vertical_align": "middle",
+          "line_height": 1.1,
+          "line_gap": 0,
+          "lines": [
+            {
+              "text": "Be Thou My Vision",
+              "scale": 100,
+              "bold": true,
+              "italic": false,
+              "color": ""
+            },
+            {
+              "text": "Irish traditional",
+              "scale": 50,
+              "bold": false,
+              "italic": true,
+              "color": "#cccccc"
+            },
+            {
+              "text": " - #",
+              "scale": 40,
+              "bold": false,
+              "italic": false,
+              "color": ""
+            }
+          ]
+        },
+        {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 100.0,
+          "h": 50.0,
+          "font_family": "Arial",
+          "font_size": 20,
+          "font_color": "#fff",
+          "text_align": "left",
+          "vertical_align": "top",
+          "line_height": 1.15,
+          "line_gap": 10,
+          "lines": [
+            {
+              "text": "always visible",
+              "scale": 100,
+              "bold": false,
+              "italic": false,
+              "color": ""
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "ann_scene": {
+    "boxes": [
+      {
+        "x": 50,
+        "y": 50,
+        "w": 900,
+        "h": 400,
+        "font_family": "Helvetica",
+        "font_size": 48,
+        "font_color": "#ffffff",
+        "text_align": "center",
+        "vertical_align": "middle",
+        "line_height": 1.2,
+        "line_gap": 20,
+        "lines": [
+          {
+            "text": "{headline}",
+            "scale": 120,
+            "bold": true,
+            "italic": false,
+            "color": ""
+          },
+          {
+            "text": "{body}",
+            "scale": 100,
+            "bold": false,
+            "italic": false,
+            "color": ""
+          }
+        ]
+      }
+    ],
+    "slots": [
+      "headline",
+      "body"
+    ],
+    "values": [
+      "Potluck Tonight",
+      "Bring a dish to share"
+    ],
+    "scene": {
+      "boxes": [
+        {
+          "x": 50.0,
+          "y": 50.0,
+          "w": 900.0,
+          "h": 400.0,
+          "font_family": "Helvetica",
+          "font_size": 48,
+          "font_color": "#ffffff",
+          "text_align": "center",
+          "vertical_align": "middle",
+          "line_height": 1.2,
+          "line_gap": 20,
+          "lines": [
+            {
+              "text": "Potluck Tonight",
+              "scale": 120,
+              "bold": true,
+              "italic": false,
+              "color": ""
+            },
+            {
+              "text": "Bring a dish to share",
+              "scale": 100,
+              "bold": false,
+              "italic": false,
+              "color": ""
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "empty_scene": {
+    "boxes": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 10,
+        "h": 10,
+        "font_family": "H",
+        "font_size": 12,
+        "font_color": "#fff",
+        "text_align": "center",
+        "vertical_align": "middle",
+        "line_height": 1.15,
+        "line_gap": 0,
+        "lines": [
+          {
+            "text": "{song-title}",
+            "scale": 100,
+            "bold": false,
+            "italic": false,
+            "color": ""
+          }
+        ]
+      }
+    ],
+    "scene": {
+      "boxes": []
+    }
+  },
+  "assign_title_slides": {
+    "groups_is_title": [
+      true,
+      false,
+      true
+    ],
+    "overlay_nonempty": [
+      true,
+      false,
+      true
+    ]
+  }
+}

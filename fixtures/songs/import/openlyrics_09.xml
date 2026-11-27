@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<song xmlns="http://openlyrics.info/namespace/2009/song" version="0.9" xml:lang="en"
+      createdIn="OpenLP 3.1" modifiedIn="OpenLP 3.1" modifiedDate="2024-01-01T10:00:00">
+  <properties>
+    <titles>
+      <title lang="de">Erstaunliche Gnade</title>
+      <title lang="en" original="true">Amazing Grace</title>
+    </titles>
+    <tempo type="bpm">90</tempo>
+    <verseOrder>i1 v1 c1 v1</verseOrder>
+  </properties>
+  <lyrics>
+    <instrument name="i1"><beat><chord root="G"/></beat></instrument>
+    <verse name="v1" lang="en">
+      <lines>
+        <comment>Softly.</comment>
+        <chord root="G">A</chord>mazing <chord root="C" structure="maj7">grace</chord> how<br/>
+        sweet the <chord root="D" bass="F#"/>sound
+      </lines>
+    </verse>
+    <verse name="v1" lang="de">
+      <lines>Erstaunliche Gnade</lines>
+    </verse>
+    <verse name="c1" lang="en">
+      <lines part="men">My chains are gone</lines>
+      <lines repeat="2"><chord root="E" structure="min"/>Set free</lines>
+    </verse>
+  </lyrics>
+</song>

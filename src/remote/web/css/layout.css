@@ -1,0 +1,217 @@
+/* Where things sit: the PIN gate, the left column's two docked panels and
+   the Controller beside them; on a narrow screen, the nav bar and the drawer
+   that holds the panels. */
+
+/* --- PIN gate -------------------------------------------------------------- */
+.gate {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--page-bg);
+}
+.gate-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 340px;
+  padding: 24px;
+  border: 1px solid var(--well-edge);
+  border-radius: var(--radius);
+  background: var(--dialog-bg);
+  text-align: center;
+}
+.gate-mark { width: 28px; height: 28px; margin: 0 auto; color: var(--text-muted); stroke-width: 2; }
+.gate-card h1 { color: var(--text-strong); font-size: var(--font-heading); font-weight: 700; }
+.gate-hint { color: var(--text-caption); font-size: var(--font-body); }
+.gate-error { color: var(--text-danger); font-size: var(--font-body); }
+.gate-pin {
+  width: 100%;
+  height: var(--remote-touch-h);
+  border: 1px solid var(--control-edge);
+  border-radius: var(--radius-small);
+  background: var(--field-face);
+  color: var(--search-ink);
+  font-size: 20px;
+  letter-spacing: 0.35em;
+  text-align: center;
+}
+.gate-pin:focus { outline: none; border-color: var(--focus-edge); background: var(--field-face-focus); }
+.gate-card .btn { height: var(--remote-touch-h); }
+
+/* --- The app --------------------------------------------------------------- */
+#app {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Said while the connection is down (StatusBadge's warning). */
+.offline {
+  flex-shrink: 0;
+  padding: 5px;
+  background: color-mix(in srgb, var(--text-warning) 22%, var(--page-bg));
+  border-bottom: 1px solid color-mix(in srgb, var(--text-warning) 45%, var(--page-bg));
+  color: var(--text-warning);
+  font-size: var(--font-body);
+  font-weight: 700;
+  text-align: center;
+}
+
+.main-container {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--remote-left-w) 1fr;
+  overflow: hidden;
+}
+
+/* --- The left column: Service over Library, as DockPanels ----------------- */
+.col-left {
+  --split-top: 0.45;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--panel-bg);
+  border-right: 1px solid var(--border);
+}
+.left-panel-top {
+  flex: var(--split-top) 1 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.left-panel-bottom {
+  flex: calc(1 - var(--split-top)) 1 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+}
+.panel-body {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+/* A panel folded away: its title bar alone, and the other takes the rest. */
+.col-left.collapsed-top .left-panel-top,
+.col-left.collapsed-bottom .left-panel-bottom { flex: 0 0 auto; }
+.col-left.collapsed-top .left-panel-top .panel-body,
+.col-left.collapsed-bottom .left-panel-bottom .panel-body { display: none; }
+.col-left.collapsed-top:not(.collapsed-bottom) .left-panel-bottom,
+.col-left.collapsed-bottom:not(.collapsed-top) .left-panel-top { flex: 1 1 auto; }
+
+/* A panel's title bar (DockTitleBar): a press collapses the panel. */
+.dock-title {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  height: var(--dock-header-h);
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--header-bg);
+  color: var(--text-bright);
+  font-size: var(--font-ui);
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+@media (hover: hover) {
+  .dock-title:hover { background: var(--dock-header-hover); }
+}
+
+/* The line between the two panels, dragged to resize them. */
+.panel-divider {
+  position: relative;
+  z-index: 3;
+  flex: 0 0 0;
+  height: 0;
+  cursor: row-resize;
+  touch-action: none;
+}
+.panel-divider::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: -4px;
+  height: 9px;
+}
+.col-left.collapsed-top .panel-divider,
+.col-left.collapsed-bottom .panel-divider { display: none; }
+.col-left.left-resizing { cursor: row-resize; user-select: none; }
+.col-left.left-resizing * { pointer-events: none; }
+
+/* --- The Controller column ------------------------------------------------- */
+.col-center {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 12px 12px;
+  overflow: hidden;
+  background: var(--page-bg);
+}
+
+/* --- Narrow screens: a nav bar, and the panels in a drawer ----------------- */
+.mobile-nav, .drawer-backdrop { display: none; }
+
+@media (max-width: 1024px) {
+  .mobile-nav {
+    position: relative;
+    z-index: 110;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: calc(var(--remote-nav-h) + var(--remote-safe-top));
+    padding: var(--remote-safe-top) calc(12px + var(--remote-safe-right)) 0 calc(12px + var(--remote-safe-left));
+    border-bottom: 1px solid var(--border);
+    background: var(--header-bg);
+  }
+  .mobile-nav-btn { height: 34px; }
+  body.drawer-left-open .mobile-nav-btn { color: var(--text-strong); }
+  .mobile-nav-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-bright);
+    font-size: var(--font-ui);
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .main-container { grid-template-columns: 1fr; }
+  .col-center { padding-bottom: calc(12px + var(--remote-safe-bottom)); }
+
+  /* The drawer covers the page under the bar, up to a comfortable width. */
+  .col-left {
+    position: fixed;
+    top: calc(var(--remote-nav-h) + var(--remote-safe-top));
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    width: min(420px, 100vw);
+    padding-bottom: var(--remote-safe-bottom);
+    padding-left: var(--remote-safe-left);
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: 0 0 24px color-mix(in srgb, var(--shadow) 60%, transparent);
+  }
+  body.drawer-left-open .col-left { transform: none; }
+  .drawer-backdrop {
+    position: fixed;
+    inset: calc(var(--remote-nav-h) + var(--remote-safe-top)) 0 0 0;
+    z-index: 95;
+    background: var(--modal-scrim);
+  }
+  body.drawer-left-open .drawer-backdrop { display: block; }
+}

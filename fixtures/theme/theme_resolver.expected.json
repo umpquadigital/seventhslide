@@ -1,0 +1,594 @@
+{
+  "schema": "seventhslide.theme_resolver.v2",
+  "output": {
+    "id": "out-main",
+    "name": "Main",
+    "category_defaults": {
+      "song": {
+        "theme": "t_default",
+        "bg": "b_default"
+      },
+      "bible": {
+        "theme": "t_big",
+        "bg": "b_blue"
+      },
+      "media": {
+        "theme": "t_ann"
+      }
+    }
+  },
+  "cases": [
+    {
+      "name": "song_defaults_only",
+      "why": "A library song with nothing picked takes the song defaults.",
+      "selection": {
+        "mode": "song",
+        "service_item_type": null,
+        "service_theme_map": {},
+        "content_theme_map": {},
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_default",
+        "bg": "b_default"
+      },
+      "text_theme_id": "t_default",
+      "style_spotlight": {
+        "font_size": 48,
+        "align": "center",
+        "highlight_color": "#ffffff",
+        "background_type": "color",
+        "background_color": "#000000"
+      }
+    },
+    {
+      "name": "song_content_text_override",
+      "why": "A theme chip's song theme wins over the default.",
+      "selection": {
+        "mode": "song",
+        "service_item_type": null,
+        "service_theme_map": {},
+        "content_theme_map": {
+          "out-main": {
+            "song": {
+              "theme": "t_big"
+            }
+          }
+        },
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_big",
+        "bg": "b_default"
+      },
+      "text_theme_id": "t_big",
+      "style_spotlight": {
+        "font_size": 72,
+        "align": "left",
+        "highlight_color": "#ffcc00",
+        "background_type": "color",
+        "background_color": "#000000"
+      }
+    },
+    {
+      "name": "service_song_content_plus_service_bg",
+      "why": "A rundown song: its chip's theme, the service's song background.",
+      "selection": {
+        "mode": "service",
+        "service_item_type": "song",
+        "service_theme_map": {
+          "out-main": {
+            "song": {
+              "bg": "b_blue"
+            }
+          }
+        },
+        "content_theme_map": {
+          "out-main": {
+            "song": {
+              "theme": "t_big"
+            }
+          }
+        },
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_big",
+        "bg": "b_blue"
+      },
+      "text_theme_id": "t_big",
+      "style_spotlight": {
+        "font_size": 72,
+        "align": "left",
+        "highlight_color": "#ffcc00",
+        "background_type": "color",
+        "background_color": "#003366"
+      }
+    },
+    {
+      "name": "service_bible_item_override",
+      "why": "A rundown passage's own Bible picks win.",
+      "selection": {
+        "mode": "service",
+        "service_item_type": "bible",
+        "service_theme_map": {},
+        "content_theme_map": {
+          "out-main": {
+            "bible": {
+              "theme": "t_ann",
+              "bg": "b_img"
+            }
+          }
+        },
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_ann",
+        "bg": "b_img"
+      },
+      "text_theme_id": "t_ann",
+      "style_spotlight": {
+        "font_size": 36,
+        "align": "center",
+        "highlight_color": "#ffffff",
+        "background_type": "image",
+        "background_color": "#000000"
+      }
+    },
+    {
+      "name": "priority_global_wins",
+      "why": "With global first, the defaults win over the content's picks.",
+      "selection": {
+        "mode": "song",
+        "service_item_type": null,
+        "service_theme_map": {},
+        "content_theme_map": {
+          "out-main": {
+            "song": {
+              "theme": "t_big",
+              "bg": "b_img"
+            }
+          }
+        },
+        "theme_priority": [
+          "global",
+          "service",
+          "content"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_default",
+        "bg": "b_default"
+      },
+      "text_theme_id": "t_default",
+      "style_spotlight": {
+        "font_size": 48,
+        "align": "center",
+        "highlight_color": "#ffffff",
+        "background_type": "color",
+        "background_color": "#000000"
+      }
+    },
+    {
+      "name": "empty_text_id_transparent",
+      "why": "A blank theme id leaves the theme to the next tier.",
+      "selection": {
+        "mode": "song",
+        "service_item_type": null,
+        "service_theme_map": {},
+        "content_theme_map": {
+          "out-main": {
+            "song": {
+              "theme": "",
+              "bg": "b_blue"
+            }
+          }
+        },
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_default",
+        "bg": "b_blue"
+      },
+      "text_theme_id": "t_default",
+      "style_spotlight": {
+        "font_size": 48,
+        "align": "center",
+        "highlight_color": "#ffffff",
+        "background_type": "color",
+        "background_color": "#003366"
+      }
+    },
+    {
+      "name": "service_song_no_double_apply",
+      "why": "A chip's song theme wins over the service's.",
+      "selection": {
+        "mode": "service",
+        "service_item_type": "song",
+        "service_theme_map": {
+          "out-main": {
+            "song": {
+              "theme": "t_ann"
+            }
+          }
+        },
+        "content_theme_map": {
+          "out-main": {
+            "song": {
+              "theme": "t_big",
+              "bg": "b_img"
+            }
+          }
+        },
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_big",
+        "bg": "b_img"
+      },
+      "text_theme_id": "t_big",
+      "style_spotlight": {
+        "font_size": 72,
+        "align": "left",
+        "highlight_color": "#ffcc00",
+        "background_type": "image",
+        "background_color": "#000000"
+      }
+    },
+    {
+      "name": "malformed_priority_falls_back",
+      "why": "A priority that is not a permutation is the default one.",
+      "selection": {
+        "mode": "song",
+        "service_item_type": null,
+        "service_theme_map": {},
+        "content_theme_map": {
+          "out-main": {
+            "song": {
+              "theme": "t_big"
+            }
+          }
+        },
+        "theme_priority": [
+          "content",
+          "content",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_big",
+        "bg": "b_default"
+      },
+      "text_theme_id": "t_big",
+      "style_spotlight": {
+        "font_size": 72,
+        "align": "left",
+        "highlight_color": "#ffcc00",
+        "background_type": "color",
+        "background_color": "#000000"
+      }
+    },
+    {
+      "name": "video_on_media_default",
+      "why": "Media takes the media default theme, and no background.",
+      "selection": {
+        "mode": "video",
+        "service_item_type": null,
+        "service_theme_map": {},
+        "content_theme_map": {},
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_ann",
+        "bg": ""
+      },
+      "text_theme_id": "t_ann",
+      "style_spotlight": {
+        "font_size": 36,
+        "align": "center",
+        "highlight_color": "#ffffff",
+        "background_type": "transparent",
+        "background_color": "#000000"
+      }
+    },
+    {
+      "name": "service_media_theme",
+      "why": "A service's media theme reaches a video in it.",
+      "selection": {
+        "mode": "service",
+        "service_item_type": "video",
+        "service_theme_map": {
+          "out-main": {
+            "media": {
+              "theme": "t_big"
+            },
+            "song": {
+              "theme": "t_default",
+              "bg": "b_img"
+            }
+          }
+        },
+        "content_theme_map": {},
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_big",
+        "bg": ""
+      },
+      "text_theme_id": "t_big",
+      "style_spotlight": {
+        "font_size": 72,
+        "align": "left",
+        "highlight_color": "#ffcc00",
+        "background_type": "transparent",
+        "background_color": "#000000"
+      }
+    },
+    {
+      "name": "service_song_only_bible_falls_to_default",
+      "why": "A service picking songs' looks leaves Bible at the output default.",
+      "selection": {
+        "mode": "service",
+        "service_item_type": "bible",
+        "service_theme_map": {
+          "out-main": {
+            "song": {
+              "theme": "t_ann",
+              "bg": "b_img"
+            }
+          }
+        },
+        "content_theme_map": {},
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_big",
+        "bg": "b_blue"
+      },
+      "text_theme_id": "t_big",
+      "style_spotlight": {
+        "font_size": 72,
+        "align": "left",
+        "highlight_color": "#ffcc00",
+        "background_type": "color",
+        "background_color": "#003366"
+      }
+    },
+    {
+      "name": "service_bible_background",
+      "why": "A service's Bible background reaches a passage in it.",
+      "selection": {
+        "mode": "service",
+        "service_item_type": "bible",
+        "service_theme_map": {
+          "out-main": {
+            "bible": {
+              "bg": "b_img"
+            }
+          }
+        },
+        "content_theme_map": {},
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_big",
+        "bg": "b_img"
+      },
+      "text_theme_id": "t_big",
+      "style_spotlight": {
+        "font_size": 72,
+        "align": "left",
+        "highlight_color": "#ffcc00",
+        "background_type": "image",
+        "background_color": "#000000"
+      }
+    },
+    {
+      "name": "divider_song_background",
+      "why": "A divider paints the songs' background and no theme.",
+      "selection": {
+        "mode": "service",
+        "service_item_type": "divider",
+        "service_theme_map": {
+          "out-main": {
+            "song": {
+              "theme": "t_big",
+              "bg": "b_blue"
+            }
+          }
+        },
+        "content_theme_map": {},
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "",
+        "bg": "b_blue"
+      },
+      "text_theme_id": null,
+      "style_spotlight": {
+        "font_size": null,
+        "align": null,
+        "highlight_color": null,
+        "background_type": "color",
+        "background_color": "#003366"
+      }
+    },
+    {
+      "name": "freeform_takes_nothing",
+      "why": "A Freeform slide takes neither a theme nor a background.",
+      "selection": {
+        "mode": "freeform",
+        "service_item_type": null,
+        "service_theme_map": {
+          "out-main": {
+            "song": {
+              "theme": "t_big",
+              "bg": "b_blue"
+            }
+          }
+        },
+        "content_theme_map": {},
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "",
+        "bg": ""
+      },
+      "text_theme_id": null,
+      "style_spotlight": {
+        "font_size": null,
+        "align": null,
+        "highlight_color": null,
+        "background_type": "transparent",
+        "background_color": "#000000"
+      }
+    },
+    {
+      "name": "dangling_theme_paints_stock",
+      "why": "A theme id that names nothing paints the stock design.",
+      "selection": {
+        "mode": "song",
+        "service_item_type": null,
+        "service_theme_map": {},
+        "content_theme_map": {
+          "out-main": {
+            "song": {
+              "theme": "t_gone"
+            }
+          }
+        },
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_gone",
+        "bg": "b_default"
+      },
+      "text_theme_id": null,
+      "style_spotlight": {
+        "font_size": null,
+        "align": null,
+        "highlight_color": null,
+        "background_type": "color",
+        "background_color": "#000000"
+      }
+    },
+    {
+      "name": "song_pick_finds_only_song_themes",
+      "why": "A song's pick is looked up among song themes: a Bible theme's id names nothing there.",
+      "selection": {
+        "mode": "song",
+        "service_item_type": null,
+        "service_theme_map": {},
+        "content_theme_map": {
+          "out-main": {
+            "song": {
+              "theme": "t_scripture"
+            }
+          }
+        },
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_scripture",
+        "bg": "b_default"
+      },
+      "text_theme_id": null,
+      "style_spotlight": {
+        "font_size": null,
+        "align": null,
+        "highlight_color": null,
+        "background_type": "color",
+        "background_color": "#000000"
+      }
+    },
+    {
+      "name": "bible_pick_finds_bible_theme",
+      "why": "The same id picked for Bible is the Bible theme.",
+      "selection": {
+        "mode": "service",
+        "service_item_type": "bible",
+        "service_theme_map": {
+          "out-main": {
+            "bible": {
+              "theme": "t_scripture"
+            }
+          }
+        },
+        "content_theme_map": {},
+        "theme_priority": [
+          "content",
+          "service",
+          "global"
+        ]
+      },
+      "theme_ids": {
+        "theme": "t_scripture",
+        "bg": "b_blue"
+      },
+      "text_theme_id": "t_scripture",
+      "style_spotlight": {
+        "font_size": 40,
+        "align": "center",
+        "highlight_color": "#ffffff",
+        "background_type": "color",
+        "background_color": "#003366"
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<library>
+  <song>
+    <properties>
+      <titles><title>First</title></titles>
+      <authors><author>A</author></authors>
+    </properties>
+    <lyrics>
+      <verse name="v1"><lines>One</lines></verse>
+    </lyrics>
+  </song>
+  <song>
+    <properties>
+      <titles><title>Second</title></titles>
+    </properties>
+    <lyrics>
+      <verse name="c1"><lines>Two</lines></verse>
+    </lyrics>
+  </song>
+</library>

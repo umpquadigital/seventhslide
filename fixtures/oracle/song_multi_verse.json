@@ -1,0 +1,223 @@
+{
+  "schema": "seventhslide.scene_dump",
+  "schema_version": 1,
+  "oracle": "python",
+  "input": {
+    "item_type": "song",
+    "item_index": 0,
+    "title": "Multi Verse",
+    "lyrics": "---[Verse:1]---\nFirst verse line\n---[Verse:2]---\nSecond verse line\n",
+    "verse_order": "v1 v2",
+    "song_id": 2
+  },
+  "outputs": [
+    {
+      "name": "Main",
+      "canvas": {
+        "width": 1920,
+        "height": 1080
+      },
+      "resolved_style": {
+        "active_line": {},
+        "align": "center",
+        "area_padding": 20,
+        "background_anim_accent": "#c9a86a",
+        "background_anim_color": "#1d2d3c",
+        "background_anim_duration": 600,
+        "background_anim_gap": 48,
+        "background_anim_height": 220,
+        "background_anim_inset": 40,
+        "background_anim_opacity": 1.0,
+        "background_anim_preset": "song_bar",
+        "background_anim_radius": 16,
+        "background_color": "#000000",
+        "background_image": "",
+        "background_type": "transparent",
+        "balance_wrapped_lines": false,
+        "balance_wrapped_strength": 100,
+        "bible_main_font_bold": false,
+        "bible_main_font_family": "Helvetica",
+        "bible_main_font_italic": false,
+        "bible_main_font_size": 48,
+        "bible_ref_align": "left",
+        "bible_ref_box_x": 100,
+        "bible_ref_box_y": 900,
+        "bible_ref_color": "#ffffff",
+        "bible_ref_font_bold": false,
+        "bible_ref_font_family": "Helvetica",
+        "bible_ref_font_italic": false,
+        "bible_ref_font_size": 30,
+        "bible_ref_height": 100,
+        "bible_ref_opacity": 1.0,
+        "bible_ref_valign": "middle",
+        "bible_ref_width": 800,
+        "bible_text_align": "center",
+        "bible_text_box_height": 400,
+        "bible_text_box_width": 1280,
+        "bible_text_box_x": 320,
+        "bible_text_box_y": 340,
+        "bible_text_color": "#ffffff",
+        "bible_text_opacity": 1.0,
+        "bible_text_padding": 20,
+        "bible_text_valign": "middle",
+        "box_x": 320,
+        "box_y": 340,
+        "clock_24h": false,
+        "clock_color": "#ffffff",
+        "clock_font_family": "",
+        "clock_font_size": 48,
+        "clock_seconds": false,
+        "clock_x": 10,
+        "clock_y": 10,
+        "copyright_align": "left",
+        "copyright_box_height": 80,
+        "copyright_box_width": 1720,
+        "copyright_box_x": 100,
+        "copyright_box_y": 980,
+        "copyright_color": "#ffffff",
+        "copyright_font_bold": false,
+        "copyright_font_family": "Helvetica",
+        "copyright_font_italic": false,
+        "copyright_font_size": 20,
+        "copyright_slide_count": 1,
+        "copyright_slide_mode": "all",
+        "copyright_text_opacity": 1.0,
+        "copyright_valign": "middle",
+        "fluid_slides": false,
+        "follow_lines": 0,
+        "font_bold": false,
+        "font_family": "Helvetica",
+        "font_italic": false,
+        "font_size": 48,
+        "height_px": 400,
+        "highlight_color": "#ffffff",
+        "image_area_height": 0,
+        "image_area_width": 0,
+        "image_area_x": 0,
+        "image_area_y": 0,
+        "image_fit": "contain",
+        "indicator_font_size": 30,
+        "indicator_opacity": 1.0,
+        "indicator_x": 10,
+        "indicator_y": 1000,
+        "other_lines": {
+          "color": "#888888"
+        },
+        "prevent_mixed_active": false,
+        "show_bible_ref": true,
+        "show_bible_text": true,
+        "show_bible_verse_numbers": false,
+        "show_chords": false,
+        "show_clock": false,
+        "show_copyright": true,
+        "show_indicator": false,
+        "show_video_countdown": false,
+        "text_opacity": 1.0,
+        "title_slide_show_lines": true,
+        "transitions": {
+          "song": {
+            "type": "cut",
+            "duration_ms": 500
+          },
+          "bible": {
+            "type": "cut",
+            "duration_ms": 500
+          },
+          "image": {
+            "type": "cut",
+            "duration_ms": 500
+          },
+          "video": {
+            "type": "cut",
+            "duration_ms": 500
+          },
+          "web": {
+            "type": "cut",
+            "duration_ms": 500
+          },
+          "live": {
+            "type": "cut",
+            "duration_ms": 500
+          },
+          "audio": {
+            "type": "cut",
+            "duration_ms": 500
+          }
+        },
+        "valign": "middle",
+        "verse_gap": 0,
+        "video_area_height": 0,
+        "video_area_width": 0,
+        "video_area_x": 0,
+        "video_area_y": 0,
+        "video_countdown_align": "left",
+        "video_countdown_color": "#ffffff",
+        "video_countdown_font_bold": false,
+        "video_countdown_font_family": "Helvetica",
+        "video_countdown_font_italic": false,
+        "video_countdown_font_size": 30,
+        "video_countdown_x": 10,
+        "video_countdown_y": 50,
+        "width_px": 1280
+      },
+      "line_to_slide": [
+        0,
+        1
+      ],
+      "verse_codes": [
+        "v1",
+        "v2"
+      ],
+      "verse_indices": [
+        0,
+        1
+      ],
+      "slide_count": 2,
+      "overlay_nonempty": [
+        false,
+        false
+      ],
+      "bg_override_present": [
+        false,
+        false
+      ],
+      "all_lines": [
+        "First verse line",
+        "Second verse line"
+      ],
+      "line_labels": [
+        "v1",
+        "v2"
+      ],
+      "groups": [
+        {
+          "indices": [
+            0
+          ],
+          "active_count": 1,
+          "is_title": false
+        },
+        {
+          "indices": [
+            1
+          ],
+          "active_count": 1,
+          "is_title": false
+        }
+      ]
+    }
+  ],
+  "player": {
+    "total_lines": 2,
+    "all_lines": [
+      "First verse line",
+      "Second verse line"
+    ],
+    "all_line_labels": [
+      "v1",
+      "v2"
+    ]
+  },
+  "notes": "Explicit verse order v1 then v2.",
+  "fixture_id": "song_multi_verse"
+}

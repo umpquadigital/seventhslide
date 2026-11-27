@@ -1,0 +1,87 @@
+[
+  {
+    "name": "paging_basic",
+    "follow_lines": 0,
+    "prevent_mixed_active": false,
+    "max_visual_px": 100,
+    "lines": [
+      {"base": 40, "active": 40, "verse": 0},
+      {"base": 40, "active": 40, "verse": 0},
+      {"base": 40, "active": 40, "verse": 0}
+    ],
+    "groups": [
+      {"indices": [0, 1], "active_count": 2},
+      {"indices": [2], "active_count": 1}
+    ]
+  },
+  {
+    "name": "paging_oversized",
+    "follow_lines": 0,
+    "prevent_mixed_active": false,
+    "max_visual_px": 100,
+    "lines": [
+      {"base": 150, "active": 150, "verse": 0},
+      {"base": 40, "active": 40, "verse": 0}
+    ],
+    "groups": [
+      {"indices": [0], "active_count": 1},
+      {"indices": [1], "active_count": 1}
+    ]
+  },
+  {
+    "name": "follow_1",
+    "follow_lines": 1,
+    "prevent_mixed_active": false,
+    "max_visual_px": 100,
+    "lines": [
+      {"base": 30, "active": 50, "verse": 0},
+      {"base": 30, "active": 50, "verse": 0},
+      {"base": 30, "active": 50, "verse": 0}
+    ],
+    "groups": [
+      {"indices": [0, 1], "active_count": 1},
+      {"indices": [1, 2], "active_count": 1},
+      {"indices": [2], "active_count": 1}
+    ]
+  },
+  {
+    "name": "follow_2",
+    "follow_lines": 2,
+    "prevent_mixed_active": false,
+    "max_visual_px": 120,
+    "lines": [
+      {"base": 30, "active": 45, "verse": 0},
+      {"base": 30, "active": 45, "verse": 0},
+      {"base": 30, "active": 45, "verse": 0},
+      {"base": 30, "active": 45, "verse": 0}
+    ],
+    "groups": [
+      {"indices": [0, 1, 2], "active_count": 2},
+      {"indices": [2, 3], "active_count": 2}
+    ]
+  },
+  {
+    "name": "follow_mixed",
+    "follow_lines": 2,
+    "prevent_mixed_active": true,
+    "max_visual_px": 200,
+    "lines": [
+      {"base": 30, "active": 40, "verse": 0},
+      {"base": 30, "active": 40, "verse": 0},
+      {"base": 30, "active": 40, "verse": 1},
+      {"base": 30, "active": 40, "verse": 1}
+    ],
+    "groups": [
+      {"indices": [0, 1, 2, 3], "active_count": 2},
+      {"indices": [2, 3], "active_count": 2}
+    ]
+  },
+  {
+    "name": "empty",
+    "follow_lines": 0,
+    "prevent_mixed_active": false,
+    "max_visual_px": 100,
+    "lines": [],
+    "groups": []
+  }
+]

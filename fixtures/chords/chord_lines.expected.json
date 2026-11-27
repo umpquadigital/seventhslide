@@ -1,0 +1,151 @@
+[
+  {
+    "input": "Hello world",
+    "has_chords": false,
+    "strip_chords": "Hello world",
+    "plain_measure": "Hello world",
+    "items": [
+      {"kind": "cell", "chord": null, "syllable": "Hello", "style": {"bold": false, "italic": false, "underline": false}},
+      {"kind": "space"},
+      {"kind": "cell", "chord": null, "syllable": "world", "style": {"bold": false, "italic": false, "underline": false}}
+    ]
+  },
+  {
+    "input": "[C]Hello [G]world",
+    "has_chords": true,
+    "strip_chords": "Hello world",
+    "plain_measure": "Hello world",
+    "items": [
+      {"kind": "cell", "chord": "C", "syllable": "Hello", "style": {"bold": false, "italic": false, "underline": false}},
+      {"kind": "space"},
+      {"kind": "cell", "chord": "G", "syllable": "world", "style": {"bold": false, "italic": false, "underline": false}}
+    ]
+  },
+  {
+    "input": "[Am] ",
+    "has_chords": true,
+    "strip_chords": " ",
+    "plain_measure": "",
+    "items": [
+      {"kind": "cell", "chord": "Am", "syllable": "", "style": {"bold": false, "italic": false, "underline": false}}
+    ]
+  },
+  {
+    "input": "[C][G]Hi",
+    "has_chords": true,
+    "strip_chords": "Hi",
+    "plain_measure": "Hi",
+    "items": [
+      {"kind": "cell", "chord": "C", "syllable": "", "style": {"bold": false, "italic": false, "underline": false}},
+      {"kind": "cell", "chord": "G", "syllable": "Hi", "style": {"bold": false, "italic": false, "underline": false}}
+    ]
+  },
+  {
+    "input": "Say [D]A[G]men",
+    "has_chords": true,
+    "strip_chords": "Say Amen",
+    "plain_measure": "Say Amen",
+    "items": [
+      {"kind": "cell", "chord": null, "syllable": "Say", "style": {"bold": false, "italic": false, "underline": false}},
+      {"kind": "space"},
+      {"kind": "cell", "chord": "D", "syllable": "A", "style": {"bold": false, "italic": false, "underline": false}},
+      {"kind": "cell", "chord": "G", "syllable": "men", "style": {"bold": false, "italic": false, "underline": false}}
+    ]
+  },
+  {
+    "input": "[F#]Love",
+    "has_chords": true,
+    "strip_chords": "Love",
+    "plain_measure": "Love",
+    "items": [
+      {"kind": "cell", "chord": "F♯", "syllable": "Love", "style": {"bold": false, "italic": false, "underline": false}}
+    ]
+  },
+  {
+    "input": "[Bb]Day",
+    "has_chords": true,
+    "strip_chords": "Day",
+    "plain_measure": "Day",
+    "items": [
+      {"kind": "cell", "chord": "B♭", "syllable": "Day", "style": {"bold": false, "italic": false, "underline": false}}
+    ]
+  },
+  {
+    "input": "[C]<b>Bold</b> [G]end",
+    "has_chords": true,
+    "strip_chords": "<b>Bold</b> end",
+    "plain_measure": "<b>Bold</b> end",
+    "items": [
+      {"kind": "cell", "chord": "C", "syllable": "Bold", "style": {"bold": true, "italic": false, "underline": false}},
+      {"kind": "space"},
+      {"kind": "cell", "chord": "G", "syllable": "end", "style": {"bold": false, "italic": false, "underline": false}}
+    ]
+  },
+  {
+    "input": "pre [Cmaj7]syl",
+    "has_chords": true,
+    "strip_chords": "pre syl",
+    "plain_measure": "pre syl",
+    "items": [
+      {"kind": "cell", "chord": null, "syllable": "pre", "style": {"bold": false, "italic": false, "underline": false}},
+      {"kind": "space"},
+      {"kind": "cell", "chord": "Cmaj7", "syllable": "syl", "style": {"bold": false, "italic": false, "underline": false}}
+    ]
+  },
+  {
+    "input": "  [A]word  ",
+    "has_chords": true,
+    "strip_chords": "  word  ",
+    "plain_measure": "word",
+    "items": [
+      {"kind": "cell", "chord": "A", "syllable": "word", "style": {"bold": false, "italic": false, "underline": false}}
+    ]
+  },
+  {
+    "input": "[C]",
+    "has_chords": true,
+    "strip_chords": "",
+    "plain_measure": "",
+    "items": [
+      {"kind": "cell", "chord": "C", "syllable": "", "style": {"bold": false, "italic": false, "underline": false}}
+    ]
+  },
+  {
+    "input": "word[C]",
+    "has_chords": true,
+    "strip_chords": "word",
+    "plain_measure": "word",
+    "items": [
+      {"kind": "cell", "chord": null, "syllable": "word", "style": {"bold": false, "italic": false, "underline": false}},
+      {"kind": "cell", "chord": "C", "syllable": "", "style": {"bold": false, "italic": false, "underline": false}}
+    ]
+  },
+  {
+    "input": "[C]word[D]",
+    "has_chords": true,
+    "strip_chords": "word",
+    "plain_measure": "word",
+    "items": [
+      {"kind": "cell", "chord": "C", "syllable": "word", "style": {"bold": false, "italic": false, "underline": false}},
+      {"kind": "cell", "chord": "D", "syllable": "", "style": {"bold": false, "italic": false, "underline": false}}
+    ]
+  },
+  {
+    "input": "[C]<i>x</i>",
+    "has_chords": true,
+    "strip_chords": "<i>x</i>",
+    "plain_measure": "<i>x</i>",
+    "items": [
+      {"kind": "cell", "chord": "C", "syllable": "x", "style": {"bold": false, "italic": true, "underline": false}}
+    ]
+  },
+  {
+    "input": "[]empty",
+    "has_chords": true,
+    "strip_chords": "empty",
+    "plain_measure": "empty",
+    "items": [
+      {"kind": "cell", "chord": "", "syllable": "empty", "style": {"bold": false, "italic": false, "underline": false}}
+    ]
+  }
+]

@@ -1,0 +1,56 @@
+# SQLite runtime side-cars (the database itself lives in the user data dir)
+*.db-wal
+*.db-shm
+
+# Backups
+archive/
+*.bak
+
+# Font resolution cache written next to a configured cache dir
+.font_match_cache.json
+
+# Build trees, FetchContent caches and ctest output
+/build
+/build-system/
+/build-*/
+/*-build/
+/compile_commands.json
+/_deps/
+/Testing/
+
+# Local one-off renders from the operator's songs.db (not CI fixtures)
+/artifacts/
+
+# Sample decks for manual testing (large, not source)
+/exampleslides/
+
+# The browser tests' packages and what a run leaves (tests/remote_web)
+/tests/remote_web/node_modules
+/tests/remote_web/test-results/
+/tests/remote_web/playwright-report/
+
+# Editor / OS / local tooling
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
+.cache/
+.claude/
+
+# Notes for coding agents on this machine, not part of the project
+/AGENTS.md
+/CLAUDE.md
+
+# UI screenshot runs (tests/ui_shots.cpp); compare with tools/ui_shots_compare.py
+/ui_shots/
+
+# Each machine's own presets: where its Qt and dependencies are
+/CMakeUserPresets.json
+
+# Python bytecode and virtual environments (tools/*.py)
+__pycache__/
+.venv/
+venv/

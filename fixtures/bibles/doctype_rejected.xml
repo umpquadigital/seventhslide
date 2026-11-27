@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<!DOCTYPE bible [
+  <!ENTITY xxe "bad">
+]>
+<bible name="Nope"/>

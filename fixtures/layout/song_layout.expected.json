@@ -1,0 +1,427 @@
+[
+  {
+    "id": "simple_paging",
+    "lyrics": "---[Verse:1]---\nHello\nWorld\n",
+    "verse_order": "v1",
+    "opts": {
+      "width_px": 200,
+      "height_px": 200,
+      "font_size": 10
+    },
+    "suppress_titles": false,
+    "result": {
+      "all_lines": [
+        "Hello",
+        "World"
+      ],
+      "verse_indices": [
+        0,
+        0
+      ],
+      "line_labels": [
+        "v1",
+        "v1"
+      ],
+      "verse_codes": [
+        "v1"
+      ],
+      "groups": [
+        {
+          "indices": [
+            0,
+            1
+          ],
+          "active_count": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "paging_two_verses",
+    "lyrics": "---[Verse:1]---\nA\n---[Verse:2]---\nB\n",
+    "verse_order": "v1 v2",
+    "opts": {
+      "fluid_slides": false
+    },
+    "suppress_titles": false,
+    "result": {
+      "all_lines": [
+        "A",
+        "B"
+      ],
+      "verse_indices": [
+        0,
+        1
+      ],
+      "line_labels": [
+        "v1",
+        "v2"
+      ],
+      "verse_codes": [
+        "v1",
+        "v2"
+      ],
+      "groups": [
+        {
+          "indices": [
+            0
+          ],
+          "active_count": 1
+        },
+        {
+          "indices": [
+            1
+          ],
+          "active_count": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "fluid_two_verses",
+    "lyrics": "---[Verse:1]---\nA\n---[Verse:2]---\nB\n",
+    "verse_order": "v1 v2",
+    "opts": {
+      "fluid_slides": true,
+      "height_px": 200
+    },
+    "suppress_titles": false,
+    "result": {
+      "all_lines": [
+        "A",
+        "B"
+      ],
+      "verse_indices": [
+        0,
+        1
+      ],
+      "line_labels": [
+        "v1",
+        "v2"
+      ],
+      "verse_codes": [
+        "v1",
+        "v2"
+      ],
+      "groups": [
+        {
+          "indices": [
+            0,
+            1
+          ],
+          "active_count": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "forced_break",
+    "lyrics": "---[Verse:1]---\nLine A\n[---][---]\nLine B\n",
+    "verse_order": "v1",
+    "opts": {
+      "height_px": 200
+    },
+    "suppress_titles": false,
+    "result": {
+      "all_lines": [
+        "Line A",
+        "Line B"
+      ],
+      "verse_indices": [
+        0,
+        0
+      ],
+      "line_labels": [
+        "v1",
+        "v1"
+      ],
+      "verse_codes": [
+        "v1"
+      ],
+      "groups": [
+        {
+          "indices": [
+            0
+          ],
+          "active_count": 1
+        },
+        {
+          "indices": [
+            1
+          ],
+          "active_count": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "fluid_forced_break",
+    "lyrics": "---[Verse:1]---\nLine A\n[---][---]\nLine B\n",
+    "verse_order": "v1",
+    "opts": {
+      "fluid_slides": true,
+      "height_px": 200
+    },
+    "suppress_titles": false,
+    "result": {
+      "all_lines": [
+        "Line A",
+        "Line B"
+      ],
+      "verse_indices": [
+        0,
+        0
+      ],
+      "line_labels": [
+        "v1",
+        "v1"
+      ],
+      "verse_codes": [
+        "v1"
+      ],
+      "groups": [
+        {
+          "indices": [
+            0,
+            1
+          ],
+          "active_count": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "fluid_verse_gap",
+    "lyrics": "---[Verse:1]---\nA\n---[Verse:2]---\nB\n",
+    "verse_order": "v1 v2",
+    "opts": {
+      "fluid_slides": true,
+      "verse_gap": 20,
+      "height_px": 200
+    },
+    "suppress_titles": false,
+    "result": {
+      "all_lines": [
+        "A",
+        "B"
+      ],
+      "verse_indices": [
+        0,
+        1
+      ],
+      "line_labels": [
+        "v1",
+        "v2"
+      ],
+      "verse_codes": [
+        "v1",
+        "v2"
+      ],
+      "groups": [
+        {
+          "indices": [
+            0,
+            1
+          ],
+          "active_count": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "fluid_same_sections_no_gap",
+    "lyrics": "---[Verse:1a]---\nA\n---[Verse:1b]---\nB\n",
+    "verse_order": "v1a v1b",
+    "opts": {
+      "fluid_slides": true,
+      "verse_gap": 20,
+      "height_px": 200
+    },
+    "suppress_titles": false,
+    "result": {
+      "all_lines": [
+        "A",
+        "B"
+      ],
+      "verse_indices": [
+        0,
+        0
+      ],
+      "line_labels": [
+        "v1",
+        "v1"
+      ],
+      "verse_codes": [
+        "v1"
+      ],
+      "groups": [
+        {
+          "indices": [
+            0,
+            1
+          ],
+          "active_count": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "follow_lines_2",
+    "lyrics": "---[Verse:1]---\nOne\nTwo\nThree\nFour\n",
+    "verse_order": "v1",
+    "opts": {
+      "follow_lines": 2,
+      "height_px": 200,
+      "font_size": 10
+    },
+    "suppress_titles": false,
+    "result": {
+      "all_lines": [
+        "One",
+        "Two",
+        "Three",
+        "Four"
+      ],
+      "verse_indices": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "line_labels": [
+        "v1",
+        "v1",
+        "v1",
+        "v1"
+      ],
+      "verse_codes": [
+        "v1"
+      ],
+      "groups": [
+        {
+          "indices": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "active_count": 2
+        },
+        {
+          "indices": [
+            2,
+            3
+          ],
+          "active_count": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "virtual_title",
+    "lyrics": "---[Verse:1]---\nHi\n",
+    "verse_order": "t1 v1",
+    "opts": {},
+    "suppress_titles": true,
+    "result": {
+      "all_lines": [
+        "",
+        "Hi"
+      ],
+      "verse_indices": [
+        0,
+        1
+      ],
+      "line_labels": [
+        "t1",
+        "v1"
+      ],
+      "verse_codes": [
+        "t1",
+        "v1"
+      ],
+      "groups": [
+        {
+          "indices": [
+            0
+          ],
+          "active_count": 1,
+          "is_title": true
+        },
+        {
+          "indices": [
+            1
+          ],
+          "active_count": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "blank_skipped",
+    "lyrics": "---[Verse:1]---\nHi\n\nThere\n",
+    "verse_order": "v1",
+    "opts": {},
+    "suppress_titles": false,
+    "result": {
+      "all_lines": [
+        "Hi",
+        "There"
+      ],
+      "verse_indices": [
+        0,
+        0
+      ],
+      "line_labels": [
+        "v1",
+        "v1"
+      ],
+      "verse_codes": [
+        "v1"
+      ],
+      "groups": [
+        {
+          "indices": [
+            0,
+            1
+          ],
+          "active_count": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "wrap_tall",
+    "lyrics": "---[Verse:1]---\naaaa bbbb cccc dddd\n",
+    "verse_order": "v1",
+    "opts": {
+      "width_px": 5,
+      "height_px": 100,
+      "font_size": 10,
+      "area_padding": 0
+    },
+    "suppress_titles": false,
+    "result": {
+      "all_lines": [
+        "aaaa bbbb cccc dddd"
+      ],
+      "verse_indices": [
+        0
+      ],
+      "line_labels": [
+        "v1"
+      ],
+      "verse_codes": [
+        "v1"
+      ],
+      "groups": [
+        {
+          "indices": [
+            0
+          ],
+          "active_count": 1
+        }
+      ]
+    }
+  }
+]

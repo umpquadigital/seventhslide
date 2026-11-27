@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="902" height="626" viewBox="61 199 902 626">
+  <title>SeventhSlide</title>
+  <defs>
+    <linearGradient id="l" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#005eae"/>
+      <stop offset="1" stop-color="#0080dc"/>
+    </linearGradient>
+    <linearGradient id="r" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2b2b2b"/>
+      <stop offset="1" stop-color="#050505"/>
+    </linearGradient>
+  </defs>
+  <path d="M274 199 290 199 290 317 591 317 315 820 257 818 179 810 176 808 169 808 150 803 133 795 116 783 96 761 82 733 72 687 73 683 69 662 65 617 61 528 65 400 74 319 82 285 89 269 102 249 117 234 135 222 153 214 192 206Z" fill="url(#l)"/>
+  <path d="M754 200 804 203 810 205 846 208 849 210 856 210 871 214 883 219 907 234 922 249 924 254 931 262 941 282 950 319 957 376 961 433 963 528 961 550 961 585 955 662 948 709 939 741 928 761 908 783 896 792 881 800 856 808 794 816 720 819 708 821 519 825 488 824 754 324Z" fill="url(#r)"/>
+</svg>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- SeventhSlide.app's Info.plist: src/app/CMakeLists.txt fills the
+     MACOSX_BUNDLE_* values from the seventhslide target. -->
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>${MACOSX_BUNDLE_EXECUTABLE_NAME}</string>
+	<key>CFBundleIconFile</key>
+	<string>${MACOSX_BUNDLE_ICON_FILE}</string>
+	<key>CFBundleIdentifier</key>
+	<string>${MACOSX_BUNDLE_GUI_IDENTIFIER}</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>${MACOSX_BUNDLE_BUNDLE_NAME}</string>
+	<key>CFBundleDisplayName</key>
+	<string>${MACOSX_BUNDLE_BUNDLE_NAME}</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>${MACOSX_BUNDLE_SHORT_VERSION_STRING}</string>
+	<key>CFBundleVersion</key>
+	<string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	<!-- Qt 6.8's own floor. -->
+	<key>LSMinimumSystemVersion</key>
+	<string>${CMAKE_OSX_DEPLOYMENT_TARGET}</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSSupportsAutomaticGraphicsSwitching</key>
+	<true/>
+
+	<!-- What macOS asks the person before the app may use them. Without
+	     these, the system ends the app the first time it opens the device
+	     or reaches the network, rather than asking. -->
+	<!-- The Live tab: webcams and capture cards (FFmpeg's avfoundation). -->
+	<key>NSCameraUsageDescription</key>
+	<string>SeventhSlide shows cameras and capture cards you add in the Live tab on its outputs.</string>
+	<!-- The Audio Mixer's microphones, and a camera's or capture card's sound. -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>SeventhSlide plays microphones and the sound of cameras and capture cards you add through its Audio Mixer.</string>
+	<!-- Sync between computers (and its discovery), the phone remote, NDI. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>SeventhSlide finds and syncs with SeventhSlides on your network, serves the phone remote, and sends and receives NDI video.</string>
+	<!-- NDI's sources are found over Bonjour. -->
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_ndi._tcp</string>
+	</array>
+</dict>
+</plist>

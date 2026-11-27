@@ -1,0 +1,232 @@
+name: Linux
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Core is one library, so a dependency cycle between its modules still
+      # builds; these keep the layering in docs/CODING.md true, and the app's
+      # controllers to the dependencies it names.
+      - name: Layering
+        run: |
+          python3 tools/core_layers.py
+          python3 tools/controller_deps.py
+
+      # Nothing kept that nothing uses: a QML type, JS file or QML class only
+      # CMake names, an invokable or property QML does not use, a fixture
+      # nothing reads, a name no build writes.
+      - name: Unused
+        run: |
+          python3 tools/qml_unused.py
+          python3 tools/qml_api_unused.py
+          python3 tools/fixture_refs.py
+          python3 tools/retired_keys.py
+
+      # Tests that wait for what they expect rather than a fixed time, and
+      # hidden tests that say how they are run.
+      - name: Tests
+        run: |
+          python3 tools/test_sleeps.py
+          python3 tools/hidden_tags.py
+
+      # Comments and docs that say how things are now: no tag of the deleted
+      # editor plan, no path kept for an earlier build, every server command
+      # in docs/SERVER.md.
+      - name: Comments and docs
+        run: |
+          python3 tools/plan_tags.py
+          python3 tools/legacy_markers.py
+          python3 tools/server_commands.py
+
+      # What a view leaves to others: which menu is open is the menu's, not
+      # an editor state's; a text field is the control kit's; a file
+      # chooser's media formats are C++'s.
+      - name: Views
+        run: |
+          python3 tools/menu_state.py
+          python3 tools/text_fields.py
+          python3 tools/file_filters.py
+
+      # Colours from Style.qml in the views, a string view made a QString as
+      # docs/CODING.md spells it, and a failure shown in words for people.
+      - name: Conventions
+        run: |
+          python3 tools/colour_literals.py
+          python3 tools/qstring_views.py
+          python3 tools/entry_errors.py
+
+      # The system packages and Qt 6.8, as the sanitizer job below has them.
+      - name: Install the dependencies
+        uses: ./.github/actions/linux-deps
+
+      - name: Configure
+        run: cmake --preset linux-ci
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      # Not built by default, so built here, where it would otherwise stop
+      # compiling unseen: the benchmarks, the screenshots and the deck check.
+      - name: Build the benchmarks and tools
+        run: cmake --build build --parallel --target seventhslide_tests_dev
+
+      # The web remote's browser tests and its lint (tests/remote_web) run
+      # inside ctest; without Node and these packages they skip.
+      - name: Set up Node for the browser tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tests/remote_web/package-lock.json
+
+      - name: Install the browser tests
+        working-directory: tests/remote_web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      # The linux-ci test preset: the build folder, the offscreen platform,
+      # the output of a test that fails.
+      - name: Test
+        run: ctest --preset linux-ci
+
+      - name: Keep the browser tests' report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remote-web-report
+          path: |
+            tests/remote_web/playwright-report
+            tests/remote_web/test-results
+          if-no-files-found: ignore
+
+      # Which categories count is src/ui/.qmllint.ini. qmllint's own
+      # --max-warnings crashes on this module (Qt 6.8.3), so the JSON report is
+      # checked instead.
+      - name: QML lint
+        run: |
+          cmake --build build --target seventhslide_ui_qmllint_json
+          python3 tools/check_qmllint.py build/seventhslide_ui_qmllint.json
+
+      # The web remote copies the tokens it uses from Style.qml and writes
+      # no colour of its own; this holds the copy to the original.
+      - name: Web remote style tokens
+        run: python3 tools/remote_tokens.py
+
+      # A name a panel uses on its state (``dialog.X``) resolves only at run
+      # time, and ids do not cross files; lint reports neither, so these check
+      # them.
+      - name: QML panel references
+        run: |
+          python3 tools/panel_refs.py
+          python3 tools/qml_defaults.py
+          QMLLINT="$QT_ROOT_DIR/bin/qmllint" QMLLINT_I=build/qml python3 tools/qml_stray_ids.py $(find src/ui -name '*.qml')
+
+  # The core, media and sync tests under AddressSanitizer and UBSan, which
+  # find a read past an end, a use after free or a signed overflow where the
+  # tests above pass by luck. The linux-asan preset builds those programs,
+  # in build-asan, and what they depend on: the sync tests run the app
+  # itself as a server, so the whole app is built too.
+  sanitizers:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the dependencies
+        uses: ./.github/actions/linux-deps
+
+      - name: Configure
+        run: cmake --preset linux-asan
+
+      - name: Build
+        run: cmake --build --preset linux-asan --parallel
+
+      # What runs, and with which options, is the linux-asan test preset.
+      - name: Test
+        run: ctest --preset linux-asan --output-on-failure --parallel 4
+
+  # clang-tidy's checks, .clang-tidy's, over src/ and tests/: a function or
+  # variable only its own file uses is not seen outside it, and an optional
+  # is read only where it holds a value (docs/CODING.md). It needs the
+  # compile commands and what a file includes that the build makes: the moc
+  # files, without building what they would otherwise wait for, and the
+  # Wayland protocol's header. Its own job, as it takes as long as a build.
+  clang-tidy:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the dependencies
+        uses: ./.github/actions/linux-deps
+
+      # Ubuntu 24.04's clang-tidy is 18, which has no
+      # misc-use-internal-linkage.
+      - name: Install clang-tidy
+        run: sudo apt-get install -y clang-tidy-20
+
+      - name: Configure
+        run: >-
+          cmake --preset linux-ci -DCMAKE_GLOBAL_AUTOGEN_TARGET=ON
+          -DCMAKE_AUTOGEN_ORIGIN_DEPENDS=OFF
+
+      - name: Make the moc files
+        run: cmake --build build --parallel --target autogen seventhslide_wayland_protocols
+
+      - name: clang-tidy
+        run: python3 tools/clang_tidy.py
+
+  # Qt WebEngine's renderer, which the jobs above build without: its Qt
+  # modules are large, so only this job installs them. It builds the app and
+  # the app's tests with it, warnings as errors as in build-and-test, runs
+  # clang-tidy over what only this build compiles, and runs the hidden
+  # [webengine] tests (docs/BUILDING.md), which draw real pages. Configure fails if
+  # Qt WebEngine is not found, so the job cannot pass having tested nothing.
+  webengine:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the dependencies
+        uses: ./.github/actions/linux-deps
+        with:
+          webengine: 'true'
+
+      - name: Configure
+        run: cmake --preset linux-ci -DSEVENTHSLIDE_REQUIRE_WEBENGINE=ON
+
+      - name: Build
+        run: cmake --build build --parallel --target seventhslide seventhslide_tests_app
+
+      # The clang-tidy job's checks, over the files whose Qt WebEngine code
+      # only this build compiles: the renderer, and the branches for it in
+      # main.cpp and the tests. The build made their compile commands and
+      # moc files.
+      - name: Install clang-tidy
+        run: sudo apt-get install -y clang-tidy-20
+
+      - name: clang-tidy
+        run: >-
+          python3 tools/clang_tidy.py src/app/webengine_renderer.cpp src/app/main.cpp
+          tests/test_main.cpp tests/test_webengine.cpp
+
+      # On a virtual display (Xvfb): Qt's offscreen platform has no OpenGL,
+      # which a page is drawn with. Chromium's sandbox needs user namespaces,
+      # which Ubuntu 24.04 may refuse a program run by a user; the pages are
+      # the tests' own, so they run without it.
+      - name: Test
+        env:
+          SEVENTHSLIDE_TEST_WEBENGINE: '1'
+          QT_QPA_PLATFORM: xcb
+          QTWEBENGINE_DISABLE_SANDBOX: '1'
+        run: xvfb-run -a build/bin/seventhslide_tests_app "[webengine]"
