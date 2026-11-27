@@ -6,6 +6,10 @@
 // thread's storage, cleaned up after them, warns once per slot. Deleting it
 // here, as the app's main() does by leaving scope, closes it while everything
 // it uses still exists.
+//
+// The tests read in one locale, US English, whatever the computer's: dates,
+// times and the order of names are the locale's, and CI's runners have none
+// (C.UTF-8). A test of another locale sets it, and puts this one back.
 
 #include <catch2/catch_session.hpp>
 
@@ -14,6 +18,7 @@
 #endif
 
 #include <QCoreApplication>
+#include <QLocale>
 
 int main(int argc, char* argv[])
 {
@@ -23,6 +28,7 @@ int main(int argc, char* argv[])
         seventhslide::app::initialize_web_engine();
     }
 #endif
+    QLocale::setDefault(QLocale(QLocale::English, QLocale::UnitedStates));
     const int result = Catch::Session().run(argc, argv);
     delete QCoreApplication::instance();
     return result;
