@@ -17,12 +17,16 @@ import SeventhSlide
 //
 // A menu taller than ``maxHeight`` (by default, the window less a margin),
 // or than the room on the side of the anchor it opens on, scrolls.
+// ``keepAnchorClear`` keeps it off its anchor even when it would fit the
+// window over it: a field's menu, which would hide what it narrows.
 Popup {
     id: menu
     default property alias items: column.data
     property Item anchorItem: null
     property Item opener: anchorItem
     property bool alignRight: false
+    /// Never over the anchor: on the roomier side, scrolling there if need be.
+    property bool keepAnchorClear: false
     /// Never narrower than this; a field's menu passes the field's width.
     property real minWidth: 196
     /// Never taller than this; the items scroll past it.
@@ -39,6 +43,44 @@ Popup {
     // window under it; focus goes back where it was on close.
     focus: true
     closePolicy: Popup.CloseOnEscape
+
+    // Qt gives the keyboard back as a popup closes by focusing what had it
+    // within its focus scope, which does not reach it inside one (a dialog's
+    // page): the keyboard stays with the window's root, and what had it
+    // misses its keys (a second Escape). As ``closed`` comes the focus is at
+    // the root even when it had moved on while the menu was open (a row put
+    // it in a field). So where it goes is settled as the menu starts to
+    // close (back to what had it before, if the menu held it, else where it
+    // went) and given there once closed, if it has fallen back.
+    property Item _focusBefore: null
+    property Item _focusAfter: null
+    onAboutToShow: menu._focusBefore = body.Window.activeFocusItem
+    onAboutToHide: {
+        const now = body.Window.activeFocusItem
+        menu._focusAfter = menu._fellBack(now, menu._focusBefore) ? menu._focusBefore : now
+    }
+    onClosed: {
+        const back = menu._focusAfter
+        menu._focusBefore = null
+        menu._focusAfter = null
+        if (back && back.visible && menu._fellBack(body.Window.activeFocusItem, back))
+            back.forceActiveFocus()
+    }
+    /// The focus is at ``now`` instead of ``from``: nowhere, in the menu, or
+    /// at a scope round ``from`` (the window's root).
+    function _fellBack(now, from) {
+        if (!now)
+            return true
+        for (let i = now; i; i = i.parent) {
+            if (i === body.parent)
+                return true
+        }
+        for (let i = from ? from.parent : null; i; i = i.parent) {
+            if (i === now)
+                return true
+        }
+        return false
+    }
     // As wide as the widest item asks to be. Not column.implicitWidth: a
     // Column sizes from its children's widths, and they take the menu's.
     implicitWidth: Math.max(menu.minWidth, menu._itemsWidth + Style.scrollGutter(body)
@@ -61,9 +103,9 @@ Popup {
 
     /// Under the anchor, or over it when it fits only there. One that fits
     /// the window but neither side moves up over its anchor, all of it in
-    /// sight; one taller than the window takes the roomier side and scrolls
-    /// there, so a long list never covers its field. Inside the window
-    /// either way.
+    /// sight, unless ``keepAnchorClear``; one taller than the window, or kept
+    /// clear, takes the roomier side and scrolls there, so a long list never
+    /// covers its field. Inside the window either way.
     function place() {
         const o = Overlay.overlay
         const a = menu.anchorItem
@@ -79,10 +121,13 @@ Popup {
         const wanted = Math.min(menu.maxHeight, full)
         const below = o.height - 4 - (p.y + 4)
         const above = top - 4 - 4
+        // Above with all of it in sight: over the anchor, if it fits neither
+        // side and may.
+        const whole = full <= menu.maxHeight && (!menu.keepAnchorClear || full <= above)
         let room = 100000
         let y = p.y + 4
-        if (wanted > below && (full <= menu.maxHeight || above > below)) {
-            if (full > menu.maxHeight)
+        if (wanted > below && (whole || above > below)) {
+            if (!whole)
                 room = Math.max(0, above)
             y = Math.max(4, top - 4 - Math.min(wanted, room))
         } else if (wanted > below) {

@@ -34,7 +34,6 @@ Item {
         }
         onSlideThemeAsked: {
             slideThemePicker.titleText = qsTr("Select Background Theme")
-            slideThemePicker.subtitleText = qsTr("Choose a background theme for this slide.")
             slideThemePicker.openFor(root.edit.output, "bg", "")
         }
         onAssetAsked: function (slot, video) {

@@ -226,8 +226,6 @@ Item {
         picker: themePicker
         scope: "service"
         inheritShort: qsTr("Output Default")
-        pickerTextSubtitle: qsTr("Choose a theme for this output, or keep the output default.")
-        pickerBgSubtitle: qsTr("Choose a background theme for this output, or keep the output default.")
     }
 
     Keys.onEscapePressed: function (event) {

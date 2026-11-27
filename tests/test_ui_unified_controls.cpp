@@ -333,6 +333,131 @@ Window {
     CHECK(bottom > opener->y() - 12);
 }
 
+TEST_CASE("A menu that fits neither side covers its anchor unless kept clear of it",
+          "[ui][unified]")
+{
+    QmlScene scene;
+    QQuickWindow* window = show(scene, R"QML(
+import QtQuick
+import SeventhSlide as Ui
+Window {
+    width: 700; height: 400
+    property alias menu: menu
+    property alias opener: opener
+    Ui.AppButton { id: opener; x: 20; y: 170; label: "Filter" }
+    Ui.AppMenu {
+        id: menu
+        anchorItem: opener
+        Repeater {
+            model: 9
+            Ui.MenuItemRow { required property int index; label: "Tag " + index }
+        }
+    }
+}
+)QML");
+    QObject* menu = window->property("menu").value<QObject*>();
+    auto* opener = window->property("opener").value<QQuickItem*>();
+    REQUIRE(menu != nullptr);
+    REQUIRE(opener != nullptr);
+    const auto open = [&] {
+        REQUIRE(QMetaObject::invokeMethod(menu, "openAt"));
+        REQUIRE(QTest::qWaitFor([&] { return menu->property("opened").toBool(); }, 2000));
+        QTest::qWait(0);
+    };
+    const auto top = [&] { return menu->property("y").toReal(); };
+    const auto bottom = [&] { return top() + menu->property("height").toReal(); };
+    const double anchorTop = opener->y();
+    const double anchorBottom = opener->y() + opener->height();
+
+    // Taller than the room on either side, though it fits the window: all of
+    // it in sight, over its anchor.
+    open();
+    CHECK(top() >= 4);
+    CHECK(bottom() > anchorTop);
+    CHECK(top() < anchorBottom);
+    REQUIRE(QMetaObject::invokeMethod(menu, "close"));
+    REQUIRE(QTest::qWaitFor([&] { return !menu->property("visible").toBool(); }, 2000));
+
+    // Kept clear: on the roomier side (below), scrolling there.
+    menu->setProperty("keepAnchorClear", true);
+    open();
+    CHECK(top() >= anchorBottom);
+    CHECK(bottom() <= window->height() - 4);
+}
+
+TEST_CASE("A menu gives the keyboard back to what had it as it closes", "[ui][unified]")
+{
+    QmlScene scene;
+    QQuickWindow* window = show(scene, R"QML(
+import QtQuick
+import SeventhSlide as Ui
+Window {
+    id: win
+    width: 500; height: 400
+    property alias menu: menu
+    property alias owner: owner
+    property alias other: other
+    property int escapes: 0
+    // In a focus scope, as a dialog's page is: Qt's own handing back focuses
+    // the item within its scope, and the keyboard stays with the window.
+    FocusScope {
+        width: 100; height: 30
+        Item {
+            id: owner
+            anchors.fill: parent
+            Keys.onEscapePressed: win.escapes++
+        }
+    }
+    Ui.AppButton { id: opener; x: 20; y: 40; label: "Sort" }
+    TextInput { id: other; y: 200; width: 100; height: 20 }
+    Ui.AppMenu {
+        id: menu
+        anchorItem: opener
+        Ui.MenuItemRow { label: "Name" }
+    }
+}
+)QML");
+    QObject* menu = window->property("menu").value<QObject*>();
+    auto* owner = window->property("owner").value<QQuickItem*>();
+    auto* other = window->property("other").value<QQuickItem*>();
+    REQUIRE(menu != nullptr);
+    REQUIRE(owner != nullptr);
+    REQUIRE(other != nullptr);
+    const auto open = [&] {
+        REQUIRE(QMetaObject::invokeMethod(menu, "openAt"));
+        REQUIRE(QTest::qWaitFor([&] { return menu->property("opened").toBool(); }, 2000));
+    };
+    const auto closed = [&] {
+        REQUIRE(QTest::qWaitFor([&] { return !menu->property("visible").toBool(); }, 2000));
+    };
+
+    // Escape closes the menu, and the next one reaches what had the keyboard.
+    owner->forceActiveFocus();
+    REQUIRE(owner->hasActiveFocus());
+    open();
+    CHECK_FALSE(owner->hasActiveFocus());
+    QTest::keyClick(window, Qt::Key_Escape);
+    closed();
+    CHECK(owner->hasActiveFocus());
+    QTest::keyClick(window, Qt::Key_Escape);
+    CHECK(window->property("escapes").toInt() == 1);
+
+    // A click elsewhere closes it and lands: what was clicked has the keyboard.
+    owner->forceActiveFocus();
+    open();
+    click(window, centre_of(other));
+    closed();
+    CHECK(other->hasActiveFocus());
+
+    // Focus that moved on while it was open (a row put it in a field) stays.
+    owner->forceActiveFocus();
+    open();
+    other->forceActiveFocus();
+    REQUIRE(QMetaObject::invokeMethod(menu, "close"));
+    closed();
+    CHECK(other->hasActiveFocus());
+}
+
 TEST_CASE("A window shell's rail asks for a page and its footer for Save", "[ui][unified]")
 {
     QmlScene scene;

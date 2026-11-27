@@ -998,8 +998,9 @@ std::vector<Scene> scenes()
                      call(component(ui, "ServiceSettingsDialog"), "openFor",
                           QVariant::fromValue<qint64>(lib.other_service), false);
                  }});
+    // ``openDialog(page)``: no page, General, as the toolbar's gear opens it.
     s.push_back({"service_settings_general", [](F&, OperatorUi& ui, const L&) {
-                     call(component(ui, "ServiceSettingsDialog"), "openDialog");
+                     call(component(ui, "ServiceSettingsDialog"), "openDialog", QString());
                  }});
     // Its General page at its foot: the service's own audio fades, one set.
     s.push_back({"service_settings_audio", [](F& facade, OperatorUi& ui, const L& lib) {
@@ -1007,7 +1008,7 @@ std::vector<Scene> scenes()
                                  ->setServiceAudioFades(lib.service,
                                                         {{QStringLiteral("fade_in_ms"), 1000}})
                                  .isEmpty());
-                     call(component(ui, "ServiceSettingsDialog"), "openDialog");
+                     call(component(ui, "ServiceSettingsDialog"), "openDialog", QString());
                      Shooter::settle(*ui.window());
                      QObject* page = seventhslide::test::qml_object(
                          component(ui, "ServiceSettingsDialog"), "ServiceGeneralPage");
@@ -1016,14 +1017,12 @@ std::vector<Scene> scenes()
                                                              - page->property("height").toReal()));
                  }});
     s.push_back({"service_settings_themes", [](F&, OperatorUi& ui, const L&) {
-                     QObject* dialog = component(ui, "ServiceSettingsDialog");
-                     call(dialog, "openDialog");
-                     set(dialog, "tab", QStringLiteral("themes"));
+                     call(component(ui, "ServiceSettingsDialog"), "openDialog",
+                          QStringLiteral("themes"));
                  }});
     s.push_back({"service_settings_export", [](F&, OperatorUi& ui, const L&) {
-                     QObject* dialog = component(ui, "ServiceSettingsDialog");
-                     call(dialog, "openDialog");
-                     set(dialog, "tab", QStringLiteral("export"));
+                     call(component(ui, "ServiceSettingsDialog"), "openDialog",
+                          QStringLiteral("export"));
                  }});
     for (const char* tab : {"lyrics", "authors", "topics", "themes"}) {
         s.push_back({std::string("song_edit_") + tab, [tab](F&, OperatorUi& ui, const L& lib) {

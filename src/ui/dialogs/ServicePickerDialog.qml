@@ -341,6 +341,7 @@ Item {
         id: tagMenu
         objectName: "serviceTagMenu"
         anchorItem: searchField.filterButton
+        keepAnchorClear: true
         minWidth: 240
         onClosed: {
             root.tagSearch = ""
