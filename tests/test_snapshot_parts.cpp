@@ -10,6 +10,7 @@
 #include <seventhslide/sync/snapshot.hpp>
 #include <seventhslide/sync/sync_store.hpp>
 
+#include "file_time_string.hpp"
 #include "test_temp_dir.hpp"
 
 #include <nlohmann/json.hpp>
