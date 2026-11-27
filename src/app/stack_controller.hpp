@@ -169,6 +169,10 @@ signals:
     /// Live content changed (see LibraryController::liveChanged); the
     /// application's reaction refreshes this controller's state too.
     void liveChanged(bool rebuildModels);
+    /// A take traded stack ``stackId``'s Program and Preview. Comes just
+    /// before the take's liveChanged, before anything shows the sides
+    /// traded.
+    void sidesSwapped(const QString& stackId);
 
 private:
     [[nodiscard]] QString persist();

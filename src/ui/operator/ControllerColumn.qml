@@ -87,6 +87,22 @@ Rectangle {
     // Another stack: the keys go back to what is live.
     onFocusedAdvanceIdChanged: root.keyedSide = "program"
 
+    // A take trades the sides, from here or the web remote: each well is
+    // about to show what the other did, and puts its list where the other's
+    // stood, not at the top. Read before either list is reset.
+    Connections {
+        target: root.session
+
+        function onFocusedSidesSwapping() {
+            if (!root.previewOn)
+                return
+            const live = programWell.scrollState()
+            const cued = previewWell.scrollState()
+            programWell.receiveScroll(cued)
+            previewWell.receiveScroll(live)
+        }
+    }
+
     /// A stack's auto-advance settings, every field (``autoAdvanceFor``
     /// fills in the defaults for a stack with none of its own).
     function advanceState(stackId) {

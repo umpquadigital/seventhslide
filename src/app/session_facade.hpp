@@ -428,6 +428,13 @@ signals:
     /// The focused stack changed, or its content did. Properties describing the
     /// controller's view (mode, line cursor, gallery kind) notify on this.
     void focusedStackChanged();
+    /// A take traded the focused stack's Program and Preview (on this
+    /// computer or from the web remote). Comes before the sides' lines are
+    /// reloaded and before the focusedStackChanged that shows them traded.
+    /// The sides already answer for what they now hold; only the views on
+    /// them (where their lists stand) are still as they were. The
+    /// Controller's wells trade those, so each lands where the other was.
+    void focusedSidesSwapping();
     /// Video or audio position / duration / play state. Fires on every
     /// playback tick (about 30 Hz while anything plays), on focus switches,
     /// and after any mutation (it follows ``sessionChanged``). Kept apart from
@@ -647,6 +654,9 @@ private:
         bool rebuild = false;
     };
     std::optional<ViewScope> view_scope_;
+    /// The stacks a take traded the sides of (once per take) since
+    /// after_mutation last announced; it says so for the focused one's.
+    std::vector<std::string> swapped_stacks_;
 
 };
 

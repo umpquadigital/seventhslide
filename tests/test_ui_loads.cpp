@@ -34,6 +34,7 @@
 #include <QQmlEngine>
 #include <QQmlError>
 #include <QColor>
+#include <QElapsedTimer>
 #include <QImage>
 #include <QJSValue>
 #include <QPoint>
@@ -45,6 +46,7 @@
 #include <QUrl>
 #include <QtQml/qqmlextensionplugin.h>
 
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -2961,6 +2963,253 @@ TEST_CASE("A stack with Preview on shows Preview and Program side by side, and T
     QTest::qWait(20);
     CHECK_FALSE(preview_well->isVisible());
     CHECK(controller->property("minimumWidth").toInt() == narrow);
+    INFO(ui.warnings());
+    CHECK(ui.warnings().empty());
+}
+
+namespace {
+
+/// A song of ``verses`` four-line verses, every line its own, ``word`` and
+/// its place: more lines than a well shows at once.
+seventhslide::model::Song long_song(const std::string& title, const std::string& word,
+                                    int verses = 10)
+{
+    seventhslide::model::Song song;
+    song.title = title;
+    for (int v = 1; v <= verses; ++v) {
+        song.lyrics += "[V" + std::to_string(v) + "]\n";
+        for (int l = 1; l <= 4; ++l) {
+            song.lyrics += word + " " + std::to_string(v) + "." + std::to_string(l) + "\n";
+        }
+        song.lyrics += "\n";
+        song.verse_order += (v > 1 ? " v" : "v") + std::to_string(v);
+    }
+    return song;
+}
+
+/// ``view``'s scroll (a ListView's or GridView's contentY).
+qreal content_y(const QQuickItem* view)
+{
+    return view->property("contentY").toReal();
+}
+
+/// The Controller's take (Transition), as its button calls it.
+bool take_by_controller(QObject* controller)
+{
+    QVariant taken;
+    REQUIRE(QMetaObject::invokeMethod(controller, "take", Q_RETURN_ARG(QVariant, taken)));
+    return taken.toBool();
+}
+
+/// Once ``view`` has stopped scrolling (a follow under way has ended): its
+/// scroll the same over a few frames running.
+qreal settled_y(const QQuickItem* view)
+{
+    qreal last = content_y(view);
+    int still = 0;
+    QElapsedTimer clock;
+    clock.start();
+    while (still < 3 && clock.elapsed() < 5000) {
+        QTest::qWait(30);
+        const qreal now = content_y(view);
+        still = std::abs(now - last) < 0.01 ? still + 1 : 0;
+        last = now;
+    }
+    REQUIRE(still == 3);
+    return last;
+}
+
+/// ``view`` stays at ``y`` over the next few frames: nothing scrolls it.
+void stays_at(QQuickItem* view, qreal y)
+{
+    // Longer than either follow's animation (280 ms for lines, 220 for thumbs).
+    for (int i = 0; i < 8; ++i) {
+        QTest::qWait(50);
+        INFO("after " << (i + 1) * 50 << " ms");
+        CHECK(content_y(view) == Catch::Approx(y).margin(0.5));
+    }
+}
+
+}  // namespace
+
+TEST_CASE("A take puts each well's lines where the other well's stood, not scrolled there",
+          "[ui][preview][scroll]")
+{
+    seventhslide::test::ensure_qt_application();
+    SessionFacade facade;
+    REQUIRE(facade.open_memory_database());
+    const auto main = facade.stacks()->focusedStackId();
+    REQUIRE(facade.stacks()->setStackPreview(main, true).isEmpty());
+    // Library songs, not service rows: neither side has a rundown item to
+    // tell them apart by.
+    facade.live()->play_song(long_song("Live", "Shine"), seventhslide::session::Land::Live);
+    facade.live()->play_song(long_song("Cued", "Rise"));
+    REQUIRE(facade.program()->totalLines() == 40);
+    REQUIRE(facade.preview()->totalLines() == 40);
+
+    OperatorUi ui(facade);
+    QQuickWindow* window = ui.window();
+    QObject* controller = ui.find_component("ControllerColumn");
+    REQUIRE(controller != nullptr);
+    auto* program_well = seventhslide::test::program_well(window);
+    auto* preview_well = window->findChild<QQuickItem*>(QStringLiteral("previewWell"));
+    REQUIRE(program_well != nullptr);
+    REQUIRE(preview_well != nullptr);
+    auto* live_lines = program_well->findChild<QQuickItem*>(QStringLiteral("wellLines"));
+    auto* cued_lines = preview_well->findChild<QQuickItem*>(QStringLiteral("wellLines"));
+    REQUIRE(live_lines != nullptr);
+    REQUIRE(cued_lines != nullptr);
+    REQUIRE(QTest::qWaitFor([&] { return program_well->height() > 100; }));
+    REQUIRE(live_lines->isVisible());
+    REQUIRE(cued_lines->isVisible());
+    // Both lists scroll: forty lines are more than a well shows.
+    REQUIRE(live_lines->property("contentHeight").toReal() > live_lines->height() * 1.5);
+
+    // Each followed to a line of its own, and the cued one scrolled on by
+    // hand past where it followed to.
+    REQUIRE(facade.program()->jumpToLine(30));
+    REQUIRE(facade.preview()->jumpToLine(12));
+    (void)settled_y(live_lines);
+    REQUIRE(cued_lines->setProperty("contentY", settled_y(cued_lines) + 50));
+    const qreal live_y = content_y(live_lines);
+    const qreal cued_y = content_y(cued_lines);
+    REQUIRE(live_y > 0);
+    REQUIRE(cued_y > 0);
+    REQUIRE(std::abs(live_y - cued_y) > 50);
+
+    // Taken: each well shows what the other did, where the other had it, at
+    // once and from then on; neither scrolls down to it from the top.
+    REQUIRE(take_by_controller(controller));
+    CHECK(facade.program()->lineCursor() == 12);
+    CHECK(facade.preview()->lineCursor() == 30);
+    CHECK(content_y(live_lines) == Catch::Approx(cued_y).margin(0.5));
+    CHECK(content_y(cued_lines) == Catch::Approx(live_y).margin(0.5));
+    stays_at(live_lines, cued_y);
+    stays_at(cued_lines, live_y);
+
+    // With Follow live line off, the same: each list comes back where it was.
+    REQUIRE(controller->setProperty("autoScroll", false));
+    REQUIRE(take_by_controller(controller));
+    CHECK(content_y(live_lines) == Catch::Approx(live_y).margin(0.5));
+    CHECK(content_y(cued_lines) == Catch::Approx(cued_y).margin(0.5));
+    stays_at(live_lines, live_y);
+    stays_at(cued_lines, cued_y);
+    REQUIRE(controller->setProperty("autoScroll", true));
+
+    // A step within what is live still scrolls to it, as it did. From mid
+    // song, so neither line is past where the list stops, however tall.
+    REQUIRE(facade.program()->jumpToLine(20));
+    const qreal mid_y = settled_y(live_lines);
+    REQUIRE(QMetaObject::invokeMethod(controller, "navigateNext"));
+    CHECK(facade.program()->lineCursor() > 20);
+    CHECK(content_y(live_lines) == Catch::Approx(mid_y).margin(0.5));
+    const qreal stepped_y = settled_y(live_lines);
+    CHECK(stepped_y > mid_y);
+
+    // Another stack's tab, far into a song of its own: shown on its line at
+    // once, not scrolled down to it from the top, each time it is shown.
+    REQUIRE(facade.stacks()->addStack(QStringLiteral("Lobby"), QStringLiteral("info")).isEmpty());
+    const auto lobby = facade.stacks()->stacks().back().toMap().value(QStringLiteral("id")).toString();
+    facade.stacks()->armSendTo(lobby);
+    facade.live()->play_song(long_song("Lobby", "Sing"), seventhslide::session::Land::Live);
+    facade.stacks()->setFocusedStackId(lobby);
+    REQUIRE(facade.stacks()->focusedStackId() == lobby);
+    REQUIRE(facade.program()->jumpToLine(25));
+    const qreal lobby_y = settled_y(live_lines);
+    REQUIRE(lobby_y > 0);
+    facade.stacks()->setFocusedStackId(main);
+    CHECK(content_y(live_lines) == Catch::Approx(stepped_y).margin(0.5));
+    stays_at(live_lines, stepped_y);
+    facade.stacks()->setFocusedStackId(lobby);
+    CHECK(content_y(live_lines) == Catch::Approx(lobby_y).margin(0.5));
+    stays_at(live_lines, lobby_y);
+
+    INFO(ui.warnings());
+    CHECK(ui.warnings().empty());
+}
+
+TEST_CASE("A take puts each well's thumbnails where the other well's stood",
+          "[ui][preview][scroll]")
+{
+    seventhslide::test::ensure_qt_application();
+    SessionFacade facade;
+    REQUIRE(facade.open_memory_database());
+    REQUIRE(facade.library()->createService(QStringLiteral("Svc")) > 0);
+    using seventhslide::db::MediaKind;
+    // Two folders of forty pictures each: more rows than a well shows.
+    for (const char* folder : {"First", "Second"}) {
+        const auto folder_id = facade.media_repo()->folders(MediaKind::Image).create(folder);
+        for (int i = 0; i < 40; ++i) {
+            const std::string file = std::string(folder) + "-" + std::to_string(i) + ".png";
+            facade.media_repo()->upsert_file(MediaKind::Image, file, file);
+            (void)facade.media_repo()->add_folder_item(MediaKind::Image, folder_id, file);
+        }
+        facade.refresh_library();
+        REQUIRE(facade.media()->addImageFolderToService(static_cast<qint64>(folder_id)));
+    }
+    const auto main = facade.stacks()->focusedStackId();
+    REQUIRE(facade.stacks()->setStackPreview(main, true).isEmpty());
+
+    OperatorUi ui(facade);
+    QQuickWindow* window = ui.window();
+    QObject* controller = ui.find_component("ControllerColumn");
+    REQUIRE(controller != nullptr);
+    auto* program_well = seventhslide::test::program_well(window);
+    auto* preview_well = window->findChild<QQuickItem*>(QStringLiteral("previewWell"));
+    REQUIRE(program_well != nullptr);
+    REQUIRE(preview_well != nullptr);
+    auto* live_thumbs = program_well->findChild<QQuickItem*>(QStringLiteral("wellGallery"));
+    auto* cued_thumbs = preview_well->findChild<QQuickItem*>(QStringLiteral("wellGallery"));
+    REQUIRE(live_thumbs != nullptr);
+    REQUIRE(cued_thumbs != nullptr);
+
+    // Laid out: the wells have their size.
+    REQUIRE(QTest::qWaitFor([&] { return program_well->height() > 100; }));
+
+    // The first folder live far into it, the second cued not so far.
+    REQUIRE(facade.live()->selectServiceItemAtImage(0, 34, /*live=*/true));
+    REQUIRE(facade.live()->selectServiceItemAtImage(1, 9));
+    QTest::qWait(50);
+    REQUIRE(live_thumbs->isVisible());
+    REQUIRE(cued_thumbs->isVisible());
+    // The cued thumbs scrolled on by hand, so where they land after the take
+    // is told apart from where a follow would put them.
+    const qreal live_y = settled_y(live_thumbs);
+    REQUIRE(cued_thumbs->setProperty("contentY", settled_y(cued_thumbs) + 20));
+    const qreal cued_y = content_y(cued_thumbs);
+    REQUIRE(live_y > 0);
+    REQUIRE(cued_y > 0);
+    REQUIRE(std::abs(live_y - cued_y) > 1);
+
+    REQUIRE(take_by_controller(controller));
+    CHECK(facade.program()->lineCursor() == 9);
+    CHECK(facade.preview()->lineCursor() == 34);
+    CHECK(content_y(live_thumbs) == Catch::Approx(cued_y).margin(0.5));
+    CHECK(content_y(cued_thumbs) == Catch::Approx(live_y).margin(0.5));
+    stays_at(live_thumbs, cued_y);
+    stays_at(cued_thumbs, live_y);
+
+    // Lines cued over thumbnails live: each well turns to the other's kind
+    // of list, and each list is where it stood in the other well.
+    auto* live_lines = program_well->findChild<QQuickItem*>(QStringLiteral("wellLines"));
+    auto* cued_lines = preview_well->findChild<QQuickItem*>(QStringLiteral("wellLines"));
+    REQUIRE(live_lines != nullptr);
+    REQUIRE(cued_lines != nullptr);
+    facade.live()->play_song(long_song("Cued", "Rise"));
+    REQUIRE(facade.preview()->jumpToLine(20));
+    const qreal song_y = settled_y(cued_lines);
+    REQUIRE(cued_lines->isVisible());
+    REQUIRE(song_y > 0);
+    const qreal thumbs_y = content_y(live_thumbs);
+    REQUIRE(thumbs_y > 0);
+    REQUIRE(take_by_controller(controller));
+    REQUIRE(live_lines->isVisible());
+    REQUIRE(cued_thumbs->isVisible());
+    CHECK(content_y(live_lines) == Catch::Approx(song_y).margin(0.5));
+    CHECK(content_y(cued_thumbs) == Catch::Approx(thumbs_y).margin(0.5));
+    stays_at(live_lines, song_y);
+    stays_at(cued_thumbs, thumbs_y);
+
     INFO(ui.warnings());
     CHECK(ui.warnings().empty());
 }

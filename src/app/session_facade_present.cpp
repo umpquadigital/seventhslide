@@ -120,6 +120,15 @@ void SessionFacade::after_mutation(bool rebuild_models)
         view_scope_->rebuild = view_scope_->rebuild || rebuild_models;
         return;
     }
+    // Before anything reloads: the views on the focused stack's sides still
+    // stand as they did. Taken twice in one change (no command does that),
+    // each side is back as it was, so nothing trades and the reset only puts
+    // each list on its line.
+    const auto takes = std::ranges::count(swapped_stacks_, session_.focused_stack_id());
+    swapped_stacks_.clear();
+    if (takes % 2 == 1) {
+        emit focusedSidesSwapping();
+    }
     // Load/play video and audio before preview URLs refresh so the first
     // thumbnail request does not capture the hold-frame / empty-frame black plate.
     mixer_->sync();

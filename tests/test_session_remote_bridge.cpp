@@ -36,6 +36,7 @@
 #include <nlohmann/json.hpp>
 
 #include <QImage>
+#include <QSignalSpy>
 #include <QString>
 #include <QTemporaryDir>
 #include <QTest>
@@ -1823,6 +1824,48 @@ TEST_CASE("Bridge: transition takes what is cued, by the theme's way or the one 
     CHECK_FALSE(bridge.invoke(Command::Transition, {{"stackId", fx.main}, {"easing", "linear"}}).ok);
     CHECK(fx.preview().occupied());
     CHECK_FALSE(bridge.invoke(Command::Transition, {{"stackId", fx.lobby}}).ok);
+}
+
+TEST_CASE("Bridge: a take from the remote trades the Controller's sides only on the stack it shows",
+          "[app][remote][bridge][preview][scroll]")
+{
+    PreviewFixture fx;
+    Remote bridge{fx.facade};
+    QSignalSpy swapping(&fx.facade, &SessionFacade::focusedSidesSwapping);
+    fx.facade.live()->play_song(demo_song(), seventhslide::session::Land::Live);
+    fx.facade.live()->play_song(demo_song());
+
+    // The console shows Main, as the remote does: said once, the console's
+    // focus back on Main by then.
+    QString focused_then;
+    QObject::connect(&fx.facade, &SessionFacade::focusedSidesSwapping,
+                     [&] { focused_then = fx.facade.stacks()->focusedStackId(); });
+    REQUIRE(bridge.invoke(Command::Transition, {{"stackId", fx.main}}).ok);
+    CHECK(swapping.count() == 1);
+    CHECK(focused_then.toStdString() == fx.main);
+
+    // The console on the Lobby: the remote's take on Main trades nothing the
+    // Controller shows.
+    fx.facade.stacks()->armSendTo(QString::fromStdString(fx.lobby));
+    fx.facade.live()->play_song(demo_song());
+    fx.facade.stacks()->setFocusedStackId(QString::fromStdString(fx.lobby));
+    REQUIRE(fx.facade.stacks()->focusedStackId().toStdString() == fx.lobby);
+    REQUIRE(fx.preview().occupied());
+    REQUIRE(bridge.invoke(Command::Transition, {{"stackId", fx.main}}).ok);
+    CHECK(swapping.count() == 1);
+    CHECK(fx.facade.stacks()->focusedStackId().toStdString() == fx.lobby);
+
+    // The remote on the Lobby's tab, the console on Main: the remote's take
+    // on Main is on the stack the Controller shows, so it trades there,
+    // once the console's focus is back.
+    fx.facade.stacks()->setFocusedStackId(QString::fromStdString(fx.main));
+    REQUIRE(bridge.invoke(Command::SetFocusedStackId, {{"stackId", fx.lobby}}).ok);
+    REQUIRE(fx.facade.stacks()->focusedStackId().toStdString() == fx.main);
+    REQUIRE(fx.preview().occupied());
+    focused_then.clear();
+    REQUIRE(bridge.invoke(Command::Transition, {{"stackId", fx.main}}).ok);
+    CHECK(swapping.count() == 2);
+    CHECK(focused_then.toStdString() == fx.main);
 }
 
 TEST_CASE("Bridge: clearPreview drops what is cued and leaves what is live",

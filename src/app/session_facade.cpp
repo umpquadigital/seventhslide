@@ -218,6 +218,10 @@ void SessionFacade::wire_controllers()
     follow_live(*live_library_);
     follow_live(*stack_ctl_);
     follow_live(*live_);
+    // A take traded a stack's sides; after_mutation says so for the focused
+    // stack's, once the console has its focus (see focusedSidesSwapping).
+    connect(stack_ctl_.get(), &StackController::sidesSwapped, this,
+            [this](const QString& stack_id) { swapped_stacks_.push_back(stack_id.toStdString()); });
     connect(playback_.get(), &PlaybackController::previewChanged, this,
             &SessionFacade::bump_preview_revision);
     connect(playback_.get(), &PlaybackController::repaintRequested, this,

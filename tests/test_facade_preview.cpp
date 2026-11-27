@@ -8,6 +8,10 @@
 
 #include <QSignalSpy>
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 using namespace seventhslide::test::facade;
 using seventhslide::app::ServiceItemModel;
 using seventhslide::app::StackController;
@@ -182,4 +186,81 @@ TEST_CASE("The service list marks the row cued in the focused stack's Preview",
     REQUIRE(facade.live()->selectServiceItemAtImage(0, 2, /*live=*/true));
     CHECK(facade.program()->lineCursor() == 2);
     CHECK(facade.preview()->lineCursor() == 1);
+}
+
+TEST_CASE("A take says the focused stack's sides are traded before it lists them again",
+          "[app][preview][scroll]")
+{
+    seventhslide::test::ensure_qt_application();
+    SessionFacade facade;
+    REQUIRE(facade.open_memory_database());
+    auto* stacks = facade.stacks();
+    const auto main = main_id(facade);
+    REQUIRE(stacks->setStackPreview(main, true).isEmpty());
+
+    // Two songs of their own lines, one live and one cued.
+    auto other = demo_song();
+    other.title = "Other Song";
+    other.lyrics = "[V1]\nA line of its own\n\n[V2]\nAnd another";
+    facade.live()->play_song(demo_song(), Land::Live);
+    facade.live()->play_song(other);
+    REQUIRE(facade.program()->occupied());
+    REQUIRE(facade.preview()->occupied());
+
+    // What the wells hear, in the order they hear it.
+    std::vector<std::string> heard;
+    QObject::connect(&facade, &SessionFacade::focusedSidesSwapping,
+                     [&] { heard.emplace_back("swapping"); });
+    QObject::connect(facade.program()->lines(), &QAbstractItemModel::modelAboutToBeReset,
+                     [&] { heard.emplace_back("program reset"); });
+    QObject::connect(facade.preview()->lines(), &QAbstractItemModel::modelAboutToBeReset,
+                     [&] { heard.emplace_back("preview reset"); });
+    QObject::connect(&facade, &SessionFacade::focusedStackChanged,
+                     [&] { heard.emplace_back("focus"); });
+
+    // The take: said once, before either side's lines are reset and before
+    // the focus says they changed.
+    REQUIRE(stacks->transition(main).isEmpty());
+    REQUIRE_FALSE(heard.empty());
+    CHECK(heard.front() == "swapping");
+    CHECK(std::ranges::count(heard, std::string("swapping")) == 1);
+    CHECK(std::ranges::count(heard, std::string("program reset")) == 1);
+    CHECK(std::ranges::count(heard, std::string("preview reset")) == 1);
+    CHECK(std::ranges::count(heard, std::string("focus")) >= 1);
+    CHECK(facade.session().focused_stack().program.song().title == "Other Song");
+
+    // Clearing what is cued trades nothing.
+    QSignalSpy swapping(&facade, &SessionFacade::focusedSidesSwapping);
+    REQUIRE(stacks->clearPreview(main).isEmpty());
+    CHECK(swapping.isEmpty());
+
+    // A take on a stack the Controller does not show trades nothing there.
+    REQUIRE(stacks->addStack(QStringLiteral("Lobby"), QStringLiteral("info")).isEmpty());
+    const auto lobby = stacks->stacks().back().toMap().value(QStringLiteral("id")).toString();
+    REQUIRE(stacks->setStackPreview(lobby, true).isEmpty());
+    stacks->armSendTo(lobby);
+    facade.live()->play_song(other);
+    stacks->setFocusedStackId(main);
+    REQUIRE(stacks->focusedStackId() == main);
+    REQUIRE(stacks->transition(lobby).isEmpty());
+    CHECK(swapping.isEmpty());
+    CHECK(stacks->focusedStackId() == main);
+    // Nor later, once it is shown: that take was let go with its change.
+    stacks->setFocusedStackId(lobby);
+    REQUIRE(stacks->focusedStackId() == lobby);
+    REQUIRE(facade.program()->jumpToLine(1));
+    CHECK(swapping.isEmpty());
+
+    // And on the one it shows, it does.
+    stacks->armSendTo(main);
+    facade.live()->play_song(demo_song());
+    stacks->setFocusedStackId(main);
+    REQUIRE(stacks->transition(main).isEmpty());
+    CHECK(swapping.count() == 1);
+
+    // By a transition of its own too, as Transition's menu takes.
+    facade.live()->play_song(other);
+    REQUIRE(facade.preview()->occupied());
+    REQUIRE(stacks->transitionWith(main, QStringLiteral("fade"), 300, QString()).isEmpty());
+    CHECK(swapping.count() == 2);
 }
