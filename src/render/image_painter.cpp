@@ -251,7 +251,7 @@ void paint_video_object(QPainter& painter, const canvas::Object& video, bool pla
         pix = *playing;
     }
     if ((!plays || pix.isNull()) && ctx.cache != nullptr) {
-        if (const auto poster_url = model::static_media_url(model::k_images_subdir, video.video.poster)) {
+        if (const auto poster_url = model::media_ref_url(model::k_images_subdir, video.video.poster)) {
             if (const QImage poster = ctx.cache->get(*poster_url); !poster.isNull()) {
                 pix = poster;
             }

@@ -2,8 +2,8 @@
 //
 // One slice of SessionFacade (the class is declared in session_facade.hpp):
 // "Save as Freeform" from a library song and from a Bible reference. Each
-// converts, copies into the library any file a background theme owns that its
-// slides name, then stores the result through the library.
+// converts, copies into the new item's own files any file a background theme
+// owns that its slides name, then stores the result through the library.
 
 #include "session_facade.hpp"
 
@@ -18,6 +18,7 @@
 #include <seventhslide/db/font_repository.hpp>
 #include <seventhslide/db/schema.hpp>
 #include <seventhslide/freeform/doc_edit.hpp>
+#include <seventhslide/freeform/own_media.hpp>
 #include <seventhslide/scene/chrome_text.hpp>
 #include <seventhslide/scene/freeform_convert.hpp>
 
@@ -158,14 +159,17 @@ QVariantMap SessionFacade::save_converted(freeform::Document doc)
     };
     auto saving = std::make_shared<Saving>();
     const std::string library = db::library_uid(*open_library_.database());
-    bg_copier_->own_theme_files(std::move(doc), [this, saving, library](
-                                                    freeform::Document owned,
-                                                    const QStringList& errors) {
+    // The item's uid is chosen now: the theme's files are copied in as its own
+    // before it is stored.
+    const auto owner = freeform::new_own_media_owner();
+    bg_copier_->own_theme_files(std::move(doc), owner, [this, saving, library, owner](
+                                                           freeform::Document owned,
+                                                           const QStringList& errors) {
         for (const auto& e : errors) {
             emit errorOccurred(e);
         }
         if (!saving->waited) {
-            saving->id = freeform_library_->add_document(std::move(owned));
+            saving->id = freeform_library_->add_document(std::move(owned), owner);
             return;
         }
         // Not under the caller's catch: a failure is reported here.
@@ -176,7 +180,7 @@ QVariantMap SessionFacade::save_converted(freeform::Document doc)
                                       "closed while its backgrounds were copied in."));
                 return;
             }
-            if (freeform_library_->add_document(std::move(owned)) < 0) {
+            if (freeform_library_->add_document(std::move(owned), owner) < 0) {
                 emit errorOccurred(tr("The Freeform item was not saved: no library is open."));
             }
         } catch (const std::exception& ex) {

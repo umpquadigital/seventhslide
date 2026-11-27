@@ -134,9 +134,9 @@ std::optional<std::string> object_media_url(const Object& obj)
 {
     switch (obj.type) {
     case ObjectType::Image:
-        return model::static_media_url(model::k_images_subdir, obj.filename);
+        return model::media_ref_url(model::k_images_subdir, obj.filename);
     case ObjectType::Video:
-        return model::static_media_url(model::k_videos_subdir, obj.filename);
+        return model::media_ref_url(model::k_videos_subdir, obj.filename);
     case ObjectType::Text:
     case ObjectType::Shape:
     case ObjectType::Table:
@@ -152,7 +152,7 @@ std::optional<std::string> fill_picture_url(const Fill& fill)
     if (fill.kind != FillKind::Picture || fill.picture.file.empty()) {
         return std::nullopt;
     }
-    return model::static_media_url(model::k_images_subdir, fill.picture.file);
+    return model::media_ref_url(model::k_images_subdir, fill.picture.file);
 }
 
 void map_object(Object& obj, const geom::CanvasMapping& mapping)

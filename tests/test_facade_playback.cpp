@@ -2331,7 +2331,12 @@ TEST_CASE("A video object plays in its box, on show or on a click", "[app][mpv][
     REQUIRE(facade.live()->playFreeform(id));
     auto* playback = facade.playback();
     REQUIRE(playback->object_player_count() == 1);
-    const auto key = seventhslide::scene::video_object_key("/static/videos/clip.mp4");
+    // Saved, the item plays its own copy of the library's clip.
+    const auto saved = facade.freeformLibrary()->load_freeform_document(id);
+    REQUIRE(saved);
+    const auto& played = saved->decks[0].slides[0].objects.back().filename;
+    REQUIRE(played.starts_with("/static/freeform_media/"));
+    const auto key = seventhslide::scene::video_object_key(played);
     CHECK(facade.program()->step_count() == (on_click ? 2 : 1));
     if (on_click) {
         // Held on its first picture until the click.

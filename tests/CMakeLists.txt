@@ -170,6 +170,7 @@ seventhslide_add_tests(core LIBS SeventhSlide::devsupport SOURCES
         test_freeform_document.cpp
         test_freeform_files.cpp
         test_freeform_editor.cpp
+        test_freeform_own_media.cpp
         test_freeform_paste.cpp
         test_freeform_slide_copy.cpp
         test_hash.cpp
@@ -282,6 +283,7 @@ seventhslide_add_tests(app APP
         test_export.cpp
         test_facade_freeform.cpp
         test_freeform_files_app.cpp
+        test_freeform_own_media_app.cpp
         test_facade_library.cpp
         test_facade_media.cpp
         test_facade_mixer.cpp

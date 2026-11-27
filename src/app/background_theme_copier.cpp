@@ -65,7 +65,8 @@ BackgroundThemeCopier::BackgroundThemeCopier(const session::Session& session,
             &BackgroundThemeCopier::on_import_finished);
 }
 
-void BackgroundThemeCopier::copy(std::string_view output_id, std::string_view theme_id, Done done)
+void BackgroundThemeCopier::copy(std::string_view output_id, std::string_view theme_id,
+                                 std::string owner, Done done)
 {
     const model::ThemeEntry* theme = nullptr;
     for (const auto& oc : session_.outputs()) {
@@ -84,7 +85,7 @@ void BackgroundThemeCopier::copy(std::string_view output_id, std::string_view th
     }
     const auto url = copied.copy_from_url;
     const bool video = copied.background.kind == freeform::SlideBackgroundKind::Video;
-    import_file(url, video,
+    import_file(url, video, owner, theme->name,
                 [copied = std::move(copied), done = std::move(done)](std::string filename,
                                                                      QString error) mutable {
                     if (filename.empty()) {
@@ -98,6 +99,7 @@ void BackgroundThemeCopier::copy(std::string_view output_id, std::string_view th
 
 void BackgroundThemeCopier::own_theme_files(
     freeform::Document doc,
+    std::string owner,
     std::function<void(freeform::Document, QStringList)> done)
 {
     // Each file once, however many slides name it.
@@ -128,7 +130,7 @@ void BackgroundThemeCopier::own_theme_files(
     state->left = files.size();
     state->done = std::move(done);
     for (const auto& [name, video] : files) {
-        import_file(name, video, [state, url = name](std::string filename, QString error) {
+        import_file(name, video, owner, theme_name_of(name), [state, url = name](std::string filename, QString error) {
             for (auto& deck : state->doc.decks) {
                 for (auto& slide : deck.slides) {
                     auto* file = theme_file_of(slide.background);
@@ -152,16 +154,34 @@ void BackgroundThemeCopier::own_theme_files(
     }
 }
 
-void BackgroundThemeCopier::import_file(const std::string& url, bool video, Imported done)
+void BackgroundThemeCopier::import_file(const std::string& url, bool video,
+                                        const std::string& owner, const std::string& title,
+                                        Imported done)
 {
     const auto path = file_of(library_.media_root(), url);
     if (path.empty()) {
         done({}, tr("The background theme's file could not be found"));
         return;
     }
-    const qint64 id = media_.import_files(video ? db::MediaKind::Video : db::MediaKind::Image,
-                                          {QString::fromStdString(path.string())});
+    const qint64 id = media_.import_freeform_media(
+        video ? db::MediaKind::Video : db::MediaKind::Image, {QString::fromStdString(path.string())},
+        owner, title.empty() ? std::string("Background") : title);
     pending_.emplace(id, std::move(done));
+}
+
+std::string BackgroundThemeCopier::theme_name_of(std::string_view url) const
+{
+    // The theme that shows it, on any output; its file's own name is no
+    // one's to read.
+    for (const auto& oc : session_.outputs()) {
+        for (const auto& theme : oc.bg_themes) {
+            const auto copied = freeform::background_copy_of(theme.style);
+            if (copied.copy_from_url == url) {
+                return theme.name;
+            }
+        }
+    }
+    return {};
 }
 
 void BackgroundThemeCopier::on_import_finished(qint64 request_id, const QVariantMap& result)

@@ -130,6 +130,7 @@ add_library(seventhslide_core STATIC
     freeform/editor_objects.cpp
     freeform/editor_properties.cpp
     freeform/object_properties.cpp
+    freeform/own_media.cpp
     freeform/paint.cpp
     freeform/tokens.cpp
 

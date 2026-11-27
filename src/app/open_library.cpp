@@ -1,5 +1,6 @@
 #include "open_library.hpp"
 
+#include <seventhslide/freeform/own_media.hpp>
 #include <seventhslide/platform/paths.hpp>
 #include <seventhslide/util/leaf_filename.hpp>
 
@@ -119,11 +120,17 @@ std::filesystem::path OpenLibrary::resolve_media_path(std::string_view subdir,
     if (resolved_root.empty() || subdir.empty()) {
         return {};
     }
-    const auto leaf = util::leaf_filename(filename);
-    if (leaf.empty()) {
-        return {};
+    fs::path candidate;
+    if (const auto own = freeform::own_media_of(filename)) {
+        // A Freeform's own file, in its owner's folder whatever ``subdir`` says.
+        candidate = freeform::own_media_path(root, *own);
+    } else {
+        const auto leaf = util::leaf_filename(filename);
+        if (leaf.empty()) {
+            return {};
+        }
+        candidate = root / std::string(subdir) / leaf;
     }
-    const fs::path candidate = root / std::string(subdir) / leaf;
     std::error_code ec;
     if (!fs::is_regular_file(candidate, ec)
         || !platform::Paths::path_is_within_resolved(candidate, resolved_root)) {

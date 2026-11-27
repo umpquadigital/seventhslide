@@ -21,6 +21,7 @@
 #include <seventhslide/exchange/bundle_io.hpp>
 #include <seventhslide/freeform/doc_edit.hpp>
 #include <seventhslide/freeform/media_refs.hpp>
+#include <seventhslide/freeform/own_media.hpp>
 #include <seventhslide/model/live_source.hpp>
 #include <seventhslide/model/static_media.hpp>
 #include <seventhslide/model/web_page.hpp>
@@ -982,9 +983,9 @@ struct MediaIndex {
     return util::portable_file_name(title, "Untitled");
 }
 
-/// Where the file ``ref`` (a library file's name, or a ``/static/...`` URL)
-/// is, what the library calls it, and its place as sync names it
-/// (``images/<name>``). Its path is left empty when it is not on this
+/// Where the file ``ref`` (a library file's name, a document's own file, or
+/// a ``/static/...`` URL) is, what it is called, and its place as sync names
+/// it (``images/<name>``, ``freeform_media/<owner>/<name>``). Its path is left empty when it is not on this
 /// computer. Only the three folders a document's files are in are looked
 /// in, unlike ``render::resolve_static_asset``, which serves every one.
 struct FoundFile {
@@ -996,6 +997,17 @@ struct FoundFile {
 {
     FoundFile found;
     found.file.kind = kind;
+    if (const auto own = freeform::own_media_of(ref)) {
+        // A document's own file, called what it was brought in as.
+        auto path = freeform::own_media_path(index.media_root, *own);
+        found.file.title = freeform::own_media_title(own->name);
+        found.sync_path = std::string(model::k_freeform_media_subdir) + "/" + own->place();
+        std::error_code ec;
+        if (!index.media_root.empty() && fs::is_regular_file(path, ec)) {
+            found.file.path = std::move(path);
+        }
+        return found;
+    }
     const bool video = kind == canvas::MediaRefKind::Video;
     std::string_view sub = db::media_subdir(video ? db::MediaKind::Video : db::MediaKind::Image);
     std::string_view name;
@@ -1017,12 +1029,15 @@ struct FoundFile {
     fs::path path;
     if (sub == model::k_theme_backgrounds_subdir) {
         path = index.theme_dir / std::string(name);
-        found.file.title = std::string(name);
+        // A theme's file's own name is no one's to read.
+        found.file.title = "Background";
     } else if (sub == model::k_images_subdir || sub == model::k_videos_subdir) {
         path = index.media_root / std::string(sub) / std::string(name);
         const auto& titles = sub == model::k_videos_subdir ? index.video_titles : index.picture_titles;
         const auto it = titles.find(name);
-        found.file.title = it != titles.end() ? it->second : std::string(name);
+        // A file the library has no title for leaves it to the importer
+        // ("Imported picture"), not its opaque name.
+        found.file.title = it != titles.end() ? it->second : std::string();
         found.sync_path = std::string(sub) + "/" + std::string(name);
     } else {
         return found;
@@ -1169,12 +1184,17 @@ struct PackageJob : BundleJob {
 /// What did not go, as notes for people.
 void note_left_out(const exchange::WriteOutcome& written, ExportOutcome& out)
 {
+    // A file with no title of its own (see find_file) is said as what it is.
     for (const auto& title : written.media_not_included) {
-        out.notes.push_back(ExportController::tr("“%1” is not on this computer, so it is not in the file.")
+        out.notes.push_back(
+            title.empty() ? ExportController::tr("A picture or video is not on this computer, so it is not in the file.")
+                          : ExportController::tr("“%1” is not on this computer, so it is not in the file.")
                                 .arg(QString::fromStdString(title)));
     }
     for (const auto& title : written.media_unreadable) {
-        out.notes.push_back(ExportController::tr("“%1” could not be read, so it is not in the file.")
+        out.notes.push_back(
+            title.empty() ? ExportController::tr("A picture or video could not be read, so it is not in the file.")
+                          : ExportController::tr("“%1” could not be read, so it is not in the file.")
                                 .arg(QString::fromStdString(title)));
     }
     for (const auto& family : written.fonts_not_included) {

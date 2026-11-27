@@ -65,6 +65,7 @@
 #include <QThreadPool>
 #include <QTimer>
 
+#include <filesystem>
 #include <optional>
 #include <type_traits>
 #include <string>
@@ -125,6 +126,7 @@ SessionFacade::SessionFacade(QObject* parent)
 {
     bg_copier_ = std::make_unique<BackgroundThemeCopier>(session_, open_library_, *media_, this);
     slide_edit_->set_background_copier(bg_copier_.get());
+    slide_edit_->set_media(media_.get());
     live_sources_->set_factory(live_receiver_factory());
     live_library_->set_receiver_factory(live_receiver_factory());
     live_library_->set_live_sources(live_sources_.get());
@@ -488,6 +490,9 @@ bool SessionFacade::finish_open_database(db::Database db, const std::string& lib
     media_->attach(database);
     freeform_library_->attach(database);
     web_library_->attach(database);
+    // Files brought into a Freeform item and never saved in it, or left by
+    // items and service rows since deleted.
+    freeform_library_->prune_own_media();
 
     // Outputs first: the profile service keys its first snapshot by output id.
     session_.set_outputs(load_library_outputs(made_now));
@@ -736,6 +741,7 @@ void SessionFacade::media_arrived(const std::vector<std::string>& paths)
     std::map<db::MediaKind, std::vector<std::string>> files;
     std::vector<std::string> pictures;
     bool theme_pictures = false;
+    bool own_media = false;
     bool fonts = false;
     for (const auto& path : paths) {
         const auto slash = path.find('/');
@@ -748,6 +754,10 @@ void SessionFacade::media_arrived(const std::vector<std::string>& paths)
             fonts = true;
         } else if (folder == model::k_theme_backgrounds_subdir) {
             theme_pictures = true;
+            pictures.push_back("/static/" + path);
+        } else if (folder == model::k_freeform_media_subdir) {
+            // A Freeform's own picture or video; neither is the library's.
+            own_media = true;
             pictures.push_back("/static/" + path);
         }
         for (const auto kind : db::k_media_kinds) {
@@ -781,9 +791,13 @@ void SessionFacade::media_arrived(const std::vector<std::string>& paths)
     for (auto& [kind, names] : files) {
         media_->files_arrived(kind, names);
     }
+    if (own_media) {
+        media_->own_media_arrived();
+    }
     // A video or sound waiting for its file plays once it is here, and the
     // previews drawn without a picture are drawn again.
-    if (redrawn || files.contains(db::MediaKind::Video) || files.contains(db::MediaKind::Audio)) {
+    if (redrawn || own_media || files.contains(db::MediaKind::Video)
+        || files.contains(db::MediaKind::Audio)) {
         after_mutation(false);
     }
 }
@@ -971,6 +985,17 @@ void SessionFacade::sweep_import_staging() const
         FileImporter::sweep_staging(root / db::media_subdir(kind));
     }
     FileImporter::sweep_staging(theme::theme_assets_dir(root));
+    // Freeform items' own files are staged in their owners' folders.
+    const auto own = root / std::string(model::k_freeform_media_subdir);
+    FileImporter::sweep_staging(own);
+    std::error_code ec;
+    for (auto it = std::filesystem::directory_iterator(own, ec);
+         !ec && it != std::filesystem::directory_iterator(); it.increment(ec)) {
+        std::error_code dir_ec;
+        if (it->is_directory(dir_ec)) {
+            FileImporter::sweep_staging(it->path());
+        }
+    }
     util::remove_stale_cache_temps(media_thumbs_dir(root));
     QThreadPool::globalInstance()->start([root] { prune_theme_thumbs(root); });
 }

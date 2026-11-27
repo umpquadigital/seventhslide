@@ -133,9 +133,10 @@ public:
     /// ``media_root`` for a caller on another thread (Qt's pixmap reader).
     [[nodiscard]] std::filesystem::path media_root_any_thread() const;
     /// Absolute path of ``filename`` under ``subdir`` of the media root, or
-    /// empty when it is not there. Only the leaf of ``filename`` counts, and
-    /// the result never leaves the media root (symlinks included). Safe to
-    /// call from any thread.
+    /// empty when it is not there. Only the leaf of ``filename`` counts, but
+    /// for a Freeform's own file (``freeform::own_media_of``), which is in its
+    /// owner's folder; the result never leaves the media root (symlinks
+    /// included). Safe to call from any thread.
     [[nodiscard]] std::filesystem::path resolve_media_path(std::string_view subdir,
                                                            std::string_view filename) const;
 

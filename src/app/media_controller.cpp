@@ -18,6 +18,7 @@
 
 #include <seventhslide/db/media_kind.hpp>
 #include <seventhslide/db/media_listing.hpp>
+#include <seventhslide/freeform/own_media.hpp>
 #include <seventhslide/model/static_media.hpp>
 #include <seventhslide/platform/paths.hpp>
 #include <seventhslide/util/atomic_file.hpp>
@@ -538,50 +539,70 @@ std::optional<nlohmann::json> MediaController::image_folder_data(std::int64_t fo
     };
 }
 
+std::optional<MediaController::MediaPlace> MediaController::place_of(db::MediaKind kind,
+                                                                     const std::string& ref) const
+{
+    if (ref.empty()) {
+        return std::nullopt;
+    }
+    MediaPlace place;
+    if (auto own = freeform::own_media_of(ref)) {
+        place.path = freeform::own_media_path(library_.media_root(), *own);
+        place.sync_path = std::string(model::k_freeform_media_subdir) + "/" + own->place();
+        place.leaf = own->name;
+        place.own = std::move(own);
+        return place;
+    }
+    place.leaf = util::leaf_filename(ref);
+    if (place.leaf.empty()) {
+        return std::nullopt;
+    }
+    place.path = library_.media_root() / db::media_subdir(kind) / place.leaf;
+    place.sync_path = std::string(db::media_subdir(kind)) + "/" + place.leaf;
+    return place;
+}
+
 QString MediaController::file_url_for_media(db::MediaKind kind, const std::string& filename) const
 {
-    if (filename.empty()) {
+    if (filename.empty() || library_.media_root().empty()) {
         return {};
     }
-    const auto media_dir = library_.media_root();
-    if (media_dir.empty()) {
-        return {};
-    }
-    const auto path = media_dir / db::media_subdir(kind) / filename;
+    const auto place = place_of(kind, filename);
     std::error_code ec;
-    if (!std::filesystem::is_regular_file(path, ec)) {
+    if (!place || !std::filesystem::is_regular_file(place->path, ec)) {
         return {};
     }
-    return QUrl::fromLocalFile(QString::fromStdString(path.string())).toString();
+    return QUrl::fromLocalFile(QString::fromStdString(place->path.string())).toString();
 }
 
 QString MediaController::media_thumb_url_for(db::MediaKind kind, const std::string& filename) const
 {
-    if (!has_thumbs(kind) || filename.empty()) {
+    if (!has_thumbs(kind) || filename.empty() || library_.media_root().empty()) {
         return {};
     }
-    const auto leaf = util::leaf_filename(filename);
-    if (leaf.empty() || library_.media_root().empty()) {
+    const auto place = place_of(kind, filename);
+    if (!place) {
         return {};
     }
     // A missing file gets no URL, so its row shows the glyph. One stat per
     // row: whether the file stays inside the media folder is the provider's
     // check, made when a thumbnail is actually loaded.
-    const auto subdir = db::media_subdir(kind);
     std::error_code ec;
-    if (!std::filesystem::is_regular_file(library_.media_root() / subdir / leaf, ec)) {
+    if (!std::filesystem::is_regular_file(place->path, ec)) {
         return {};
     }
     // An image is read on demand; a video's frame only once the warming pool
     // has made it (and the listing is rebuilt then).
-    if (kind == db::MediaKind::Video && !video_thumbs_made(library_.media_root(), leaf)) {
+    if (kind == db::MediaKind::Video && !video_thumbs_made(library_.media_root(), place->leaf)) {
         return {};
     }
+    // A Freeform's own file goes by its URL, which says whose it is.
+    const auto id = place->own ? filename : place->leaf;
     // ``v`` busts both the QML pixmap cache and the provider LRU when the active
     // library changes - two libraries can hold different files under one name.
     return QStringLiteral("image://mediathumb/%1/%2?v=%3")
-        .arg(QString::fromUtf8(subdir),
-             QString::fromUtf8(QUrl::toPercentEncoding(QString::fromStdString(leaf))))
+        .arg(QString::fromUtf8(db::media_subdir(kind)),
+             QString::fromUtf8(QUrl::toPercentEncoding(QString::fromStdString(id))))
         .arg(library_revision_);
 }
 
@@ -636,7 +657,8 @@ void MediaController::rebuild_media_browser(db::MediaKind kind)
 }
 
 void MediaController::schedule_warm_media_thumbs(db::MediaKind kind,
-                                                 std::vector<std::string> filenames)
+                                                 std::vector<std::string> filenames,
+                                                 const std::string& owner)
 {
     if (filenames.empty()) {
         return;
@@ -649,27 +671,45 @@ void MediaController::schedule_warm_media_thumbs(db::MediaKind kind,
     // cancels its batch, so a job never writes into an outgoing library's
     // media folder past the file it is on.
     // ``this`` outlives every job: the destructor waits for the pool.
-    warm_thumbs_pool_.start([this, media_dir, kind, filenames = std::move(filenames),
-                             cancelled = warm_thumbs_cancelled_] {
+    // A Freeform's own files are in its owner's folder; their thumbnails are
+    // kept by name with the library's, as their names are unique too.
+    const auto dir = owner.empty() ? media_dir / db::media_subdir(kind)
+                                   : freeform::own_media_dir(media_dir, owner);
+    warm_thumbs_pool_.start([this, media_dir, dir, kind, own = !owner.empty(),
+                             filenames = std::move(filenames), cancelled = warm_thumbs_cancelled_] {
         for (const auto& fn : filenames) {
             if (cancelled->load()) {
                 return;
             }
-            const auto source = media_dir / db::media_subdir(kind) / fn;
+            const auto source = dir / fn;
             if (kind == db::MediaKind::Image) {
                 ensure_media_thumbs_all_tiers(media_dir, source, fn);
                 continue;
             }
             const bool had = video_thumbs_made(media_dir, fn);
             if (ensure_video_thumbs(media_dir, source, fn) && !had) {
-                post_video_thumbs_made(cancelled);
+                post_video_thumbs_made(cancelled, own);
             }
         }
     });
 }
 
-void MediaController::post_video_thumbs_made(const std::shared_ptr<std::atomic<bool>>& cancelled)
+void MediaController::post_video_thumbs_made(const std::shared_ptr<std::atomic<bool>>& cancelled,
+                                             bool own)
 {
+    if (own) {
+        // A Freeform's own video: no listing shows it, the editor does.
+        QMetaObject::invokeMethod(
+            this,
+            [this, cancelled] {
+                if (!cancelled->load()) {
+                    ++files_revision_;
+                    emit filesArrived();
+                }
+            },
+            Qt::QueuedConnection);
+        return;
+    }
     // One rebuild for however many thumbs land before the GUI thread gets to it.
     if (video_thumbs_posted_.exchange(true)) {
         return;
@@ -787,19 +827,30 @@ QString MediaController::mediaFileUrl(MediaKindQml::Kind kind, const QString& fi
     if (!mk) {
         return {};
     }
-    const auto fn = util::leaf_filename(filename.toStdString());
-    return file_url_for_media(*mk, fn);
+    return file_url_for_media(*mk, filename.toStdString());
 }
 
 QString MediaController::mediaThumbUrl(MediaKindQml::Kind kind, const QString& filename,
-                                       int /*revision*/) const
+                                       int /*revision*/)
 {
     const auto mk = MediaKindQml::to_db(kind);
     if (!mk) {
         return {};
     }
-    const auto fn = util::leaf_filename(filename.toStdString());
-    return media_thumb_url_for(*mk, fn);
+    const auto ref = filename.toStdString();
+    auto url = media_thumb_url_for(*mk, ref);
+    // A Freeform's own video has its frame made the first time it is shown:
+    // no listing warms it. The URL follows once it is there.
+    if (url.isEmpty() && *mk == db::MediaKind::Video) {
+        if (const auto place = place_of(*mk, ref); place && place->own) {
+            std::error_code ec;
+            if (std::filesystem::is_regular_file(place->path, ec)
+                && warm_queued_.insert(place->leaf).second) {
+                schedule_warm_media_thumbs(*mk, {place->leaf}, place->own->owner);
+            }
+        }
+    }
+    return url;
 }
 
 void MediaController::set_arrivals(std::map<std::string, FileArrival> arrivals)
@@ -870,8 +921,8 @@ QVariantMap MediaController::arrival(MediaKindQml::Kind kind, const QString& fil
     if (!mk || arrivals_.empty()) {
         return {};
     }
-    return arrival_at(std::string(db::media_subdir(*mk)) + "/"
-                      + util::leaf_filename(filename.toStdString()));
+    const auto place = place_of(*mk, filename.toStdString());
+    return place ? arrival_at(place->sync_path) : QVariantMap{};
 }
 
 QVariantMap MediaController::arrival_at(const std::string& path) const
@@ -932,7 +983,12 @@ std::filesystem::path MediaController::resolve_media_path(const QString& subdir,
                                                       const QString& filename) const
 {
     const auto sub = subdir.trimmed().toLower().toStdString();
-    const auto fn = util::leaf_filename(filename.toStdString());
+    // A Freeform's own file whole (its URL says where it is); anything else
+    // by its leaf.
+    auto fn = filename.toStdString();
+    if (!freeform::own_media_of(fn)) {
+        fn = util::leaf_filename(fn);
+    }
     return library_.resolve_media_path(sub, fn);
 }
 
@@ -954,6 +1010,10 @@ try {
     const auto mk = MediaKindQml::to_db(kind);
     if (!mk) {
         return {};
+    }
+    if (const auto own = freeform::own_media_of(filename.toStdString())) {
+        // Not the library's: called what it was brought in as.
+        return QString::fromStdString(freeform::own_media_title(own->name));
     }
     const auto fn = util::leaf_filename(filename.toStdString());
     if (fn.empty()) {
@@ -1176,6 +1236,92 @@ qint64 MediaController::import_files(db::MediaKind kind,
         finish_import(target, std::move(done));
     });
     return id;
+}
+
+qint64 MediaController::import_freeform_media(db::MediaKind kind, const QStringList& local_paths,
+                                              const std::string& owner, const std::string& title)
+{
+    const auto media_dir = library_.media_root();
+    if (media_dir.empty() || !media_repo_) {
+        return refuse_import(refusal::no_library());
+    }
+    if (!freeform::is_own_media_part(owner) || kind == db::MediaKind::Audio) {
+        return refuse_import(refusal::freeform_gone());
+    }
+    const qint64 id = ++last_import_id_;
+    ImportBatch batch;
+    batch.id = id;
+    batch.dir = freeform::own_media_dir(media_dir, owner);
+    std::error_code ec;
+    std::filesystem::create_directories(batch.dir, ec);
+    batch.max_bytes = db::max_import_bytes(kind);
+    batch.files.reserve(static_cast<std::size_t>(local_paths.size()));
+    for (const auto& raw : local_paths) {
+        ImportFile file;
+        file.source = local_path_from_qml(raw);
+        file.display = file.source.filename().string();
+        if (!db::is_media_filename(kind, file.display)) {
+            file.error = not_a_kind_of(kind).toStdString();
+        }
+        batch.files.push_back(std::move(file));
+    }
+    importer_.start(std::move(batch), [this, kind, owner, title](ImportBatch done) {
+        finish_freeform_import(kind, owner, title, std::move(done));
+    });
+    return id;
+}
+
+void MediaController::finish_freeform_import(db::MediaKind kind, const std::string& owner,
+                                             const std::string& title, ImportBatch batch) noexcept
+{
+    QStringList errors;
+    QStringList urls;
+    try {
+        QStringList titles;
+        std::int64_t bytes = 0;
+        std::vector<std::string> warm;
+        for (auto& file : batch.files) {
+            if (!file.error.empty()) {
+                errors.push_back(file_error(file, file.error));
+                continue;
+            }
+            const freeform::OwnMedia own{
+                owner, freeform::new_own_media_name(title.empty() ? file.display : title,
+                                                    file.source.extension().string())};
+            const auto dest = batch.dir / own.name;
+            std::error_code ec;
+            std::filesystem::rename(file.staged, dest, ec);
+            if (ec) {
+                std::filesystem::remove(file.staged, ec);
+                errors.push_back(file_error(file, import_not_copied()));
+                continue;
+            }
+            urls.push_back(QString::fromStdString(freeform::own_media_url(own)));
+            titles.push_back(QString::fromStdString(file.display));
+            const auto size = std::filesystem::file_size(dest, ec);
+            bytes += ec ? 0 : static_cast<std::int64_t>(size);
+            warm.push_back(own.name);
+            warm_queued_.insert(own.name);
+        }
+        if (import_note_ && !titles.isEmpty()) {
+            if (const auto note = import_note_(titles, bytes); !note.isEmpty()) {
+                emit errorOccurred(note);
+            }
+        }
+        if (has_thumbs(kind) && !warm.empty()) {
+            schedule_warm_media_thumbs(kind, std::move(warm), owner);
+        }
+    } catch (const std::exception& ex) {
+        errors.push_back(app::report_entry_error(__func__, ex));
+    }
+    emit importFinished(batch.id, import_result(errors, urls));
+}
+
+void MediaController::own_media_arrived()
+{
+    // Nothing lists them; what shows them looks again.
+    ++files_revision_;
+    emit filesArrived();
 }
 
 void MediaController::finish_import(const ImportTarget& target, ImportBatch batch) noexcept

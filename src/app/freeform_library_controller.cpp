@@ -18,10 +18,15 @@
 #include "qml_ids.hpp"
 #include "requested_size.hpp"
 
+#include <seventhslide/db/media_kind.hpp>
+#include <seventhslide/db/media_repository.hpp>
 #include <seventhslide/db/search_text.hpp>
 #include <seventhslide/freeform/compile.hpp>
 #include <seventhslide/freeform/doc_edit.hpp>
+#include <seventhslide/freeform/own_media.hpp>
 #include <seventhslide/model/output_library.hpp>
+#include <seventhslide/model/static_media.hpp>
+#include <seventhslide/theme/theme_library.hpp>
 
 #include <QCoreApplication>
 #include <QCryptographicHash>
@@ -32,6 +37,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <filesystem>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
@@ -188,13 +195,16 @@ try {
         return refusal::freeform_gone();
     }
     item->name = doc.name;
-    item->document = doc.to_json();
+    auto owned = doc;
+    own_files(owned, item->uid);
+    item->document = owned.to_json();
     repo_->update_item(*item);
     rebuild_freeform_browser();
     // Stacks playing this library item show the saved version in place. The
     // saved item is never sent anywhere it was not already live, and rundown
     // rows keep their own snapshot.
-    if (session_.refresh_freeform(live_content(id, doc))) {
+    // What they show is what was stored: the document naming its own files.
+    if (session_.refresh_freeform(live_content(id, owned))) {
         emit liveChanged(true);
     }
     return {};
@@ -224,18 +234,113 @@ session::LiveFreeformContent FreeformLibraryController::live_content(std::int64_
     return live;
 }
 
-qint64 FreeformLibraryController::add_document(freeform::Document doc)
+qint64 FreeformLibraryController::add_document(freeform::Document doc, std::string owner)
 {
     if (!repo_) {
         return -1;
     }
     model::FreeformItem item;
     item.name = doc.name.empty() ? "Untitled" : doc.name;
+    if (owner.empty()) {
+        owner = freeform::new_own_media_owner();
+    }
     freeform::normalize(doc);
+    own_files(doc, owner);
     item.document = doc.to_json();
-    const auto id = repo_->create_item(item);
+    const auto id = repo_->create_item(item, owner);
     rebuild_freeform_browser();
     return static_cast<qint64>(id);
+}
+
+std::string FreeformLibraryController::freeform_media_owner(std::int64_t id)
+{
+    if (!repo_ || id < 0) {
+        return {};
+    }
+    const auto item = repo_->get_item(id);
+    return item ? item->uid : std::string();
+}
+
+void FreeformLibraryController::freeform_document_closed(std::int64_t id)
+try {
+    if (const auto owner = freeform_media_owner(id); !owner.empty()) {
+        prune_own_media({owner});
+    }
+} catch (const std::exception& ex) {
+    // Only tidying: what stays is taken at the next opening.
+    qWarning("SeventhSlide: could not tidy a Freeform item's files: %s", ex.what());
+}
+
+void FreeformLibraryController::own_files(freeform::Document& doc, const std::string& owner)
+{
+    const auto root = library_.media_root();
+    auto* db = library_.database();
+    if (root.empty() || db == nullptr || owner.empty()) {
+        return;
+    }
+    db::MediaRepository media(*db);
+    const auto title_of = [&media](std::string_view ref, canvas::MediaRefKind kind) -> std::string {
+        if (ref.starts_with(theme::k_theme_bg_url_prefix)) {
+            return "Background";
+        }
+        const auto file = media.get_file(
+            kind == canvas::MediaRefKind::Video ? db::MediaKind::Video : db::MediaKind::Image,
+            model::media_basename(ref));
+        return file ? file->title() : std::string();
+    };
+    const auto taken = freeform::take_own_media(doc, owner, root, title_of);
+    if (taken.failed > 0) {
+        emit errorOccurred(tr("%n picture(s) or video(s) could not be copied into the Freeform "
+                              "item; it still shows them from where they were.",
+                              nullptr, taken.failed));
+    }
+}
+
+std::set<std::string> FreeformLibraryController::item_uids()
+{
+    std::set<std::string> uids;
+    for (const auto& item : repo_->list_items()) {
+        uids.insert(item.uid);
+    }
+    return uids;
+}
+
+void FreeformLibraryController::prune_own_media(const std::vector<std::string>& owners)
+{
+    const auto root = library_.media_root();
+    auto* db = library_.database();
+    if (root.empty() || db == nullptr || library_.read_only()) {
+        return;
+    }
+    std::vector<std::string> which = owners;
+    if (which.empty()) {
+        std::error_code ec;
+        const auto dir = root / std::string(model::k_freeform_media_subdir);
+        for (auto it = std::filesystem::directory_iterator(dir, ec);
+             !ec && it != std::filesystem::directory_iterator(); it.increment(ec)) {
+            std::error_code dir_ec;
+            if (it->is_directory(dir_ec)) {
+                which.push_back(it->path().filename().string());
+            }
+        }
+    }
+    if (which.empty()) {
+        return;
+    }
+    auto named = db::own_media_named(*db);
+    // What a stack shows is named too: an item deleted while it is live keeps
+    // its files until it leaves the screen (and goes at the next opening).
+    for (const auto& stack : session_.stacks()) {
+        for (const auto side : {session::StackSide::Program, session::StackSide::Preview}) {
+            const auto* runtime = stack.side(side);
+            if (runtime != nullptr && runtime->content_kind() == model::ContentKind::Freeform) {
+                freeform::note_own_media(runtime->freeform().document.to_json(), named);
+            }
+        }
+    }
+    for (const auto& owner : which) {
+        (void)freeform::remove_unnamed_own_media(root, owner, named);
+    }
 }
 
 void FreeformLibraryController::attach(db::Database& db)
@@ -292,7 +397,13 @@ try {
     } else {
         copy.name += " copy";
     }
-    const auto id = repo_->create_item(copy);
+    // A copy owns copies of the files, so either can change on its own.
+    const auto owner = freeform::new_own_media_owner();
+    if (auto doc = freeform::load_document(copy.document, copy.name)) {
+        own_files(*doc, owner);
+        copy.document = doc->to_json();
+    }
+    const auto id = repo_->create_item(copy, owner);
     rebuild_freeform_browser();
     return static_cast<qint64>(id);
 } catch (const std::exception& ex) {
@@ -308,10 +419,15 @@ try {
     if (freeform_id < 0) {
         return refusal::freeform_gone();
     }
+    const auto owner = freeform_media_owner(freeform_id);
     if (!repo_->remove_item(freeform_id)) {
         return refusal::freeform_gone();
     }
     remove_freeform_library_thumbs(freeform_id);
+    // Its files go, but for those a service's copy of it still shows.
+    if (!owner.empty()) {
+        prune_own_media({owner});
+    }
     rebuild_freeform_browser();
     return {};
 } catch (const std::exception& ex) {
@@ -361,8 +477,17 @@ void FreeformLibraryController::rebuild_freeform_browser()
 
 QString FreeformLibraryController::delete_folder(std::int64_t folder_id)
 {
+    const auto before = item_uids();
     for (const auto id : repo_->delete_folder_tree(folder_id)) {
         remove_freeform_library_thumbs(id);
+    }
+    // The files of the items it held, as deleting each would.
+    const auto after = item_uids();
+    std::vector<std::string> gone;
+    std::ranges::set_difference(before, after, std::back_inserter(gone));
+    std::erase(gone, std::string());
+    if (!gone.empty()) {
+        prune_own_media(gone);
     }
     rebuild_freeform_browser();
     return {};

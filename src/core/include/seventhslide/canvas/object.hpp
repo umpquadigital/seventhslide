@@ -134,8 +134,8 @@ struct Object : BoxFrame, BoxType {
 [[nodiscard]] std::optional<geom::PathPoint> path_point_from_json(const nlohmann::json& j);
 
 /// The picture or video ``obj`` places (``filename``), as a ``/static/...``
-/// URL (model::static_media_url); nothing for any other object, or a name
-/// that cannot be served. A picture fill's file is ``fill_picture_url``'s.
+/// URL (model::media_ref_url: a library file by name, a document's own by
+/// its URL); nothing for any other object, or a name that cannot be served. A picture fill's file is ``fill_picture_url``'s.
 [[nodiscard]] std::optional<std::string> object_media_url(const Object& obj);
 
 /// The picture a fill paints with, as a ``/static/...`` URL: nothing unless

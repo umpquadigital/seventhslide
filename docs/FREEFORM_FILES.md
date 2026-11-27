@@ -136,7 +136,7 @@ it. An import matches outputs by the shape of this canvas.
 | --- | --- | --- |
 | `entry` | string | The file's entry, such as `media/ab12….jpg`. |
 | `kind` | string | `picture` or `video`. |
-| `title` | string | The title the exporting library gave the file. |
+| `title` | string | The title the exporting library gave the file. For a file of a Freeform item's own, this is the name it was brought in as. |
 | `size` | integer | The file's size in bytes. |
 | `sha256` | string | The file's SHA-256 hash, in lowercase hexadecimal. |
 
@@ -324,9 +324,12 @@ size limit, is left out, and the import reports it in a note.
 An import changes nothing that the library already has. Each imported item
 is added as a new item.
 
-- **Files.** A file whose bytes the library already holds is reused as it
-  is. Files are compared by size first, then by SHA-256. If the same bytes
-  appear twice in one file, they are imported once.
+- **Files.** The pictures and videos an item names become that item's own
+  files, in a folder of its own. They are never added to the library's images
+  or videos. If the same bytes appear twice in one file, they are imported
+  once. A service package's own image, video and audio rows are added to the
+  library, and there a file whose bytes the library already holds is reused
+  as it is. Files are compared by size first, then by SHA-256.
 - **Fonts.** A font face is added only when the library has no face in the
   same slot, meaning the same family, bold and italic.
 - **Decks.** A deck goes only to an output with the same aspect ratio as the

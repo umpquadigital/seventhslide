@@ -693,8 +693,8 @@ QtObject {
                 }
             }
         }
-        // A picture of its own is placed once its file is chosen and in the
-        // library, so a chooser cancelled leaves nothing behind.
+        // A picture of its own is placed once its file is chosen and brought
+        // in, so a chooser cancelled leaves nothing behind.
         if (type === "image" && binding === "static") {
             state.mediaFileAsked("object")
             return
@@ -774,7 +774,7 @@ QtObject {
         }
         state.report(state.edit.slides.setBackground("none", ""))
     }
-    /// A file from disk as the slide's background: into the library first.
+    /// A file from disk as the slide's background (importMediaFile).
     function importSlideBackground(url, video) {
         state.importMediaFile(url, video ? "background_video" : "background_image")
     }
@@ -797,7 +797,8 @@ QtObject {
             return ""
         }
     }
-    /// A file from disk, into the library first, then used as ``use`` says:
+    /// A file from disk, into a Freeform item's own files first (never the
+    /// library's; a theme's go into the library), then used as ``use`` says:
     /// background_image | background_video (the slide's background), or as
     /// mediaFileAsked's. What sets a property sets it on the object selected
     /// now. Several may be under way at once.
@@ -810,7 +811,15 @@ QtObject {
             return
         }
         const video = state.mediaUseIsVideo(use)
-        const id = state.session.media.importMedia(video ? MediaKind.Video : MediaKind.Image, [String(url)], -1)
+        // A theme's pictures are the library's; a Freeform item's are its own.
+        const id = state.isFreeform
+            ? state.edit.importMedia(video, String(url))
+            : state.session.media.importMedia(video ? MediaKind.Video : MediaKind.Image, [String(url)], -1)
+        // Nothing to bring it in with: no import is under way to wait for.
+        if (id < 0) {
+            state.showStatus(qsTr("The file could not be brought in."))
+            return
+        }
         state.pendingImports[String(id)] = {
             use: String(use),
             video: video,
@@ -826,8 +835,9 @@ QtObject {
         delete state.pendingImports[key]
         const names = (result && result.filenames) ? result.filenames : []
         if (names && names.length) {
-            // The file is in the library either way; it is used only if the
-            // operator is still on the slide it was chosen for.
+            // The file is in either way; it is used only if the operator is
+            // still on the slide it was chosen for. A Freeform item's own
+            // file nothing names goes when the editor closes.
             if (state.active && state.edit.slides.currentId === pending.slideId)
                 state.useImportedMedia(pending, String(names[0]))
             return

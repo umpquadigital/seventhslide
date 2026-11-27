@@ -32,6 +32,9 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <set>
+#include <string>
+#include <vector>
 
 namespace seventhslide::app {
 
@@ -82,8 +85,12 @@ public:
     /// Says why on ``errorOccurred`` when the stored document cannot be read.
     [[nodiscard]] std::optional<freeform::Document> load_freeform_document(
         std::int64_t id) override;
+    /// Every file ``doc`` names is item ``id``'s own once it is stored
+    /// (``own_files``).
     [[nodiscard]] QString commit_freeform_document(std::int64_t id,
                                                    const freeform::Document& doc) override;
+    [[nodiscard]] std::string freeform_media_owner(std::int64_t id) override;
+    void freeform_document_closed(std::int64_t id) override;
 
     /// Library item ``id`` as live content, tagged with its id. nullopt when
     /// it cannot be loaded.
@@ -91,9 +98,16 @@ public:
     /// ``document``, stored as library item ``id``, as live content.
     [[nodiscard]] static session::LiveFreeformContent live_content(std::int64_t id,
                                                                    freeform::Document document);
-    /// Store ``doc`` as a new item in the library root, with its thumbnails.
-    /// Returns its id, or -1 without a library.
-    [[nodiscard]] qint64 add_document(freeform::Document doc);
+    /// Store ``doc`` as a new item in the library root, with its thumbnails,
+    /// every file it names its own. ``owner`` is the uid it is stored under
+    /// when files were brought into it for it already (freeform/own_media.hpp);
+    /// empty, it takes a new one. Returns its id, or -1 without a library.
+    [[nodiscard]] qint64 add_document(freeform::Document doc, std::string owner = {});
+
+    /// The files of each owner's folder that no document names any more go
+    /// (freeform::remove_unnamed_own_media): those of ``owners``, or with
+    /// none given, of every owner. Nothing goes from a library only viewed.
+    void prune_own_media(const std::vector<std::string>& owners = {});
 
 signals:
     /// A saved document replaced one already live: the application reloads
@@ -111,6 +125,12 @@ protected:
 
 private:
     void remove_freeform_library_thumbs(std::int64_t freeform_id);
+    /// ``doc`` naming only ``owner``'s own files (freeform::take_own_media),
+    /// a library file taken in under the title the library gives it. Says
+    /// on ``errorOccurred`` when a file could not be taken.
+    void own_files(freeform::Document& doc, const std::string& owner);
+    /// The uids of every item.
+    [[nodiscard]] std::set<std::string> item_uids();
 
     OpenLibrary& library_;
     session::Session& session_;

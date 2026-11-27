@@ -11,6 +11,9 @@
 
 #include "sync_engine_internal.hpp"
 
+#include "seventhslide/freeform/own_media.hpp"
+#include "seventhslide/model/static_media.hpp"
+
 #include <algorithm>
 #include <set>
 
@@ -124,6 +127,13 @@ std::string SyncEngine::title_of(const std::string& path)
     const auto slash = path.find('/');
     const auto folder = path.substr(0, slash);
     const auto name = path.substr(slash + 1);
+    if (folder == model::k_freeform_media_subdir) {
+        // A Freeform's own file is called what it was brought in as.
+        if (const auto own = freeform::own_media_at(name)) {
+            return freeform::own_media_title(own->name);
+        }
+        return name;
+    }
     for (const auto& f : db::k_sync_files) {
         if (f.folder == folder && f.in == db::FileIn::Key) {
             if (const auto record = db::read_record(db_, f.table, name)) {
@@ -152,7 +162,7 @@ std::set<SyncEngine::RecordName> SyncEngine::held_back(const MediaUse& use)
         return out;
     }
     for (const auto& [table, key] : marked_now()) {
-        if (db::owns_files_by_url(table)) {
+        if (db::never_held_back(table)) {
             continue;
         }
         const auto current = db::read_record(db_, table, key);

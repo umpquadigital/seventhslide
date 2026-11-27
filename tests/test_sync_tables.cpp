@@ -255,9 +255,12 @@ TEST_CASE("A file's name is found only where a record may name one", "[db][sync]
     const std::vector<std::string> files{"ab12.png", "cd34.mp4", "ef56.mp3"};
 
     for (const auto table : seventhslide::db::record_tables_in_order()) {
-        if (std::ranges::any_of(seventhslide::db::k_sync_files,
-                                [&](const auto& f) { return f.table == table; })) {
-            continue;  // a file's own record, or one owning files by URL
+        // A file's own record, or one owning files by URL alone. A Freeform
+        // document owns its own files by URL and names the library's.
+        if (std::ranges::any_of(seventhslide::db::k_sync_files, [&](const auto& f) {
+                return f.table == table && (f.in == seventhslide::db::FileIn::Key || !f.per_owner);
+            })) {
+            continue;
         }
         for (const auto& key : seventhslide::db::record_keys(db, table)) {
             const auto document = seventhslide::db::read_record(db, table, key);

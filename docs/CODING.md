@@ -159,6 +159,22 @@ The differences between media kinds are defined in `db/media_kind.hpp`. Code
 asks it (for example, `hidden_when_in_use(kind)`) rather than testing for a
 particular kind.
 
+A Freeform document's pictures and videos are its own, not the library's
+(`freeform/own_media.hpp`). Each Freeform item has a folder,
+`freeform_media/<item uid>/`, and its document names each file by URL,
+`/static/freeform_media/<uid>/<name>`. No registry lists them, so the Images
+and Videos tabs never show them. A file brought in from the editor goes
+straight into the item's folder (`SlideEditSession::importMedia`), and so does
+a background theme's picture or video. When an item is saved, created or
+duplicated, any file its document names that is not already in its folder
+(a library file, a theme's background, another item's file) is linked into
+it (`take_own_media`). A file stays as long as any document names it: the item
+itself, or a service's copy of it. Sync owns these files in the same way, by
+the URLs in `freeform_items.document` and `service_items.data`
+(`db::k_sync_files`). Files no document names are removed when the editor
+closes the item, when the item is deleted, and when the library is opened
+(`FreeformLibraryController::prune_own_media`).
+
 ### Fonts
 
 A library's fonts are one more registry, `font_files` (`db::FontRepository`),

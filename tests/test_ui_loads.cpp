@@ -22,6 +22,7 @@
 #include <seventhslide/theme/song_theme_pack.hpp>
 #include <seventhslide/db/media_repository.hpp>
 #include <seventhslide/db/song_repository.hpp>
+#include <seventhslide/freeform/own_media.hpp>
 #include <seventhslide/model/content.hpp>
 #include <seventhslide/model/transition.hpp>
 
@@ -301,6 +302,17 @@ QObject* ribbon_home(QObject* window)
     return nullptr;
 }
 
+/// Whether ``url`` names a file of Freeform item ``id``'s own that is on the
+/// disk (freeform/own_media.hpp): an item's pictures are never the library's.
+[[nodiscard]] bool is_own_file_of(SessionFacade& facade, qint64 id, const QString& url)
+{
+    const auto own = seventhslide::freeform::own_media_of(url.toStdString());
+    const auto item = facade.freeform_repo()->get_item(id);
+    return own && item && own->owner == item->uid
+           && std::filesystem::exists(
+               seventhslide::freeform::own_media_path(facade.open_library().media_root(), *own));
+}
+
 }  // namespace
 
 // The image is copied in the background, and the editor applies it when the
@@ -326,13 +338,9 @@ TEST_CASE("A slide background image is applied once its import finishes", "[ui][
         return facade.slideEdit()->slides()->background().value(QStringLiteral("image")).toString();
     };
     REQUIRE(QTest::qWaitFor([&] { return !bg_image().isEmpty(); }, 10000));
-    REQUIRE(facade.media()->images()->rowCount() == 1);
-    REQUIRE(bg_image()
-            == facade.media()
-                   ->images()
-                   ->data(facade.media()->images()->index(0),
-                          seventhslide::app::ImageListModel::FilenameRole)
-                   .toString());
+    // The item's own picture; the library has nothing new.
+    CHECK(is_own_file_of(facade, freeform, bg_image()));
+    CHECK(facade.media()->images()->rowCount() == 0);
 }
 
 TEST_CASE("The slide editor's output picker lists the item's outputs that are on", "[ui][freeform]")
@@ -418,13 +426,13 @@ TEST_CASE("A slide background import that outlives its editor is not applied", "
 
     REQUIRE(QTest::qWaitFor([&] { return !facade.media()->importing(); }, 10000));
     QTest::qWait(20);
-    // The image still reaches the library; it just is not anyone's background.
-    REQUIRE(facade.media()->images()->rowCount() == 1);
+    // It is no one's background, and never the library's.
+    CHECK(facade.media()->images()->rowCount() == 0);
     REQUIRE(facade.slideEdit()->slides()->background().value(QStringLiteral("image")).toString().isEmpty());
 }
 
 // A background theme is copied into the slide: its colour
-// and fade at once, a picture it owns once the library has its own copy.
+// and fade at once, a picture it owns once the item has its own copy.
 // The slide keeps them when the theme goes; nothing of the theme's shows on
 // the stage but what the slide now has.
 TEST_CASE("A background theme is copied into the slide, not linked", "[ui][freeform][bg]")
@@ -455,7 +463,7 @@ TEST_CASE("A background theme is copied into the slide, not linked", "[ui][freef
     CHECK(bg("transition_type") == QStringLiteral("fade"));
     CHECK(slides->background().value(QStringLiteral("transition_ms")).toInt() == 700);
 
-    // A picture the theme owns: the slide gets the library's own copy.
+    // A picture the theme owns: the slide gets the item's own copy.
     QImage picture(32, 18, QImage::Format_RGB32);
     picture.fill(QColor(QStringLiteral("#336699")));
     const auto png = dir.path / "dawn.png";
@@ -473,14 +481,15 @@ TEST_CASE("A background theme is copied into the slide, not linked", "[ui][freef
     REQUIRE(QTest::qWaitFor([&] { return bg("kind") == QStringLiteral("image") && !bg("image").isEmpty(); },
                             10000));
     const auto copied = bg("image");
-    CHECK(facade.media()->images()->rowCount() == 1);
+    CHECK(is_own_file_of(facade, freeform, copied));
+    CHECK(facade.media()->images()->rowCount() == 0);
     // A cut: the theme had no fade.
     CHECK(bg("transition_type") == QStringLiteral("cut"));
 
-    // The theme goes; the slide keeps its picture, which is the library's.
+    // The theme goes; the slide keeps its picture, which is the item's.
     REQUIRE(themes->remove(QStringLiteral("Main"), QStringLiteral("bg"), dawn_id).isEmpty());
     CHECK(bg("image") == copied);
-    CHECK(std::filesystem::exists(facade.open_library().media_root() / "images" / copied.toStdString()));
+    CHECK(is_own_file_of(facade, freeform, copied));
 
     // Nothing of a theme's shows on the stage.
     OperatorUi ui(facade);
@@ -743,8 +752,9 @@ TEST_CASE("Insert Picture and Video choose a file, imported then placed", "[ui][
     const auto sel = [&] { return facade.slideEdit()->objects()->selection(); };
     REQUIRE(QTest::qWaitFor([&] { return sel().value(QStringLiteral("type")).toString() == QStringLiteral("image"); },
                             10000));
-    REQUIRE(facade.media()->images()->rowCount() == 1);
-    CHECK(sel().value(QStringLiteral("filename")).toString() == first_library_image(facade));
+    // The item's own picture; the library has nothing new.
+    CHECK(is_own_file_of(facade, freeform, sel().value(QStringLiteral("filename")).toString()));
+    CHECK(facade.media()->images()->rowCount() == 0);
     CHECK(count() == before + 1);
 }
 
@@ -815,7 +825,9 @@ TEST_CASE("Two imports under way at once both land", "[ui][import]")
     REQUIRE(QTest::qWaitFor([&] {
         return !bg_image().isEmpty() && sel().value(QStringLiteral("type")).toString() == QStringLiteral("image");
     }, 10000));
-    REQUIRE(facade.media()->images()->rowCount() == 2);
+    CHECK(facade.media()->images()->rowCount() == 0);
+    CHECK(is_own_file_of(facade, freeform, bg_image()));
+    CHECK(is_own_file_of(facade, freeform, sel().value(QStringLiteral("filename")).toString()));
     CHECK(bg_image() != sel().value(QStringLiteral("filename")).toString());
 }
 
@@ -2678,7 +2690,7 @@ TEST_CASE("A song saved as Freeform owns its background theme", "[ui][freeform][
         CHECK(slide.background_transition == Transition{TransitionType::Fade, 700});
     }
 
-    // A picture the theme owns: saved once the library has its own copy.
+    // A picture the theme owns: saved once the item has its own copy.
     QImage picture(32, 18, QImage::Format_RGB32);
     picture.fill(QColor(QStringLiteral("#336699")));
     const auto png = dir.path / "dawn.png";
@@ -2709,8 +2721,7 @@ TEST_CASE("A song saved as Freeform owns its background theme", "[ui][freeform][
     REQUIRE(pictured);
     REQUIRE_FALSE(pictured->decks.empty());
     const auto copied = pictured->decks[0].slides.front().background.image;
-    CHECK_FALSE(copied.empty());
-    CHECK_FALSE(copied.starts_with("/static/"));
+    CHECK(is_own_file_of(facade, *saved_item(), QString::fromStdString(copied)));
     for (const auto& slide : pictured->decks[0].slides) {
         CHECK(slide.background.kind == SlideBackgroundKind::Image);
         CHECK(slide.background.image == copied);
@@ -2718,11 +2729,11 @@ TEST_CASE("A song saved as Freeform owns its background theme", "[ui][freeform][
         REQUIRE(slide.background_transition.has_value());
         CHECK(slide.background_transition->type == TransitionType::Cut);
     }
-    CHECK(facade.media()->images()->rowCount() == 1);
+    CHECK(facade.media()->images()->rowCount() == 0);
 
-    // The theme goes; the item keeps its picture, which is the library's.
+    // The theme goes; the item keeps its picture, which is its own.
     REQUIRE(themes->remove(main, bg, dawn).isEmpty());
-    CHECK(std::filesystem::exists(facade.open_library().media_root() / "images" / copied));
+    CHECK(is_own_file_of(facade, *saved_item(), QString::fromStdString(copied)));
 }
 
 TEST_CASE("A stack with Preview on shows Preview and Program side by side, and T takes it",

@@ -4,6 +4,7 @@
 
 #include "media_thumb_cache.hpp"
 
+#include <seventhslide/freeform/own_media.hpp>
 #include <seventhslide/model/static_media.hpp>
 #include <seventhslide/util/leaf_filename.hpp>
 
@@ -78,11 +79,16 @@ try {
         return {};
     }
     const QString subdir = path_id.left(slash);
-    const QString filename = QString::fromStdString(util::leaf_filename(
-        QUrl::fromPercentEncoding(path_id.mid(slash + 1).toUtf8()).toStdString()));
+    // A library file by its leaf; a Freeform's own file by its whole URL,
+    // which says whose it is.
+    const auto ref = QUrl::fromPercentEncoding(path_id.mid(slash + 1).toUtf8()).toStdString();
+    const auto own = freeform::own_media_of(ref);
+    const QString filename = QString::fromStdString(own ? ref : util::leaf_filename(ref));
     if (filename.isEmpty()) {
         return {};
     }
+    // The thumbnails on the disk go by the file's own name.
+    const std::string fn = own ? own->name : filename.toStdString();
 
     const QSize box = clamp_thumb_request(requestedSize);
     // The query is a cache-busting token (library revision), so it belongs in the
@@ -113,7 +119,6 @@ try {
         // pool made before the row was given this URL (MediaController). This
         // remakes it only if the video has changed since.
         const auto media_dir = media_dir_ ? media_dir_() : std::filesystem::path();
-        const std::string fn = filename.toStdString();
         if (media_dir.empty() || !ensure_video_thumbs(media_dir, source, fn)) {
             return {};
         }
@@ -136,7 +141,6 @@ try {
         const auto media_dir = media_dir_();
         if (!media_dir.empty()) {
             const int tier = media_thumb_tier_for_request(box.width(), box.height());
-            const std::string fn = filename.toStdString();
             if (ensure_media_thumb(media_dir, source, fn, tier)) {
                 const auto thumb = media_thumb_path(media_dir, fn, tier);
                 QImage img = load_scaled(thumb, box);

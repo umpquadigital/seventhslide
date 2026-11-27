@@ -22,14 +22,17 @@
 #include <seventhslide/exchange/adapt.hpp>
 #include <seventhslide/exchange/bundle.hpp>
 #include <seventhslide/exchange/bundle_io.hpp>
+#include <seventhslide/freeform/own_media.hpp>
 #include <seventhslide/geom/canvas_presets.hpp>
 #include <seventhslide/library/library.hpp>
 #include <seventhslide/model/content.hpp>
 #include <seventhslide/model/library.hpp>
 #include <seventhslide/model/live_source.hpp>
 #include <seventhslide/model/output_library.hpp>
+#include <seventhslide/model/static_media.hpp>
 #include <seventhslide/model/web_page.hpp>
 #include <seventhslide/session/session.hpp>
+#include <seventhslide/util/file_copy.hpp>
 #include <seventhslide/util/strings.hpp>
 #include <seventhslide/util/unique_name.hpp>
 
@@ -46,6 +49,7 @@
 #include <map>
 #include <optional>
 #include <set>
+#include <stdexcept>
 #include <system_error>
 #include <utility>
 
@@ -319,9 +323,13 @@ void extract_files(Extracted& plan, const std::atomic<bool>& cancelled, const st
     };
     for (std::size_t n = 0; n < plan.needs.size(); ++n) {
         const auto& need = plan.needs[n];
-        const auto dir = plan.media_root / std::string(db::media_subdir(need.kind));
+        // A row's own file goes to the library; an item's picture or video is
+        // the item's own (freeform/own_media.hpp), staged where those are and
+        // never matched to a library file.
+        const auto dir = need.loose ? plan.media_root / std::string(db::media_subdir(need.kind))
+                                    : plan.media_root / std::string(model::k_freeform_media_subdir);
         fs::create_directories(dir, ec);
-        if (!by_size.contains(need.kind)) {
+        if (need.loose && !by_size.contains(need.kind)) {
             auto& sizes = by_size[need.kind];
             for (const auto& name : plan.library_files[need.kind]) {
                 std::error_code size_ec;
@@ -352,7 +360,9 @@ void extract_files(Extracted& plan, const std::atomic<bool>& cancelled, const st
         done += entry->size;
         plan.got.push_back(std::move(got));
 
-        const auto [lib_lo, lib_hi] = by_size[need.kind].equal_range(entry->size);
+        static const std::multimap<std::uint64_t, std::string> k_none;
+        const auto& library = need.loose ? by_size[need.kind] : k_none;
+        const auto [lib_lo, lib_hi] = library.equal_range(entry->size);
         const auto [own_lo, own_hi] = taken.equal_range(entry->size);
         if (lib_lo == lib_hi && own_lo == own_hi) {
             taken.emplace(entry->size, n);
@@ -366,7 +376,8 @@ void extract_files(Extracted& plan, const std::atomic<bool>& cancelled, const st
         }
         auto& here = plan.got[n];
         for (auto it = own_lo; it != own_hi && !here.same_as; ++it) {
-            if (plan.needs[it->second].kind == need.kind && sha_of_need(it->second) == sha) {
+            const auto& other = plan.needs[it->second];
+            if (other.kind == need.kind && other.loose == need.loose && sha_of_need(it->second) == sha) {
                 here.same_as = it->second;
             }
         }
@@ -447,6 +458,10 @@ public:
         for (const auto& path : moved_) {
             remove_quietly(path);
         }
+        for (const auto& owner : owners_) {
+            std::error_code ec;
+            fs::remove(freeform::own_media_dir(plan_.media_root, owner), ec);  // when empty
+        }
     }
 
     [[nodiscard]] const std::vector<MediaController::StagedMedia>& adopted() const noexcept { return adopted_; }
@@ -454,7 +469,10 @@ public:
     [[nodiscard]] const std::set<db::MediaKind>& folders_made() const noexcept { return folders_made_; }
     [[nodiscard]] qint64 service_id() const noexcept { return service_id_; }
     [[nodiscard]] int items_made() const noexcept { return items_made_; }
-    [[nodiscard]] int files_new() const noexcept { return static_cast<int>(adopted_names_.size()); }
+    [[nodiscard]] int files_new() const noexcept
+    {
+        return static_cast<int>(adopted_names_.size()) + own_files_;
+    }
 
 private:
     std::int64_t service_folder(db::MediaKind kind)
@@ -481,6 +499,11 @@ private:
         for (std::size_t n = 0; n < plan_.got.size(); ++n) {
             const auto& got = plan_.got[n];
             const auto& need = plan_.needs[n];
+            if (!need.loose) {
+                // An item's own: placed in each item's folder (``own_files``).
+                need_of_entry_.emplace(need.entry, n);
+                continue;
+            }
             if (got.same_as) {
                 continue;
             }
@@ -504,6 +527,9 @@ private:
         }
         // The same bytes twice in the file: one library file.
         for (std::size_t n = 0; n < plan_.got.size(); ++n) {
+            if (!plan_.needs[n].loose) {
+                continue;
+            }
             if (const auto same = plan_.got[n].same_as) {
                 if (const auto it = name_of_.find(plan_.needs[*same].entry); it != name_of_.end()) {
                     const auto filename = it->second;
@@ -561,14 +587,70 @@ private:
         }
     }
 
-    /// Each item's files named as the library names them: an entry that
-    /// did not come in is emptied.
+    /// Each item's files its own, in a folder of its own named by the uid
+    /// it is stored under: an entry that did not come in is emptied.
     void repoint_items()
     {
+        owners_.clear();
         for (auto& item : plan_.items) {
-            exchange::point_at_entries(item.document, name_of_);
+            const auto owner = freeform::new_own_media_owner();
+            std::map<std::string, std::string, std::less<>> urls;
+            for (const auto& entry : exchange::entries_named(item.document)) {
+                if (auto url = own_file(entry, owner); !url.empty()) {
+                    urls.emplace(entry, std::move(url));
+                }
+            }
+            exchange::point_at_entries(item.document, urls);
             freeform::normalize(item.document);
+            owners_.push_back(owner);
         }
+    }
+
+    /// The file ``entry`` names, in ``owner``'s folder: the staged copy moved
+    /// there the first time, a link to (or copy of) it for each item after,
+    /// under the one name. Its URL, or empty when it did not come in.
+    [[nodiscard]] std::string own_file(const std::string& entry, const std::string& owner)
+    {
+        const auto found = need_of_entry_.find(entry);
+        if (found == need_of_entry_.end()) {
+            return {};
+        }
+        auto n = found->second;
+        if (const auto same = plan_.got[n].same_as) {
+            n = *same;
+        }
+        const auto& need = plan_.needs[n];
+        auto& got = plan_.got[n];
+        const auto dir = freeform::own_media_dir(plan_.media_root, owner);
+        std::error_code ec;
+        fs::create_directories(dir, ec);
+        if (const auto placed = own_placed_.find(n); placed != own_placed_.end()) {
+            const auto name = placed->second.filename().string();
+            const auto to = dir / name;
+            if (!fs::exists(to, ec)) {
+                fs::create_hard_link(placed->second, to, ec);
+                if (ec && util::copy_file_chunked(placed->second, to, [](std::uintmax_t) { return true; })
+                              != util::CopyOutcome::Copied) {
+                    throw std::runtime_error("Could not copy a picture into an imported item");
+                }
+                moved_.push_back(to);
+            }
+            return freeform::own_media_url({owner, name});
+        }
+        if (got.staged.empty()) {
+            return {};
+        }
+        const auto name = freeform::new_own_media_name(need.title, extension_of(need.entry));
+        const auto to = dir / name;
+        fs::rename(got.staged, to, ec);
+        if (ec) {
+            throw std::runtime_error("Could not move a picture into an imported item");
+        }
+        got.staged.clear();  // the item's now
+        moved_.push_back(to);
+        own_placed_.emplace(n, to);
+        ++own_files_;
+        return freeform::own_media_url({owner, name});
     }
 
     /// The items, in their folders: a new folder named as asked, the file's
@@ -602,14 +684,16 @@ private:
             folder_of.emplace(key, made);
             return made;
         };
-        for (const auto& item : plan_.items) {
+        for (std::size_t i = 0; i < plan_.items.size(); ++i) {
+            const auto& item = plan_.items[i];
             const auto& listed = m.items[item.index];
             model::FreeformItem row;
             row.name = listed.name.empty() ? item.document.name : listed.name;
             row.folder_id = folder_for(folder_for, listed.folder);
             row.tags = listed.tags;
             row.document = item.document.to_json();
-            (void)freeform_.create_item(row);
+            // Under the uid its files' folder is named by.
+            (void)freeform_.create_item(row, owners_[i]);
             ++items_made_;
         }
     }
@@ -773,6 +857,13 @@ private:
     const std::vector<model::StackDef>& stacks_;
 
     std::map<std::string, std::string, std::less<>> name_of_;  // entry -> library name
+    /// An item's file by entry -> its need.
+    std::map<std::string, std::size_t, std::less<>> need_of_entry_;
+    /// Each need of an item's placed: where it was moved first.
+    std::map<std::size_t, fs::path> own_placed_;
+    /// Each item's owner of its files, by place in ``plan_.items``.
+    std::vector<std::string> owners_;
+    int own_files_ = 0;
     /// Each image-folder row's own folder, by place in the rundown.
     std::map<std::size_t, std::int64_t> row_folder_;
     std::map<db::MediaKind, std::int64_t> service_folders_;
@@ -1038,7 +1129,8 @@ QVariantMap FreeformImportController::summary() const
                              static_cast<int>(m.media_not_included.size())));
     } else {
         for (const auto& t : m.media_not_included) {
-            missing.push_back(tr("“%1” was not in the library it came from.").arg(q(t)));
+            missing.push_back(t.empty() ? tr("A picture or video was not in the library it came from.")
+                                        : tr("“%1” was not in the library it came from.").arg(q(t)));
         }
     }
     for (const auto& f : m.fonts_not_included) {

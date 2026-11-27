@@ -922,19 +922,22 @@ TEST_CASE("A background theme gives a slide its colour, file and fade", "[freefo
     CHECK(none.background.is_none());
     CHECK(none.transition.type == TransitionType::Cut);
 
-    // A file the theme owns has to be copied first; a library one need not be.
+    // The file has to be copied into the document's own first, the theme's
+    // or the library's alike: a slide names its own files only.
     auto owned = background_copy_of(
         {{"background_type", "image"}, {"background_image", "/static/theme_backgrounds/t1-bg.png"}});
     CHECK(owned.background.kind == SlideBackgroundKind::Image);
     CHECK(owned.background.image.empty());
     CHECK(owned.copy_from_url == "/static/theme_backgrounds/t1-bg.png");
-    seventhslide::freeform::place_copied_file(owned, "ab12.png");
-    CHECK(owned.background.image == "ab12.png");
+    const auto own = "/static/freeform_media/" + std::string(32, 'a') + "/1234abcd-Dawn.png";
+    seventhslide::freeform::place_copied_file(owned, own);
+    CHECK(owned.background.image == own);
     CHECK_FALSE(owned.waits_for_copy());
 
-    const auto library = background_copy_of(
+    auto library = background_copy_of(
         {{"background_type", "video"}, {"background_video", "/static/videos/cd34.mp4"}});
     CHECK(library.background.kind == SlideBackgroundKind::Video);
-    CHECK(library.background.video == "cd34.mp4");
-    CHECK_FALSE(library.waits_for_copy());
+    CHECK(library.background.video.empty());
+    CHECK(library.copy_from_url == "/static/videos/cd34.mp4");
+    CHECK(library.waits_for_copy());
 }
