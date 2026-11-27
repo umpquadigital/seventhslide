@@ -38,7 +38,7 @@ Item {
         switch (String(use.kind)) {
         case "theme": return "themes"
         case "output": return "display"
-        case "profile": return "person"
+        case "profile": return "sliders"
         case "song": return "song"
         case "freeform": return "freeform"
         case "service": {

@@ -82,7 +82,7 @@ Item {
                     Layout.preferredWidth: 1
                     ruleLeft: true
                     title: qsTr("Profiles")
-                    iconSource: Icons.url("person", profilesColumn.titleInk, 2)
+                    iconSource: Icons.url("sliders", profilesColumn.titleInk, 2)
                     focused: !panel.onLibraries
                     model: panel.dialog.showsProfiles ? panel.dialog.profileRows : []
                     emptyText: !panel.library ? ""
