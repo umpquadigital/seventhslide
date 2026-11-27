@@ -544,6 +544,35 @@ std::vector<Scene> scenes()
                      facade.media()->setMediaViewMode(QStringLiteral("icons"));
                      set(component(ui, "LibraryPanel"), "tabIndex", 3);
                  }});
+    // Icons of names too long for a tile: folders and sounds whose names
+    // only differ past the first line, and one word wider than a tile.
+    s.push_back({"main_audio_icons_long_names", [](F& facade, OperatorUi& ui, const L&) {
+                     using seventhslide::db::MediaKind;
+                     auto* media = facade.media_repo();
+                     for (const char* name : {"Group Singing", "Piano Accompaniment",
+                                              "For God & Country", "Piano Background",
+                                              "Piano/Violin"}) {
+                         (void)media->folders(MediaKind::Audio).create(name);
+                     }
+                     const auto audio = facade.media_root() / "audio";
+                     for (const char* name :
+                          {"Almost Home.mp3", "Ashokan Farewell (Violin).mp3",
+                           "Come, Christians, Join to Sing (Piano).mp3",
+                           "Come, Christians, Join to Sing (Organ).mp3",
+                           "Elgar - Pomp & Circumstance No. 1.mp3",
+                           "Elgar Arr. of Jerusalem (Choir).mp3",
+                           "Elgar Arr. of Jerusalem (Orchestra).mp3",
+                           "Hard Times Come Again No More (Verse 1).mp3",
+                           "Hard Times Come Again No More (Verse 2).mp3",
+                           "I Vow to Thee My Country.mp3", "In Christ Alone.mp3",
+                           "Unaccompanied_Congregational_Version.mp3"}) {
+                         std::ofstream(audio / name) << "not real audio";
+                         media->upsert_file(MediaKind::Audio, name, name);
+                     }
+                     facade.refresh_library();
+                     facade.media()->setMediaViewMode(QStringLiteral("icons"));
+                     set(component(ui, "LibraryPanel"), "tabIndex", 5);
+                 }});
     s.push_back({"main_service_item_selected",[](F& facade, OperatorUi& ui, const L&) {
                      const auto id = facade.serviceItems()->data(
                          facade.serviceItems()->index(1, 0),

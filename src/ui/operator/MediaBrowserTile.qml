@@ -23,8 +23,17 @@ Item {
     required property int count
     required property string thumbUrl
     required property int index
+    /// The preview's inset from the tile's top and sides.
+    readonly property int inset: 3
+    /// The caption under it: its lines, its inset within the tile's (so an
+    /// ellipsis keeps clear of the border) and the space above and below it.
+    readonly property int captionLines: 2
+    readonly property int captionPadX: 2
+    readonly property int captionGap: 3
+    readonly property int captionPadBottom: 5
     width: tile.cellW
-    height: tile.previewH + tile.browser.iconCaptionH
+    height: tile.inset + tile.previewH + tile.captionGap
+            + tile.captionLines * tile.browser.iconCaptionLineH + tile.captionPadBottom
     readonly property bool selected: tile.kind === "parent"
         ? tile.browser.selectedParent
         : (tile.kind === "folder"
@@ -68,8 +77,10 @@ Item {
 
         Column {
             anchors.fill: parent
-            anchors.margins: 3
-            spacing: 2
+            anchors.leftMargin: tile.inset
+            anchors.rightMargin: tile.inset
+            anchors.topMargin: tile.inset
+            spacing: tile.captionGap
             Item {
                 width: parent.width
                 height: tile.previewH
@@ -117,18 +128,23 @@ Item {
                     }
                 }
             }
+            // Up to two lines, broken at words (or inside a word too long for
+            // a line), the second ending in an ellipsis when the name is cut;
+            // top-aligned, so a row's names start level whether they take one
+            // line or two.
             Text {
                 width: parent.width
-                height: tile.browser.iconCaptionH - 6
+                leftPadding: tile.captionPadX
+                rightPadding: tile.captionPadX
+                lineHeightMode: Text.FixedHeight
+                lineHeight: tile.browser.iconCaptionLineH
                 horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignTop
                 text: tile.kind === "parent" ? ".." : tile.name
                 color: Style.text
                 font.pixelSize: Style.fontCaption
                 elide: Text.ElideRight
-                maximumLineCount: 2
-                wrapMode: Text.WordWrap
-                clip: true
+                maximumLineCount: tile.captionLines
+                wrapMode: Text.Wrap
             }
         }
 
