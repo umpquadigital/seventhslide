@@ -19,6 +19,7 @@
 #include "glyphs.hpp"
 #include "live_library_controller.hpp"
 #include "media_thumb_cache.hpp"
+#include "refusals.hpp"
 #include "sample_library.hpp"
 #include "line_map_model.hpp"
 #include "session_remote_bridge.hpp"
@@ -1231,6 +1232,36 @@ TEST_CASE("Bridge: openService opens a service, and refuses one there is not",
     CHECK(fx.bridge.section(Section::Session)["openServiceName"] == "Good Friday");
     CHECK(fx.items().empty());
     CHECK_FALSE(fx.run(Command::OpenService, {{"serviceId", 987654}}));
+    CHECK(fx.facade.openServiceId() == fx.lib.other_service);
+}
+
+TEST_CASE("Bridge: closeService leaves no service open, and refuses when none is",
+          "[app][remote][bridge][other-clients]")
+{
+    SampleFixture fx;
+    const auto services_before = fx.facade.library()->services()->rowCount();
+    REQUIRE(fx.facade.openServiceId() >= 0);
+    REQUIRE_FALSE(fx.items().empty());
+    // Its first item live.
+    REQUIRE(fx.run(Command::SelectServiceItem, {{"index", 0}}));
+    REQUIRE(fx.bridge.section(Section::Session)["serviceItemIndex"] == 0);
+    REQUIRE_FALSE(fx.bridge.section(Section::Stacks)["occupied"].empty());
+
+    REQUIRE(fx.run(Command::CloseService, {}));
+    const auto session = fx.bridge.section(Section::Session);
+    CHECK(session["openServiceId"] == -1);
+    CHECK(session["openServiceName"] == "");
+    CHECK(session["serviceItemIndex"] == -1);
+    CHECK(fx.items().empty());
+    // What was live is cleared, as opening another service clears it.
+    CHECK(fx.bridge.section(Section::Stacks)["occupied"].empty());
+    // Closed, not deleted: the service is still in the library, to open again.
+    CHECK(fx.facade.library()->services()->rowCount() == services_before);
+
+    const auto refused = fx.bridge.invoke(Command::CloseService, nlohmann::json::object());
+    CHECK_FALSE(refused.ok);
+    CHECK(refused.error == seventhslide::app::refusal::no_service_open().toStdString());
+    REQUIRE(fx.run(Command::OpenService, {{"serviceId", fx.lib.other_service}}));
     CHECK(fx.facade.openServiceId() == fx.lib.other_service);
 }
 

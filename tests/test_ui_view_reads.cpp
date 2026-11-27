@@ -1376,6 +1376,45 @@ TEST_CASE("Services: Settings opens Service Settings on the service picked; Dele
     CHECK(ui.warnings().empty());
 }
 
+TEST_CASE("Service panel: ⋯ Close Service closes the open service", "[ui][services]")
+{
+    seventhslide::test::ensure_qt_application();
+    const seventhslide::test::TempDir dir;
+    SessionFacade facade;
+    REQUIRE(facade.open_database(dir.path / "library.db"));
+    (void)seventhslide::test::fill_sample_library(facade);
+    OperatorUi ui(facade);
+    REQUIRE(facade.live()->selectServiceItem(0));
+    QTest::qWait(30);
+
+    auto* toolbar = qobject_cast<QQuickItem*>(ui.find_component("ServiceToolbar"));
+    REQUIRE(toolbar != nullptr);
+    QQuickItem* more = nullptr;
+    for (QQuickItem* item : toolbar->findChildren<QQuickItem*>()) {
+        if (seventhslide::test::is_qml_type(item, "ServiceToolButton")
+            && item->property("icon").toString() == QStringLiteral("more")) {
+            more = item;
+        }
+    }
+    REQUIRE(more != nullptr);
+    REQUIRE(more->isEnabled());
+    click(ui.window(), centre_of(more));
+    QTest::qWait(30);
+
+    QQuickItem* overlay = ui.window()->contentItem();
+    QQuickItem* label = visible_text_under(overlay, QStringLiteral("Close Service"));
+    REQUIRE(label != nullptr);
+    click(ui.window(), centre_of(label));
+    QTest::qWait(30);
+    CHECK(facade.openServiceId() < 0);
+    CHECK(facade.session().occupied_stacks().empty());
+    // The menu closed, and ⋯ is off with no service open.
+    CHECK(visible_text_under(overlay, QStringLiteral("Close Service")) == nullptr);
+    CHECK_FALSE(more->isEnabled());
+    INFO(ui.warnings());
+    CHECK(ui.warnings().empty());
+}
+
 TEST_CASE("Services: New makes a service and opens its settings, the cursor in its title",
           "[ui][services]")
 {

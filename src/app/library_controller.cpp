@@ -1235,6 +1235,17 @@ try {
     return false;
 }
 
+QString LibraryController::closeService()
+try {
+    if (!session_.service_id()) {
+        return refusal::no_service_open();
+    }
+    open_rundown(std::nullopt, nlohmann::json::object(), {});
+    return {};
+} catch (const std::exception& ex) {
+    return app::report_entry_error(__func__, ex);
+}
+
 qint64 LibraryController::createService(const QString& name)
 try {
     if (!service_repo_) {
@@ -1472,7 +1483,7 @@ try {
 QString LibraryController::renameServiceDivider(qint64 item_id, const QString& title)
 try {
     if (!service_repo_ || !session_.service_id()) {
-        return tr("No service is open.");
+        return refusal::no_service_open();
     }
     if (item_id < 0) {
         return refusal::service_item_gone();
@@ -1513,7 +1524,7 @@ try {
 QString LibraryController::removeServiceItems(const QVariantList& item_ids)
 try {
     if (!service_repo_ || !db_ || !session_.service_id()) {
-        return tr("No service is open.");
+        return refusal::no_service_open();
     }
     const auto ids = parse_id_list(item_ids);
     if (!ids || in_rundown_order(session_, *ids).size() != ids->size()) {
