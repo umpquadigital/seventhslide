@@ -420,21 +420,23 @@ Item {
     }
 
     Rectangle {
-        visible: intern.snapV >= 0
-        x: intern.snapV * root.stageScale()
+        // A guide past the canvas (a sibling's overhanging edge) stays hidden;
+        // one exactly on the far edge is pulled inside the clipped stage.
+        visible: intern.snapV >= 0 && intern.snapV <= root.canvasWidth
+        x: Math.min(intern.snapV * root.stageScale(), root.width - width)
         y: 0
         width: 1
-        height: parent.height
+        height: root.height
         z: 5
         enabled: false
         color: Style.canvasGuide
         opacity: 0.85
     }
     Rectangle {
-        visible: intern.snapH >= 0
+        visible: intern.snapH >= 0 && intern.snapH <= root.canvasHeight
         x: 0
-        y: intern.snapH * root.stageScale()
-        width: parent.width
+        y: Math.min(intern.snapH * root.stageScale(), root.height - height)
+        width: root.width
         height: 1
         z: 5
         enabled: false

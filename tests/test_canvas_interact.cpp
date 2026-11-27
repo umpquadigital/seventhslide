@@ -98,6 +98,64 @@ TEST_CASE("snap_rect move snaps left edge to a sibling", "[canvas][interact]")
     REQUIRE(snapped.rect.x == Approx(40));
 }
 
+TEST_CASE("snap_axis_targets lists the canvas edges and centre first", "[canvas][interact]")
+{
+    const CanvasSize canvas{1920, 1080};
+    const std::vector<Rect> objects{{"a", 100, 50, 200, 40}, {"skip", 7, 7, 10, 10}};
+    const auto targets = snap_axis_targets(canvas, objects, {"skip"});
+    CHECK(targets.xs == std::vector<double>{0, 960, 1920, 100, 200, 300});
+    CHECK(targets.ys == std::vector<double>{0, 540, 1080, 50, 70, 90});
+
+    // An unset canvas falls back to the reference size, as clamp_rect does.
+    const auto fallback = snap_axis_targets(CanvasSize{0, 0}, {}, {});
+    CHECK(fallback.xs == std::vector<double>{0, 960, 1920});
+    CHECK(fallback.ys == std::vector<double>{0, 540, 1080});
+}
+
+TEST_CASE("snap_rect meets the canvas edges", "[canvas][interact]")
+{
+    const CanvasSize canvas{1920, 1080};
+    const auto targets = snap_axis_targets(canvas, {}, {});
+    struct Expect {
+        Rect rect;
+        Handle handle;
+        double x, y, w, h, v_guide, h_guide;
+    };
+    const Expect cases[] = {
+        // Moving: the left and top edges meet 0, the right and bottom the far
+        // sides, and the size holds.
+        {{"b", 6, -4, 200, 100}, Handle::Move, 0, 0, 200, 100, 0, 0},
+        {{"b", 1725, 984, 200, 100}, Handle::Move, 1720, 980, 200, 100, 1920, 1080},
+        // Resizing: the dragged edge meets the canvas side and the other holds.
+        {{"b", 100, 100, 1814, 100}, Handle::E, 100, 100, 1820, 100, 1920, -1},
+        {{"b", 7, 100, 293, 100}, Handle::W, 0, 100, 300, 100, 0, -1},
+        {{"b", 100, -6, 200, 306}, Handle::N, 100, 0, 200, 300, -1, 0},
+        {{"b", 100, 500, 200, 572}, Handle::S, 100, 500, 200, 580, -1, 1080},
+    };
+    for (const auto& c : cases) {
+        INFO(to_string(c.handle) << " from x " << c.rect.x << " y " << c.rect.y);
+        const auto s = snap_rect(c.rect, c.handle, targets, canvas, true);
+        CHECK(s.rect.x == Approx(c.x));
+        CHECK(s.rect.y == Approx(c.y));
+        CHECK(s.rect.w == Approx(c.w));
+        CHECK(s.rect.h == Approx(c.h));
+        CHECK(s.v_guide == Approx(c.v_guide));
+        CHECK(s.h_guide == Approx(c.h_guide));
+    }
+
+    // A sibling closer than the canvas edge still wins; at an equal distance
+    // the canvas edge does.
+    const std::vector<Rect> objects{{"a", 8, 400, 80, 40}};
+    const auto with_sibling = snap_axis_targets(canvas, objects, {});
+    const auto nearer =
+        snap_rect(Rect{"b", 6, 200, 80, 40}, Handle::Move, with_sibling, canvas, true);
+    CHECK(nearer.v_guide == Approx(8));
+    CHECK(nearer.rect.x == Approx(8));
+    const auto tie = snap_rect(Rect{"b", 4, 200, 80, 40}, Handle::Move, with_sibling, canvas, true);
+    CHECK(tie.v_guide == Approx(0));
+    CHECK(tie.rect.x == Approx(0));
+}
+
 TEST_CASE("snap_rect moves only the edges a handle holds", "[canvas][interact]")
 {
     // Edges: left 100, right 300, top 100, bottom 200. Every guide is within
