@@ -20,10 +20,9 @@ ScrollPage {
     PageHeader {
         width: panel.columnWidth
         title: qsTr("General")
-        text: qsTr("Enter your organization’s name, and its CCLI license number so it shows at the "
-                   + "end of each song. Theme priority decides which look wins when a song, "
-                   + "the service and the default each have their own. Library tabs choose "
-                   + "which tabs this computer shows, in what order and how many at once.")
+        text: qsTr("Set your organization’s name and CCLI number here. You can also choose which "
+                   + "theme wins when more than one applies, and which library tabs this computer "
+                   + "shows.")
     }
 
     GroupHeading {

@@ -25,9 +25,7 @@ ScrollPage {
     PageHeader {
         width: panel.columnWidth
         title: qsTr("Tools")
-        text: qsTr("SeventhSlide converts media and downloads it with these programs. "
-                   + "Each is looked for in SeventhSlide’s own tools folder, beside "
-                   + "SeventhSlide, and then where this computer keeps its programs.")
+        text: qsTr("SeventhSlide uses these programs to convert and download media.")
     }
 
     GroupHeading {

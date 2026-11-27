@@ -52,10 +52,8 @@ Item {
         PageHeader {
             Layout.fillWidth: true
             title: qsTr("Stacks")
-            text: qsTr("Stacks let you show more than one thing on screen at once, like a Bible "
-                       + "verse along the bottom while a picture stays behind it. Stacks higher in "
-                       + "the list show in front. Each new item goes to the stack set to receive "
-                       + "it, or to %1.").arg(panel.dialog.stackName(panel.dialog.fallbackId))
+            text: qsTr("Stacks let more than one thing show on a screen at the same time. Stacks "
+                       + "higher in the list show in front of the ones below them.")
         }
 
         // Up and Down for the stack picked, then Delete and New, over the well.

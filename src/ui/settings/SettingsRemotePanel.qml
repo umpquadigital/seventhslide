@@ -17,9 +17,8 @@ ScrollPage {
     PageHeader {
         width: panel.columnWidth
         title: qsTr("Web Remote")
-        text: qsTr("Run the slides from a phone or tablet. Connect it to the same Wi-Fi as "
-                   + "this computer, then scan the QR code below or open the address in its "
-                   + "web browser.")
+        text: qsTr("The web remote lets you run the slides from a phone or tablet. The phone or "
+                   + "tablet needs to be on the same Wi-Fi as this computer.")
     }
 
     GroupHeading {

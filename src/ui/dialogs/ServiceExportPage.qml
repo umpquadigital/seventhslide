@@ -17,8 +17,8 @@ ScrollPage {
     PageHeader {
         width: page.columnWidth
         title: qsTr("Export")
-        text: qsTr("Save this service’s slides as images, or the whole service as a package to "
-                   + "import into another library. Both use this window’s themes.")
+        text: qsTr("Save this service’s slides as images, or save the whole service as a package "
+                   + "for another library.")
     }
 
     GroupHeading {
