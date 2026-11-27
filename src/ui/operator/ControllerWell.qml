@@ -41,6 +41,15 @@ ColumnLayout {
     property double lastFollowedItem: -1
     /// Set by local line/thumb clicks so the follow scroll leaves the list in place.
     property bool skipFollowOnce: false
+    /// The side's lines were listed anew (other content, or the same edited)
+    /// since the last focusedStackChanged: the list is put on its line, not
+    /// scrolled there from the top it was reset to.
+    property bool linesReplaced: false
+    /// Where the other well's list stood when a take traded the sides
+    /// (``scrollState()``): this well now shows what that one did, and puts
+    /// its list there. Kept until the change is over (``placeList``), as a
+    /// well that showed a video shows its lines a moment after the rest.
+    property var pendingScroll: null
 
     readonly property int lineRowHeight: 36
 
@@ -122,6 +131,50 @@ ColumnLayout {
             galleryView.followActiveThumb(anim)
     }
 
+    /// Which of the list and the gallery shows, and where it stands (where a
+    /// follow under way will stop): ``{kind: "lines" | "gallery", y}``, or
+    /// null when neither shows.
+    function scrollState() {
+        if (lineList.visible)
+            return { kind: "lines", y: lineList.restingContentY() }
+        if (galleryView.visible)
+            return { kind: "gallery", y: galleryView.restingContentY() }
+        return null
+    }
+
+    /// Take where the other well's list stood (``scrollState()``), for what a
+    /// take brought here from it.
+    function receiveScroll(state) {
+        well.pendingScroll = state
+        // Dropped once this change is over; until then every placing uses it.
+        if (state)
+            Qt.callLater(well.dropPendingScroll)
+    }
+
+    /// The take's change is over: back to following the current line.
+    function dropPendingScroll() {
+        well.pendingScroll = null
+    }
+
+    /// The lines were replaced: put the list where it belongs at once,
+    /// without scrolling. Where the other well had it, after a take, if this
+    /// well lists it the same way; otherwise on the current line, as the
+    /// follow would.
+    function placeList() {
+        const handoff = well.pendingScroll
+        if (handoff) {
+            if (handoff.kind === "lines" && lineList.visible && lineList.count > 0) {
+                lineList.placeAt(handoff.y)
+                return
+            }
+            if (handoff.kind === "gallery" && galleryView.visible && galleryView.count > 0) {
+                galleryView.placeAt(handoff.y)
+                return
+            }
+        }
+        well.followLiveAfterNav(false)
+    }
+
     /// Jump to a clicked row without re-anchoring the list.
     function jumpToLineFromList(index) {
         if (!well.ready)
@@ -158,6 +211,9 @@ ColumnLayout {
 
     // Keep the live line in view when the cursor moves from auto-advance or the
     // web remote. A local line click sets skipFollowOnce so the list stays put.
+    // Other content is put in place rather than scrolled to. The session's
+    // signal reaches the side's own first (it is forwarded to it), so the
+    // side's properties, and the bindings on them, read what it now shows.
     Connections {
         target: well.session
         enabled: well.ready
@@ -167,14 +223,26 @@ ColumnLayout {
                 return
             const cursor = well.view.lineCursor
             const item = well.view.serviceItemId
+            const replaced = well.linesReplaced || item !== well.lastFollowedItem
             const moved = cursor !== well.lastFollowedCursor
-                          || item !== well.lastFollowedItem
             const skip = well.skipFollowOnce
             well.skipFollowOnce = false
+            well.linesReplaced = false
             well.lastFollowedCursor = cursor
             well.lastFollowedItem = item
-            if (moved && !skip)
+            if (replaced || well.pendingScroll)
+                well.placeList()
+            else if (moved && !skip)
                 well.followLiveAfterNav(true)
+        }
+    }
+
+    // The rows were reset: the views went back to the top with them.
+    Connections {
+        target: well.ready ? well.view.lines : null
+
+        function onModelReset() {
+            well.linesReplaced = true
         }
     }
 
@@ -284,6 +352,7 @@ ColumnLayout {
         // uses MediaPreviewFrame instead.
         GridView {
             id: galleryView
+            objectName: "wellGallery"
             // Cells carry half the gap on each side, so the view sits half a gap
             // outside the well padding and the thumbs still line up with it.
             readonly property int gap: 6
@@ -327,15 +396,33 @@ ColumnLayout {
                 easing.type: Easing.OutCubic
             }
 
+            /// The furthest it scrolls, from its rows rather than
+            /// contentHeight, which a reset leaves stale until the view lays
+            /// out again.
+            function maxContentY() {
+                return Math.max(0, Math.ceil(count / columnCount) * cellHeight - height)
+            }
+
+            /// Where it stands, or where the follow under way will stop.
+            function restingContentY() {
+                return galleryFollowAnim.running ? galleryFollowAnim.to : contentY
+            }
+
+            /// Put it at ``y`` at once.
+            function placeAt(y) {
+                galleryFollowAnim.stop()
+                contentY = Math.max(0, Math.min(y, maxContentY()))
+            }
+
             function followActiveThumb(animated) {
                 if (!well.autoScroll || !visible || !well.ready)
                     return
                 const idx = well.view.lineCursor
-                if (idx < 0 || height <= 0)
+                if (idx < 0 || height <= 0 || count <= 0)
                     return
                 const top = Math.floor(idx / columnCount) * cellHeight + gap / 2
                 const ideal = top - (height - thumbH) * followAnchor
-                const target = Math.max(0, Math.min(ideal, contentHeight - height))
+                const target = Math.max(0, Math.min(ideal, maxContentY()))
                 galleryFollowAnim.stop()
                 if (!animated || Math.abs(contentY - target) < 0.5) {
                     contentY = target
@@ -347,8 +434,13 @@ ColumnLayout {
             }
 
             onMovementStarted: galleryFollowAnim.stop()
-            onVisibleChanged: if (visible)
-                                  Qt.callLater(galleryView.followActiveThumb, false)
+            // Its thumbs listed anew, in place at once: a reset says
+            // countChanged, a model newly given (the view shown) says
+            // modelChanged. Both place, so the order between them is moot.
+            onModelChanged: if (visible && count > 0)
+                                well.placeList()
+            onCountChanged: if (visible && count > 0)
+                                well.placeList()
             onWidthChanged: if (visible)
                                 Qt.callLater(galleryView.followActiveThumb, false)
 
@@ -486,6 +578,7 @@ ColumnLayout {
 
         ListView {
             id: lineList
+            objectName: "wellLines"
             anchors.fill: parent
             anchors.margins: 8
             visible: !parent.slideGallery && !parent.videoPreview && !parent.webPreview
@@ -508,14 +601,31 @@ ColumnLayout {
             // upcoming lines stay visible below (vs dead-center).
             readonly property real followAnchor: 0.37
 
+            /// The furthest it scrolls, from its rows (all one height)
+            /// rather than contentHeight, which a reset leaves stale until
+            /// the view lays out again.
+            function maxContentY() {
+                return Math.max(0, count * (well.lineRowHeight + spacing) - spacing - height)
+            }
+
+            /// Where it stands, or where the follow under way will stop.
+            function restingContentY() {
+                return followAnim.running ? followAnim.to : contentY
+            }
+
+            /// Put it at ``y`` at once.
+            function placeAt(y) {
+                followAnim.stop()
+                contentY = Math.max(0, Math.min(y, maxContentY()))
+            }
+
             function centeredContentY(index) {
                 if (index < 0 || count <= 0 || height <= 0)
                     return contentY
                 const itemH = well.lineRowHeight
                 const stride = itemH + spacing
                 const ideal = index * stride - (height - itemH) * followAnchor
-                const maxY = Math.max(0, contentHeight - height)
-                return Math.max(0, Math.min(ideal, maxY))
+                return Math.max(0, Math.min(ideal, maxContentY()))
             }
 
             function followLiveLine(animated) {
@@ -538,6 +648,11 @@ ColumnLayout {
             }
 
             onMovementStarted: followAnim.stop()
+            // Its lines listed anew: in place at once, as the gallery.
+            onModelChanged: if (visible && count > 0)
+                                well.placeList()
+            onCountChanged: if (visible && count > 0)
+                                well.placeList()
 
             delegate: Rectangle {
                 id: row

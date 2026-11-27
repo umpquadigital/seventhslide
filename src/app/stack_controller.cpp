@@ -466,6 +466,7 @@ try {
                                                        + session_.transition_ms_on(id)
                                                        + session_.auto_advance(id).interval_ms);
     }
+    emit sidesSwapped(QString::fromStdString(id));
     // The service's selected row and Also play followed what went live.
     emit liveChanged(true);
     return {};
