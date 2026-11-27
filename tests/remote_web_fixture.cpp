@@ -30,6 +30,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <seventhslide/db/bible_repository.hpp>
 #include <seventhslide/db/service_repository.hpp>
 #include <seventhslide/db/song_repository.hpp>
 #include <seventhslide/model/content.hpp>
@@ -63,6 +64,11 @@ nlohmann::json build(const fs::path& data_dir, int port, int extra_songs)
     SessionFacade facade;
     REQUIRE(facade.init_libraries(data_dir));
     const auto lib = seventhslide::test::fill_sample_library(facade);
+    // The app the tests run is the program, which copies its shipped Bibles
+    // into a library the first time it opens one: noted as done, the library
+    // keeps its one Bible, and the app is not busy writing three others while
+    // the tests run.
+    seventhslide::db::BibleRepository(*facade.open_library().database()).note_bundled_taken();
 
     for (int i = 1; i <= extra_songs; ++i) {
         seventhslide::model::Song song;
