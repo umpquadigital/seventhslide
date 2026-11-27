@@ -215,7 +215,6 @@ Item {
                 AppButton {
                     objectName: "serviceImportButton"
                     size: "control"
-                    label: qsTr("Import…")
                     iconSource: Icons.url("import", ink)
                     enabled: !!root.session && root.session.ready
                     onClicked: (importLoader.load() as FreeformImportDialog).start()

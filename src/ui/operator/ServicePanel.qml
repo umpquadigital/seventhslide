@@ -76,6 +76,13 @@ Rectangle {
             root.failed(error)
     }
 
+    /// No service open again: the rundown empties and every stack clears,
+    /// as they do when another service is opened.
+    function closeService() {
+        if (root.session)
+            root.report(root.session.library.closeService())
+    }
+
     function toolEditItem() {
         if (!root.canEditItem)
             return

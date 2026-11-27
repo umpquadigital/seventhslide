@@ -88,6 +88,7 @@ enum class Command {
     WebReload,
     // Service rundown
     OpenService,
+    CloseService,
     SelectServiceItem,
     SelectServiceItemAtImage,
     AddSongToService,

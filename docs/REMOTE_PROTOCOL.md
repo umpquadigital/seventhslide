@@ -635,6 +635,7 @@ refused when there is no such page; `webCanGoBack` says whether there is.
 | Command | Arguments | Sections |
 |---|---|---|
 | `openService` *(not sent by the bundled client)* | `serviceId` int | all |
+| `closeService` *(not sent by the bundled client)* | | all |
 | `selectServiceItem` | `index` int | all |
 | `selectServiceItemAtImage` | `index` int, `imageIndex` int | all |
 | `addSongToService` *(not sent by the bundled client)* | `songId` int, optional `atIndex` int | service |
@@ -649,6 +650,10 @@ refused when there is no such page; `webCanGoBack` says whether there is.
 | `removeServiceItem` *(not sent by the bundled client)* | `itemId` int | service, session, lines, images, preview, previewLines, previewImages |
 | `moveServiceItemTo` *(not sent by the bundled client)* | `fromIndex` int, `toIndex` int | service |
 | `reorderServiceItems` *(not sent by the bundled client)* | `orderedItemIds` int array | service |
+
+`closeService` leaves no service open: the rundown empties and every stack is
+cleared, as when another service is opened. The service stays in the library.
+It is refused when no service is open.
 
 ### Services: rename and delete only
 

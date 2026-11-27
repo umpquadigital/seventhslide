@@ -120,6 +120,7 @@ std::vector<CommandSpec> build_table()
 
         // ---- service rundown ----
         {C::OpenService, "openService", {{"serviceId", ArgType::Int, true}}, k_everything},
+        {C::CloseService, "closeService", {}, k_everything},
         {C::SelectServiceItem, "selectServiceItem", {{"index", ArgType::Int, true}}, k_everything},
         {C::SelectServiceItemAtImage, "selectServiceItemAtImage",
          {{"index", ArgType::Int, true}, {"imageIndex", ArgType::Int, true}},

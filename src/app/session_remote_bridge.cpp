@@ -740,6 +740,8 @@ CommandResult SessionRemoteBridge::invoke_command(remote::Command command, const
     // Service rundown
     case Command::OpenService:
         return from_bool(library->openService(qi(a, "serviceId")), refusal::service_gone());
+    case Command::CloseService:
+        return from_error(library->closeService());
     case Command::SelectServiceItem:
         return from_bool(facade_.live()->selectServiceItem(arg_int(a, "index")),
                          refusal::service_item_gone());

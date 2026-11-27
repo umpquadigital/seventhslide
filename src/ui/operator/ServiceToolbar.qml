@@ -7,7 +7,7 @@ import SeventhSlide
 
 // The Service panel's toolbar, flat on the panel: the service picker, editing
 // and removing items, the stack menu, the service settings and ⋯ (a divider,
-// playing items together).
+// exporting, playing items together, closing the service).
 Rectangle {
     id: svcToolbar
     /// Untyped, since ServicePanel makes this type and Qt refuses the cycle;
@@ -109,6 +109,15 @@ Rectangle {
                     onTriggered: {
                         svcAddMenu.close()
                         svcToolbar.panel.linkSelectedItems()
+                    }
+                }
+                MenuRule {}
+                MenuItemRow {
+                    icon: "close"
+                    label: qsTr("Close Service")
+                    onTriggered: {
+                        svcAddMenu.close()
+                        svcToolbar.panel.closeService()
                     }
                 }
             }

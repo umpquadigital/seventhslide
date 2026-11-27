@@ -110,6 +110,10 @@ public:
     void refresh_bibles();
 
     Q_INVOKABLE bool openService(qint64 service_id);
+    /// Close the open service: no service open, so no rundown, and every
+    /// stack cleared, as opening another service clears them. The service
+    /// stays in the library. Empty = ok.
+    Q_INVOKABLE QString closeService();
 
     /// Create a service dated now, and open it. -1 when it could not be.
     Q_INVOKABLE qint64 createService(const QString& name);

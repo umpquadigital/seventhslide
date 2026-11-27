@@ -51,6 +51,12 @@ namespace seventhslide::app::refusal {
     return QCoreApplication::translate("Refusal", "That service is no longer in the library.");
 }
 
+/// No service is open, so there is no rundown to change or close.
+[[nodiscard]] inline QString no_service_open()
+{
+    return QCoreApplication::translate("Refusal", "No service is open.");
+}
+
 /// An item of the open service (a row of the rundown).
 [[nodiscard]] inline QString service_item_gone()
 {
