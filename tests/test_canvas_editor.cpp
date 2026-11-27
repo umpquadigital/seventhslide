@@ -349,7 +349,9 @@ private:
                                                     seventhslide::canvas::Object, ScratchPart>;
     static constexpr const char* k_names[] = {"text", "text_refused", "text_throws"};
     static constexpr auto k_units = seventhslide::canvas::GeometryUnits::Exact;
-    static constexpr int k_z_step = 1;
+    // The editor's contract (object_editor.hpp); these tests never stack by
+    // z, so nothing here reads it, and Apple clang calls it unused.
+    [[maybe_unused]] static constexpr int k_z_step = 1;
 
     [[nodiscard]] std::vector<seventhslide::canvas::Object>* stack() { return &doc_.objects; }
     [[nodiscard]] const std::vector<seventhslide::canvas::Object>* stack() const
