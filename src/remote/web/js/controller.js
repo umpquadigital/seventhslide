@@ -37,10 +37,12 @@ function toggleFreeze() {
 }
 
 /* Shift+B / Shift+F: this device's stack, on every output, while something
-   is live on it. */
+   is on it. Whether that is live is the server's to say (it refuses, and
+   says why, when nothing is): the page hears of a take a moment after its
+   words, and a key pressed just after one is meant for what was taken. */
 function toggleStack(command) {
   const stack = focusedEntry();
-  if (stack && stack.live) send(command, { stackId: stack.id });
+  if (stack) send(command, { stackId: stack.id });
 }
 
 /* A snapshot redraws everything: place the views again, without animating. */
