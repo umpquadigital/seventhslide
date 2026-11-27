@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -25,6 +26,11 @@ struct FreeformBrowserRow {
     std::string thumb_key;
 };
 
+/// The places ("<owner>/<name>") of every Freeform document's own file that a
+/// document still names: a library item, or a service's copy of one
+/// (freeform/own_media.hpp). Whatever else is in those folders is no one's.
+[[nodiscard]] std::set<std::string, std::less<>> own_media_named(Database& db);
+
 class FreeformRepository {
 public:
     explicit FreeformRepository(Database& db) : db_(db) {}
@@ -36,7 +42,11 @@ public:
     std::vector<std::int64_t> delete_folder_tree(std::int64_t id);
 
     // --- items ---
-    [[nodiscard]] std::int64_t create_item(model::FreeformItem& item);
+    /// Stores ``item`` as a new item, under ``uid`` when one is given (the
+    /// owner its files were put under) and a new one otherwise; ``item.uid``
+    /// is never read, so an item read back and stored again is a new one.
+    /// Sets ``item``'s id, sort order and uid.
+    [[nodiscard]] std::int64_t create_item(model::FreeformItem& item, std::string_view uid = {});
     void update_item(const model::FreeformItem& item);
     [[nodiscard]] std::optional<model::FreeformItem> get_item(std::int64_t id);
     /// Items whose ``folder_id`` is ``folder_id`` (nullopt = library root).

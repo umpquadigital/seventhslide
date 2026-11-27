@@ -20,6 +20,7 @@
 #include "qml_ids.hpp"
 
 #include <seventhslide/db/media_repository.hpp>
+#include <seventhslide/freeform/own_media.hpp>
 #include <seventhslide/session/session.hpp>
 
 #include <QtQml/qqmlregistration.h>
@@ -188,8 +189,10 @@ public:
     /// ``image://mediathumb/...`` URL for scaled library / gallery thumbs: an
     /// image's picture, a video's frame. Empty for sound, or a missing file.
     /// ``revision`` (``filesRevision``) is only there for a binding to follow.
+    /// A Freeform's own video (by its URL) has its frame made the first time
+    /// it is asked for; the URL comes once it is there (``filesRevision``).
     Q_INVOKABLE QString mediaThumbUrl(seventhslide::app::MediaKindQml::Kind kind, const QString& filename,
-                                      int revision = 0) const;
+                                      int revision = 0);
     [[nodiscard]] int filesRevision() const noexcept { return files_revision_; }
 
     /// What sync knows of library file ``filename`` while it is not here:
@@ -249,6 +252,17 @@ public:
                                    const QStringList& local_paths,
                                    qint64 folder_id = -1);
 
+    /// Copy pictures or videos into the folder of a Freeform document's own
+    /// files that ``owner`` has (freeform/own_media.hpp), never the
+    /// library's: nothing is registered or listed. As ``import_files``, the
+    /// copy runs off the GUI thread and ``importFinished`` reports the id
+    /// once, its ``filenames`` the files' URLs for the document to name.
+    /// Each is called what its source is, or ``title`` when one is given.
+    qint64 import_freeform_media(db::MediaKind kind, const QStringList& local_paths,
+                                 const std::string& owner, const std::string& title = {});
+    /// Sync brought Freeform documents' own files: what shows them looks again.
+    void own_media_arrived();
+
     /// What to tell the operator about files just imported (``titles``,
     /// ``bytes`` together); empty for nothing. Sync's: a synced library's
     /// size limit they would go over.
@@ -303,11 +317,14 @@ public:
     /// The listing of ``kind``'s folders, read again (a folder made elsewhere).
     void refresh_folders(db::MediaKind kind);
 
-    /// Background-generate disk thumbs for filenames of ``kind`` currently listed (existing libraries).
-    void schedule_warm_media_thumbs(db::MediaKind kind, std::vector<std::string> filenames);
+    /// Background-generate disk thumbs for filenames of ``kind`` currently listed (existing libraries),
+    /// or for the files of a Freeform's ``owner`` (freeform/own_media.hpp).
+    void schedule_warm_media_thumbs(db::MediaKind kind, std::vector<std::string> filenames,
+                                    const std::string& owner = {});
     /// From the warming pool: a video's thumbs were made, so its row can show
-    /// them. Rebuilds the video listing on the GUI thread.
-    void post_video_thumbs_made(const std::shared_ptr<std::atomic<bool>>& cancelled);
+    /// them. Rebuilds the video listing on the GUI thread; for a Freeform's
+    /// own video (``own``), which no listing shows, bumps ``filesRevision``.
+    void post_video_thumbs_made(const std::shared_ptr<std::atomic<bool>>& cancelled, bool own = false);
 
     [[nodiscard]] db::MediaRepository* media_repo() noexcept { return media_repo_.get(); }
 
@@ -414,6 +431,23 @@ private:
     /// Move a copied batch into the library and report it. Runs from the
     /// event loop, so it never lets an exception out.
     void finish_import(const ImportTarget& target, ImportBatch batch) noexcept;
+    /// ``finish_import`` for ``import_freeform_media``: each file under a
+    /// name of its own in the owner's folder, and nothing registered.
+    void finish_freeform_import(db::MediaKind kind, const std::string& owner,
+                                const std::string& title, ImportBatch batch) noexcept;
+
+    /// Where the file ``ref`` names is: a library file of ``kind`` by its
+    /// name, or a Freeform's own file by its URL. Whether it is there is the
+    /// caller's to ask.
+    struct MediaPlace {
+        std::filesystem::path path;
+        /// As sync names it ("images/<name>", "freeform_media/<owner>/<name>").
+        std::string sync_path;
+        /// The file's own name, which its thumbnails go by.
+        std::string leaf;
+        std::optional<freeform::OwnMedia> own;
+    };
+    [[nodiscard]] std::optional<MediaPlace> place_of(db::MediaKind kind, const std::string& ref) const;
     /// Rename staged files into place, register them, refresh the browser.
     /// Fills ``errors`` and returns the names the files now have.
     [[nodiscard]] QStringList commit_import(const ImportTarget& target,

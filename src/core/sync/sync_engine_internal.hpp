@@ -81,19 +81,31 @@ inline std::vector<std::string> files_of(std::string_view table, std::string_vie
             }
             continue;
         }
-        // Each URL "/static/<folder>/<name>" in it, the name running to the
-        // first character no file name here has (a quote, a backslash).
+        // Each URL "/static/<folder>/<name>" in it (".../<owner>/<name>" for
+        // a folder of owners), each part running to the first character no
+        // file name here has (a quote, a backslash).
         const auto text = document.dump();
         const auto prefix = "/static/" + folder + "/";
+        const auto part_end = [&text](std::size_t from) {
+            while (from < text.size()
+                   && ((text[from] >= 'a' && text[from] <= 'z') || (text[from] >= 'A' && text[from] <= 'Z')
+                       || (text[from] >= '0' && text[from] <= '9') || text[from] == '.'
+                       || text[from] == '_' || text[from] == '-')) {
+                ++from;
+            }
+            return from;
+        };
         for (auto at = text.find(prefix); at != std::string::npos; at = text.find(prefix, at)) {
             at += prefix.size();
-            auto end = at;
-            while (end < text.size()
-                   && (std::isalnum(static_cast<unsigned char>(text[end])) != 0
-                       || text[end] == '.' || text[end] == '_' || text[end] == '-')) {
-                ++end;
+            auto end = part_end(at);
+            if (f.per_owner) {
+                if (end >= text.size() || text[end] != '/'
+                    || !db::is_media_file_name(text.substr(at, end - at))) {
+                    continue;
+                }
+                end = part_end(end + 1);
             }
-            if (const auto name = text.substr(at, end - at); db::is_media_file_name(name)) {
+            if (const auto name = text.substr(at, end - at); db::is_sync_media_path(folder + "/" + name)) {
                 out.push_back(folder + "/" + name);
             }
         }

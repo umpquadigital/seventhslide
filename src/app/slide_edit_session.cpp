@@ -9,6 +9,7 @@
 #include "entry_error.hpp"
 #include "refusals.hpp"
 #include "freeform_slide_render.hpp"
+#include "media_controller.hpp"
 #include "qvariant_json.hpp"
 #include "requested_size.hpp"
 #include "rich_line_variant.hpp"
@@ -16,6 +17,7 @@
 #include "theme_controller.hpp"
 
 #include <seventhslide/canvas/layout.hpp>
+#include <seventhslide/db/media_kind.hpp>
 #include <seventhslide/freeform/compile.hpp>
 #include <seventhslide/freeform/doc_edit.hpp>
 #include <seventhslide/freeform/object_properties.hpp>
@@ -1660,7 +1662,7 @@ QString SlideEditSession::copy_background_into(std::string output_id,
     // Set when the copy fails at once (a theme that is gone), for the caller;
     // a copy that lands later reports through errorOccurred alone.
     auto failed = std::make_shared<QString>();
-    bg_copier_->copy(output_id, theme_id,
+    bg_copier_->copy(output_id, theme_id, documents_.freeform_media_owner(item_id_),
                      [this, opened, slide = std::move(slide_id),
                       failed](std::optional<freeform::BackgroundCopy> copied, QString error) {
                          if (opened != opened_ || !freeform_mode()) {
@@ -1684,6 +1686,10 @@ QString SlideEditSession::copy_background_into(std::string output_id,
 void SlideEditSession::close_document()
 {
     ++opened_;
+    // Saved or not, the files brought into the item that it does not name go.
+    if (mode_ == SlideEditMode::Freeform && item_id_ >= 0) {
+        documents_.freeform_document_closed(item_id_);
+    }
     // Saved or not, the background files the theme does not name go: a
     // picture picked and not saved, or the one a saved pick replaced.
     if (mode_ == SlideEditMode::BackgroundTheme) {
@@ -1887,6 +1893,19 @@ void SlideEditSession::cancel()
 QString SlideEditSession::undo()
 {
     return objects_->undo();
+}
+
+qint64 SlideEditSession::importMedia(bool video, const QString& url)
+{
+    if (media_ == nullptr) {
+        return -1;
+    }
+    const auto kind = video ? db::MediaKind::Video : db::MediaKind::Image;
+    // An empty owner (no item open) has the import refused, reported as any
+    // other import's end.
+    const auto owner =
+        freeform_mode() && item_id_ >= 0 ? documents_.freeform_media_owner(item_id_) : std::string();
+    return media_->import_freeform_media(kind, {url}, owner);
 }
 
 QString SlideEditSession::redo()

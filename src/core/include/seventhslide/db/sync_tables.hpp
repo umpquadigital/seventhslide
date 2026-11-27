@@ -192,6 +192,12 @@ struct SyncFile {
     FileIn in;
     /// The folder under the media folder; also the ``/static/`` segment.
     std::string_view folder;
+    /// Its files are a folder further down, one for each owner:
+    /// "<folder>/<owner>/<name>" (``FileIn::Url`` only).
+    bool per_owner = false;
+    /// Its records go however large their files are: the size limit never
+    /// keeps one here (an output, which holds every theme).
+    bool never_held = false;
 };
 
 inline constexpr std::array k_sync_files = {
@@ -203,7 +209,12 @@ inline constexpr std::array k_sync_files = {
     // so a font's file is never in ``k_sync_file_names``.
     SyncFile{"font_files", FileIn::Key, model::k_fonts_subdir},
     // Theme backgrounds, each owned by the one theme that names it.
-    SyncFile{"outputs", FileIn::Url, model::k_theme_backgrounds_subdir},
+    SyncFile{"outputs", FileIn::Url, model::k_theme_backgrounds_subdir, false, true},
+    // A Freeform document's own pictures and videos (freeform/own_media.hpp):
+    // owned by every document that names one, the item and the services'
+    // copies of it, so a file goes only once none of them does.
+    SyncFile{"freeform_items", FileIn::Url, model::k_freeform_media_subdir, true},
+    SyncFile{"service_items", FileIn::Url, model::k_freeform_media_subdir, true},
 };
 
 /// Where a record may name a media file of the library (a ``FileIn::Key``
@@ -415,12 +426,12 @@ inline constexpr auto k_sync_parts = [] {
     return false;
 }
 
-/// Whether ``table``'s records own the files their JSON names by URL (an
-/// output, its themes' backgrounds).
-[[nodiscard]] constexpr bool owns_files_by_url(std::string_view table)
+/// Whether the size limit lets ``table``'s records go whatever files they
+/// own (``SyncFile::never_held``).
+[[nodiscard]] constexpr bool never_held_back(std::string_view table)
 {
     for (const auto& f : k_sync_files) {
-        if (f.table == table && f.in == FileIn::Url) {
+        if (f.table == table && f.never_held) {
             return true;
         }
     }
@@ -470,7 +481,8 @@ inline constexpr auto k_sync_parts = [] {
 }
 
 /// Whether ``path`` names a media file as sync does, "<folder>/<name>": the
-/// folder of one of ``k_sync_files``, and a file's own name under it.
+/// folder of one of ``k_sync_files``, and a file's own name under it; for a
+/// folder with one for each owner, "<folder>/<owner>/<name>".
 [[nodiscard]] inline bool is_sync_media_path(std::string_view path)
 {
     const auto slash = path.find('/');
@@ -478,10 +490,17 @@ inline constexpr auto k_sync_parts = [] {
         return false;
     }
     const auto folder = path.substr(0, slash);
+    const auto rest = path.substr(slash + 1);
     for (const auto& f : k_sync_files) {
-        if (f.folder == folder) {
-            return is_media_file_name(path.substr(slash + 1));
+        if (f.folder != folder) {
+            continue;
         }
+        if (!f.per_owner) {
+            return is_media_file_name(rest);
+        }
+        const auto inner = rest.find('/');
+        return inner != std::string_view::npos && is_media_file_name(rest.substr(0, inner))
+               && is_media_file_name(rest.substr(inner + 1));
     }
     return false;
 }

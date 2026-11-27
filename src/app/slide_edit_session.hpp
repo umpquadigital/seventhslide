@@ -61,6 +61,7 @@ class ScenePresenter;
 namespace seventhslide::app {
 
 class BackgroundThemeCopier;
+class MediaController;
 
 class SlideEditSession;
 class ThemeController;
@@ -586,6 +587,12 @@ public:
     Q_INVOKABLE void cancel();
     Q_INVOKABLE QString undo();
     Q_INVOKABLE QString redo();
+    /// Copy a picture or video from the disk (``url``, a path or file URL)
+    /// into the open Freeform item's own files, never the library's
+    /// (freeform/own_media.hpp). Returns the request id
+    /// ``MediaController::importFinished`` reports, its ``filenames`` the
+    /// URL to name the file by; with no item open the report says why.
+    Q_INVOKABLE qint64 importMedia(bool video, const QString& url);
 
     [[nodiscard]] QString mode() const;
     [[nodiscard]] bool active() const;
@@ -620,6 +627,9 @@ public:
     /// What copies a background theme into slides; null in tests that need
     /// none (a copy then fails, saying so).
     void set_background_copier(BackgroundThemeCopier* copier) noexcept { bg_copier_ = copier; }
+    /// What copies files into the open item (``importMedia``); null in tests
+    /// that need none.
+    void set_media(MediaController* media) noexcept { media_ = media; }
 
 signals:
     void documentChanged();
@@ -680,6 +690,7 @@ private:
     /// lands later knows whether it is still wanted.
     std::uint64_t opened_ = 0;
     BackgroundThemeCopier* bg_copier_ = nullptr;
+    MediaController* media_ = nullptr;
 
     // A theme: where it lives, what it holds beside its elements.
     QString theme_output_;

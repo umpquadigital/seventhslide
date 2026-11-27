@@ -59,7 +59,7 @@ void FreeformPictureItem::paint(QPainter* painter)
         return;
     }
     auto* cache = facade->previews().image_cache();
-    const auto url = model::static_media_url(model::k_images_subdir, filename_.toStdString());
+    const auto url = model::media_ref_url(model::k_images_subdir, filename_.toStdString());
     if (cache == nullptr || !url) {
         return;
     }

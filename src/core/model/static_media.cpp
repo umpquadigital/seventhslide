@@ -21,4 +21,12 @@ std::optional<std::string> static_media_url(std::string_view subdir,
     return out;
 }
 
+std::optional<std::string> media_ref_url(std::string_view subdir, std::string_view ref)
+{
+    if (ref.starts_with("/static/")) {
+        return std::string(ref);
+    }
+    return static_media_url(subdir, ref);
+}
+
 } // namespace seventhslide::model

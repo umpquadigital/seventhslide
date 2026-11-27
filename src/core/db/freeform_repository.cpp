@@ -6,6 +6,7 @@
 #include "seventhslide/db/json_codec.hpp"
 #include "seventhslide/freeform/compile.hpp"
 #include "seventhslide/freeform/doc_edit.hpp"
+#include "seventhslide/freeform/own_media.hpp"
 #include "seventhslide/json/read.hpp"
 
 #include <stdexcept>
@@ -33,6 +34,7 @@ model::FreeformItem item_from_row(QSqlQuery& q)
     }
     item.thumb_output_id = q.value(6).toString().toStdString();
     item.thumb_key = q.value(7).toString().toStdString();
+    item.uid = q.value(8).toString().toStdString();
     return item;
 }
 
@@ -54,6 +56,27 @@ void stamp_thumb(model::FreeformItem& item)
 
 }  // namespace
 
+std::set<std::string, std::less<>> own_media_named(Database& db)
+{
+    std::set<std::string, std::less<>> named;
+    auto items = exec(db, QStringLiteral("SELECT document FROM freeform_items"), {},
+                      "read freeform own media");
+    while (items.next()) {
+        freeform::note_own_media(parse_json_text(items.value(0).toString(), nlohmann::json::object()),
+                                 named);
+    }
+    auto rows = exec(db,
+                     QStringLiteral("SELECT data FROM service_items WHERE item_type = 'freeform'"),
+                     {}, "read service freeform own media");
+    while (rows.next()) {
+        const auto data = parse_json_text(rows.value(0).toString(), nlohmann::json::object());
+        if (const auto* doc = json::member(data, "document")) {
+            freeform::note_own_media(*doc, named);
+        }
+    }
+    return named;
+}
+
 FolderTree FreeformRepository::folders() const
 {
     return FolderTree(db_, "freeform_folders");
@@ -69,15 +92,16 @@ std::vector<std::int64_t> FreeformRepository::delete_folder_tree(std::int64_t id
     return rows().delete_folder_tree(id);
 }
 
-std::int64_t FreeformRepository::create_item(model::FreeformItem& item)
+std::int64_t FreeformRepository::create_item(model::FreeformItem& item, std::string_view uid)
 {
     stamp_thumb(item);
     const auto sort_order = next_order(db_, {"freeform_items", "sort_order", "folder_id", item.folder_id});
 
+    // No uid given: the table's trigger gives it one.
     const auto sql = QStringLiteral(
         "INSERT INTO freeform_items (name, folder_id, sort_order, tags, document, "
-        "thumb_output_id, thumb_key) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)");
+        "thumb_output_id, thumb_key, uid) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     exec(db_, sql,
          {QString::fromStdString(item.name),
           sql_id(item.folder_id),
@@ -85,10 +109,14 @@ std::int64_t FreeformRepository::create_item(model::FreeformItem& item)
           json_to_qstring(nlohmann::json(item.tags)),
           json_to_qstring(item.document),
           QString::fromStdString(item.thumb_output_id),
-          QString::fromStdString(item.thumb_key)},
+          QString::fromStdString(item.thumb_key),
+          uid.empty() ? QVariant() : QVariant(QString::fromUtf8(uid.data(), static_cast<qsizetype>(uid.size())))},
          "create freeform item");
     item.id = db_.last_insert_id();
     item.sort_order = sort_order;
+    auto stored = exec(db_, QStringLiteral("SELECT uid FROM freeform_items WHERE id = ?"),
+                       {static_cast<qint64>(*item.id)}, "read new freeform item uid");
+    item.uid = stored.next() ? stored.value(0).toString().toStdString() : std::string();
     return *item.id;
 }
 
@@ -118,7 +146,7 @@ std::optional<model::FreeformItem> FreeformRepository::get_item(std::int64_t id)
 {
     const auto sql = QStringLiteral(
         "SELECT id, name, folder_id, sort_order, tags, document, "
-        "thumb_output_id, thumb_key "
+        "thumb_output_id, thumb_key, uid "
         "FROM freeform_items WHERE id = ?");
     auto q = exec(db_, sql, {static_cast<qint64>(id)}, "get freeform item");
     if (!q.next()) {
@@ -132,7 +160,7 @@ std::vector<model::FreeformItem> FreeformRepository::list_items_in_folder(
 {
     const auto sql = QStringLiteral(
         "SELECT id, name, folder_id, sort_order, tags, document, "
-        "thumb_output_id, thumb_key "
+        "thumb_output_id, thumb_key, uid "
         "FROM freeform_items WHERE folder_id IS ? ORDER BY sort_order ASC, uid ASC");
     auto q = exec(db_, sql, {sql_id(folder_id)}, "list freeform items in folder");
     std::vector<model::FreeformItem> out;
@@ -146,7 +174,7 @@ std::vector<model::FreeformItem> FreeformRepository::list_items()
 {
     const auto sql = QStringLiteral(
         "SELECT id, name, folder_id, sort_order, tags, document, "
-        "thumb_output_id, thumb_key "
+        "thumb_output_id, thumb_key, uid "
         "FROM freeform_items ORDER BY folder_id, sort_order ASC, uid ASC");
     auto q = exec(db_, sql, {}, "list freeform items");
     std::vector<model::FreeformItem> out;

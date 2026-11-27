@@ -98,6 +98,10 @@ struct FreeformItem {
     /// parse ``document``. Canvas size is applied when the URL is built.
     std::string thumb_output_id;
     std::string thumb_key;
+    /// Its name on every computer, and the owner of its own files
+    /// (freeform/own_media.hpp). Read back; a new item's is given to
+    /// ``FreeformRepository::create_item`` on its own.
+    std::string uid;
 };
 
 /// A rundown row's ``data`` for Freeform ``item``: its name and document.

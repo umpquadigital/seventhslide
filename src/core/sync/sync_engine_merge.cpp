@@ -23,6 +23,33 @@
 namespace seventhslide::sync {
 namespace {
 
+/// The files of every record that may be a row of ``table``'s by a column
+/// (a service's items, a folder's Freeform items) and names its files by URL.
+/// Deleting a record of ``table`` takes those rows with it (ON DELETE
+/// CASCADE), and their own deletes then find nothing to read; what they named
+/// is checked here instead, against what still names it (remove_unowned).
+std::vector<std::string> files_of_rows_under(db::Database& db, std::string_view table)
+{
+    std::vector<std::string> out;
+    for (const auto& f : db::k_sync_files) {
+        if (f.in != db::FileIn::Url) {
+            continue;
+        }
+        const bool under = std::ranges::any_of(db::k_sync_references, [&](const db::SyncReference& r) {
+            return r.in == db::RefIn::Column && r.table == f.table && r.target == table;
+        });
+        if (!under) {
+            continue;
+        }
+        for (const auto& key : db::record_keys(db, f.table)) {
+            if (const auto record = db::read_record(db, f.table, key)) {
+                std::ranges::copy(files_of(f.table, key, *record), std::back_inserter(out));
+            }
+        }
+    }
+    return out;
+}
+
 /// The words of a word list's text; nullopt when it is not one.
 std::optional<std::vector<std::string>> words_of(const json& text)
 {
@@ -365,6 +392,7 @@ bool SyncEngine::apply_change(const Change& change, const Origin& origin)
         }
         // A record changed here and not yet sent stays, and is sent whole.
         if (current && !pending) {
+            std::ranges::copy(files_of_rows_under(db_, table), std::back_inserter(unowned_));
             db::delete_record(db_, table, key);
             std::ranges::copy(files_of(table, key, *current), std::back_inserter(unowned_));
         }

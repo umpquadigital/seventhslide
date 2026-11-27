@@ -1,26 +1,10 @@
 #include "seventhslide/freeform/background_copy.hpp"
 
 #include "seventhslide/layout/background_fill.hpp"
-#include "seventhslide/model/static_media.hpp"
 
-#include <string_view>
 #include <utility>
 
 namespace seventhslide::freeform {
-namespace {
-
-/// ``url``'s file when it is in the library's ``subdir`` folder, which a
-/// slide can name as it is; empty for anything else.
-[[nodiscard]] std::string library_file(std::string_view url, std::string_view subdir)
-{
-    const std::string prefix = "/static/" + std::string(subdir) + "/";
-    if (url.starts_with(prefix)) {
-        return std::string(model::media_basename(url));
-    }
-    return {};
-}
-
-}  // namespace
 
 BackgroundCopy background_copy_of(const layout::BackgroundFill& fill, model::Transition transition)
 {
@@ -38,20 +22,14 @@ BackgroundCopy background_copy_of(const layout::BackgroundFill& fill, model::Tra
             break;
         }
         out.background.kind = SlideBackgroundKind::Image;
-        out.background.image = library_file(fill.image, model::k_images_subdir);
-        if (out.background.image.empty()) {
-            out.copy_from_url = fill.image;
-        }
+        out.copy_from_url = fill.image;
         break;
     case layout::BackgroundType::Video:
         if (fill.video.empty()) {
             break;
         }
         out.background.kind = SlideBackgroundKind::Video;
-        out.background.video = library_file(fill.video, model::k_videos_subdir);
-        if (out.background.video.empty()) {
-            out.copy_from_url = fill.video;
-        }
+        out.copy_from_url = fill.video;
         break;
     }
     return out;

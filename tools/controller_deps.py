@@ -33,7 +33,8 @@ ALLOWED = {
     "download_controller.hpp": {"ToolsController", "MediaController"},
     "output_preview_controller.hpp": {"PlaybackController"},
     "background_theme_copier.hpp": {"MediaController"},
-    "slide_edit_session.hpp": {"ThemeController"},
+    # The Freeform editor brings a file into the open item's own folder.
+    "slide_edit_session.hpp": {"ThemeController", "MediaController"},
     # A service's first slide, from the rows it reads out of the library.
     "service_thumbs.hpp": {"LibraryController"},
     # Parts of one area: they are their controller's.

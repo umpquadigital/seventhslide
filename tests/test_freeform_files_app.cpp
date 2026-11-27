@@ -21,6 +21,7 @@
 #include <seventhslide/db/service_repository.hpp>
 #include <seventhslide/exchange/bundle_io.hpp>
 #include <seventhslide/freeform/doc_edit.hpp>
+#include <seventhslide/freeform/own_media.hpp>
 #include <seventhslide/layout/text_measurer.hpp>
 #include <seventhslide/session/still_frames.hpp>
 #include <seventhslide/model/live_source.hpp>
@@ -37,6 +38,7 @@
 #include <array>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 
 namespace fs = std::filesystem;
 
@@ -129,6 +131,12 @@ void write_file(const fs::path& path, const std::string& bytes)
     std::ofstream out(path, std::ios::binary);
     out << bytes;
     REQUIRE(out);
+}
+
+[[nodiscard]] std::string read_file(const fs::path& path)
+{
+    std::ifstream in(path, std::ios::binary);
+    return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
 }
 
 [[nodiscard]] model::OutputConfig output(SessionFacade& facade, std::string id, std::string name, int w, int h)
@@ -278,17 +286,33 @@ TEST_CASE("A Freeform file goes from one library to another with its folders, fi
     CHECK(in_easter[0].name == "Welcome");
     CHECK(in_easter[0].tags == std::vector<std::string>{"easter"});
 
-    // The document: on the 4K output alone, scaled, naming the library's own copy of the picture.
+    // The document: on the 4K output alone, scaled, naming a picture of its
+    // own, not the library's, though the library has the same bytes.
     const auto doc = ff::load_document(in_easter[0].document, "Welcome");
     REQUIRE(doc);
     REQUIRE(doc->decks.size() == 1);
     CHECK(doc->decks[0].output_id == "dst-uhd");
     CHECK(doc->decks[0].canvas == seventhslide::geom::CanvasSize{3840, 2160});
     const auto& image = doc->decks[0].slides[0].objects[0];
-    CHECK(image.filename == "zzz.png");
+    const auto own = ff::own_media_of(image.filename);
+    REQUIRE(own);
+    CHECK(own->owner == in_easter[0].uid);
+    CHECK(ff::own_media_title(own->name) == "Sunrise.png");
+    CHECK(read_file(ff::own_media_path(to_root.path, *own)) == picture);
     CHECK(image.x == 200);
     CHECK(image.w == 800);
+    // The library lists what it had, and nothing more.
     CHECK(to.media_repo()->list_files(MediaKind::Image, false).size() == 1);
+    // The other item has the picture too, in a folder of its own.
+    const auto at_top = to_repo->list_items_in_folder(top[0].id);
+    REQUIRE(at_top.size() == 1);
+    const auto other = ff::load_document(at_top[0].document, "Notices");
+    REQUIRE(other);
+    const auto other_own = ff::own_media_of(other->decks[0].slides[0].objects[0].filename);
+    REQUIRE(other_own);
+    CHECK(other_own->owner == at_top[0].uid);
+    CHECK(other_own->owner != own->owner);
+    CHECK(read_file(ff::own_media_path(to_root.path, *other_own)) == picture);
 
     // The fonts come once the font controller has taken them.
     seventhslide::db::FontRepository to_fonts(*to.open_library().database());
@@ -637,6 +661,9 @@ TEST_CASE("An import stopped, or whose library changes, leaves nothing", "[freef
         std::error_code ec;
         for (const auto& e : fs::recursive_directory_iterator(root.path / "images", ec)) {
             CHECK_FALSE(e.is_regular_file());  // no copy, staged or adopted
+        }
+        for (const auto& e : fs::recursive_directory_iterator(root.path / "freeform_media", ec)) {
+            CHECK_FALSE(e.is_regular_file());  // nor an item's own
         }
     };
 
@@ -1311,15 +1338,18 @@ TEST_CASE("A song or passage in a package paints, imported, as it played in its 
     const auto to_outputs = to.session().outputs();
     for (std::size_t r = 0; r < rows.size(); ++r) {
         CHECK(rows[r].kind() == model::ContentKind::Freeform);
-        // The theme's picture is the library's own now.
+        // The theme's picture is the row's document's own now, not the
+        // library's: a service's copy with no item has an owner of its own.
         const auto doc = ff::load_document(rows[r].data["document"], "row");
         REQUIRE(doc);
         REQUIRE(doc->decks.size() == 1);
         for (const auto& slide : doc->decks[0].slides) {
             CHECK(slide.background.kind == ff::SlideBackgroundKind::Image);
-            CHECK_FALSE(slide.background.image.starts_with("/static/"));
-            CHECK(fs::exists(to_root.path / "images" / slide.background.image));
+            const auto own = ff::own_media_of(slide.background.image);
+            REQUIRE(own);
+            CHECK(fs::exists(ff::own_media_path(to_root.path, *own)));
         }
+        CHECK(to.media_repo()->list_files(MediaKind::Image, false).empty());
         const auto before = paint_slides(from, played[r], from_outputs, "src-main");
         const auto after = paint_slides(to, rows[r], to_outputs, "dst-front");
         REQUIRE(before.size() >= 2);
