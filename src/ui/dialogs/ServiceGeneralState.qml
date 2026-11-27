@@ -82,13 +82,14 @@ QtObject {
             || !state.sameFades(state.fadesSet(), state.saved.audioFades)
     }
 
-    /// ``text`` as ``HH:mm``: "7:30", "19:30", "7:30 pm", "730pm", "7pm". ""
-    /// for nothing typed; null for what is not a time.
+    /// ``text`` as ``HH:mm``: "7:30", "19:30", "7:30 pm", "730pm", "7pm",
+    /// "19:30:00" (seconds dropped). "" for nothing typed; null for what is
+    /// not a time.
     function parseTime(text) {
         const t = String(text || "").trim().toLowerCase().replace(/\s+|\./g, "")
         if (!t.length)
             return ""
-        const m = /^(\d{1,2})(?::?(\d{2}))?(am|pm|a|p)?$/.exec(t)
+        const m = /^(\d{1,2})(?::?(\d{2})(?::\d{2})?)?(am|pm|a|p)?$/.exec(t)
         if (!m)
             return null
         let h = Number(m[1])
@@ -136,7 +137,10 @@ QtObject {
     /// otherwise why not (a time that is not one is refused before anything
     /// is kept).
     function save(library, id) {
-        const time = state.parseTime(state.draftTimeText)
+        // The time as it opened is the locale's label of the stored one, which
+        // the parser need not read ("오전 11:00"): left as it was, it is that.
+        const time = state.draftTimeText === state.saved.timeLabel ? (state.saved.time || "")
+                                                                   : state.parseTime(state.draftTimeText)
         if (state.draftDate.length && time === null)
             return qsTr("“%1” is not a time. Try 9:30 or 7:00 PM.").arg(state.draftTimeText.trim())
         let err = ""

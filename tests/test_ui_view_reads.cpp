@@ -3,6 +3,7 @@
 // Each goes through the QML function the view itself calls.
 
 #include <catch2/catch_approx.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
@@ -34,6 +35,7 @@
 #include <seventhslide/model/stack.hpp>
 
 #include <QElapsedTimer>
+#include <QLocale>
 #include <QMetaObject>
 #include <QQmlEngine>
 #include <QQuickItem>
@@ -42,6 +44,7 @@
 #include <QString>
 #include <QTest>
 #include <QTcpServer>
+#include <QTime>
 #include <QUrl>
 #include <QVariant>
 #include <QVariantList>
@@ -1093,6 +1096,7 @@ TEST_CASE("Service Settings: General keeps a service's title, date, time and tag
     CHECK(call(general, "parseTime", QStringLiteral("930")).toString() == QStringLiteral("09:30"));
     CHECK(call(general, "parseTime", QStringLiteral("12am")).toString() == QStringLiteral("00:00"));
     CHECK(call(general, "parseTime", QStringLiteral("19:05")).toString() == QStringLiteral("19:05"));
+    CHECK(call(general, "parseTime", QStringLiteral("19:05:00")).toString() == QStringLiteral("19:05"));
     CHECK(call(general, "parseTime", QStringLiteral("")).toString().isEmpty());
     CHECK(call(general, "parseTime", QStringLiteral("25:00")).isNull());
     CHECK(call(general, "parseTime", QStringLiteral("13pm")).isNull());
@@ -1150,6 +1154,46 @@ TEST_CASE("Service Settings: General keeps a service's title, date, time and tag
     CHECK(stored().tags == std::vector<std::string>{"Holy Week"});
     INFO(ui.warnings());
     CHECK(ui.warnings().empty());
+}
+
+TEST_CASE("Service Settings: General keeps the time it opened with, however the locale writes it",
+          "[ui][services]")
+{
+    // The field opens on the locale's own way of writing the time, which the
+    // field's reading of what is typed need not take: Korean puts the
+    // afternoon before the hour ("오후 7:00"), the C locale adds seconds.
+    const auto language = GENERATE(QLocale::Korean, QLocale::C);
+    CAPTURE(QLocale::languageToString(language).toStdString());
+    struct DefaultLocale {
+        QLocale was;
+        ~DefaultLocale() { QLocale::setDefault(was); }
+    } const restore{QLocale()};
+    QLocale::setDefault(QLocale(language));
+
+    seventhslide::test::ensure_qt_application();
+    const seventhslide::test::TempDir dir;
+    SessionFacade facade;
+    REQUIRE(facade.open_database(dir.path / "library.db"));
+    const auto lib = seventhslide::test::fill_sample_library(facade);
+    OperatorUi ui(facade);
+    QObject* settings = ui.find_component("ServiceSettingsDialog");
+    REQUIRE(settings != nullptr);
+    QObject* general = qml_object(settings, "ServiceGeneralState");
+    REQUIRE(general != nullptr);
+    const auto stored = [&] { return *facade.service_repo()->get_service(lib.other_service); };
+
+    call(settings, "openFor", QVariant::fromValue<qint64>(lib.other_service), false);
+    QTest::qWait(30);
+    CAPTURE(general->property("draftTimeText").toString().toStdString());
+    CHECK(general->property("draftTimeText").toString()
+          == QLocale().toString(QTime(19, 0), QLocale::ShortFormat));
+    // Only the title changes; the time, as it opened, is the one stored.
+    REQUIRE(general->setProperty("draftName", QStringLiteral("Good Friday Vespers")));
+    call(settings, "save");
+    CHECK(settings->property("errorText").toString().isEmpty());
+    CHECK_FALSE(settings->property("open").toBool());
+    CHECK(stored().name == "Good Friday Vespers");
+    CHECK(stored().service_at == "2026-04-03T19:00:00");
 }
 
 namespace {
