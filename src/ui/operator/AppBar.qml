@@ -12,7 +12,7 @@ import SeventhSlide
 // of them), then Layout ▾ (Edit Mode, which panels show, Reset
 // Layout), Collaboration (while the open library syncs, a dot on its icon for
 // a message not read yet), Update available (while a newer SeventhSlide is
-// out and not skipped; opens Settings › Updates & Tools) and Settings.
+// out; opens Settings › Updates & Tools) and Settings.
 // An output's state is its card's coloured border, not here.
 Rectangle {
     id: bar
@@ -431,7 +431,7 @@ Rectangle {
             icon: "import"
             dot: true
             visible: !!bar.session && bar.session.updates.available
-                     && !bar.session.updates.skipped && !bar.session.updates.installed
+                     && !bar.session.updates.installed
             enabled: !!bar.session && bar.session.ready
             onClicked: bar.updatesRequested()
 

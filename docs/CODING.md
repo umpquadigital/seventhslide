@@ -373,14 +373,25 @@ It checks a minute after the app starts and then once a day, but only after
 that fails changes only its status line. Nothing opens by itself during a
 service.
 
+Only one check, download or install runs at a time. While one runs, the
+channel cannot change, and the release being downloaded is recorded when the
+download starts, so a later check cannot change it.
+
 A packaged build knows which file of each release is its own
 (`package_file()`, from `SEVENTHSLIDE_PACKAGE_FILE`). The updater downloads
-that file and keeps it only if its SHA-256 matches the digest GitHub reports.
-It then opens the Windows installer or the macOS disk image and asks the
-window to quit, or installs a deb or an rpm through `pkexec`. Every link it
-follows must point into the repository's releases on github.com, and release
-notes are shown as plain text. A build configured with
-`SEVENTHSLIDE_UPDATE_CHECK` off never checks.
+that file and keeps it only if its SHA-256 matches the digest GitHub reports,
+then checks it again just before installing it. On Windows and macOS it asks
+first, because installing closes the app: it opens the installer or the disk
+image and asks the window to close. On Linux it installs the deb or rpm with
+`/usr/bin/pkexec` and `/usr/bin/apt-get` or `/usr/bin/dnf`, named by full path
+so that nothing in the user's `PATH` runs as root, and then offers to restart.
+Every link it follows must point into the repository's releases on
+github.com, and release notes are shown as plain text. A build configured
+with `SEVENTHSLIDE_UPDATE_CHECK` off never checks.
+
+The digest comes from GitHub, along with the file. It catches a damaged or
+altered download, but not a release published by someone who has taken over
+the repository; code signing the packages would.
 
 ### Export and import
 

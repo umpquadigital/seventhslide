@@ -364,6 +364,15 @@ FocusScope {
             sourceComponent: SettingsToolsPanel {
                 anchors.fill: parent
                 session: root.session
+                onInstallAsked: installConfirm.ask(root.session.updates.installCloses
+                                                   && Qt.platform.os === "osx"
+                                                   ? qsTr("SeventhSlide closes and the disk image "
+                                                          + "opens. Drag SeventhSlide into "
+                                                          + "Applications, replacing the copy there, "
+                                                          + "then open it again.")
+                                                   : qsTr("SeventhSlide closes and the installer "
+                                                          + "opens. Open SeventhSlide again once it "
+                                                          + "has finished."))
             }
         }
 
@@ -383,6 +392,16 @@ FocusScope {
         onOpenChanged: if (!open && root.open) root.forceActiveFocus()
         blurb: qsTr("Closing Settings now loses what you have not saved.")
         onAccepted: root.close()
+    }
+
+    // Installing closes SeventhSlide, and its outputs with it: never by
+    // surprise during a service.
+    AppDialog {
+        id: installConfirm
+        title: qsTr("Install SeventhSlide %1?").arg(root.session ? root.session.updates.latestVersion
+                                                                 : "")
+        acceptLabel: qsTr("Close and Install")
+        onAccepted: root.session.updates.install()
     }
 
     AppDialog {

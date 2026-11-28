@@ -1,13 +1,18 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import SeventhSlide
 
 // Updates & Tools page of Settings. First SeventhSlide itself: the version
-// running, a newer release on GitHub when there is one (its notes, and
-// Download, then Install, or its page for a build that was not packaged),
-// Skip This Version, checking automatically, and the release channel. Then
+// running, Check for updates (Check Now, and when the last check was), Query
+// automatically and the release channel (held while something is under
+// way); then, apart from them, a newer release on GitHub when there is one
+// (What's New and Download, then Install, or its page for a build that was
+// not packaged, over its notes in a well). An install that closes the app
+// is confirmed first (``installAsked``); one beside it (Linux) ends with
+// Restart Now. Then
 // the programs SeventhSlide runs to convert and download media - ffmpeg,
 // ffprobe and yt-dlp - where each was found and which version it is, looked
 // for when the page opens and on Check again; then SeventhSlide's dedicated
@@ -20,6 +25,9 @@ ScrollPage {
 
     required property SessionFacade session
     readonly property AppUpdater updates: panel.session.updates
+    /// Install asked for, where installing closes SeventhSlide: the dialog
+    /// confirms, then calls ``updates.install()``.
+    signal installAsked()
     readonly property ToolsController tools: panel.session.tools
     readonly property YtdlpUpdater ytdlp: panel.tools.ytdlp
     /// A yt-dlp is found somewhere, the app's own or another.
@@ -32,23 +40,15 @@ ScrollPage {
           ? qsTr("Not installed. Downloads use the yt-dlp listed above, which "
                  + "SeventhSlide does not update.")
           : qsTr("Not installed. Downloading needs it.")
-    /// Under the version: what a check is doing or came to, else when the
-    /// last one was.
+    /// Under Check for updates: what a check is doing or came to, else when
+    /// the last one was.
     readonly property string updateState: {
-        if (!panel.updates.checks)
-            return qsTr("This copy of SeventhSlide gets its updates from wherever it was "
-                        + "installed from.")
         if (panel.updates.status.length)
             return panel.updates.status
         const last = panel.updates.lastChecked
         return !isNaN(last.getTime())
             ? qsTr("Last checked %1.").arg(last.toLocaleString(Qt.locale(), Locale.ShortFormat))
             : qsTr("Not checked yet.")
-    }
-    /// The newer release's notes, cut to their first lines.
-    readonly property string notesShown: {
-        const lines = panel.updates.notes.split("\n")
-        return lines.length > 8 ? lines.slice(0, 8).join("\n") + "\n…" : lines.join("\n")
     }
 
     onVisibleChanged: {
@@ -75,12 +75,27 @@ ScrollPage {
         GroupRow {
             FormRow {
                 Layout.fillWidth: true
-                label: qsTr("Version %1").arg(panel.updates.version)
+                label: qsTr("Version")
+                hint: panel.updates.checks
+                      ? ""
+                      : qsTr("This copy of SeventhSlide gets its updates from wherever it was "
+                             + "installed from.")
+                Text {
+                    text: panel.updates.version
+                    color: Style.textStrong
+                    font.pixelSize: Style.fontBody
+                }
+            }
+        }
+        GroupRow {
+            visible: panel.updates.checks
+            FormRow {
+                Layout.fillWidth: true
+                label: qsTr("Check for updates")
                 hint: panel.updateState
                 hintInk: panel.updates.failed && !panel.updates.busy ? Style.textWarning
                                                                      : Style.textHint
                 AppButton {
-                    visible: panel.updates.checks
                     size: "control"
                     label: qsTr("Check Now")
                     enabled: !panel.updates.busy
@@ -88,10 +103,41 @@ ScrollPage {
                 }
             }
         }
+        SettingRow {
+            visible: panel.updates.checks
+            label: qsTr("Query automatically")
+            ToggleSwitch {
+                checked: panel.updates.autoCheck
+                onToggled: panel.updates.autoCheck = !panel.updates.autoCheck
+            }
+        }
+        SettingRow {
+            visible: panel.updates.checks
+            label: qsTr("Release channel")
+            SegmentedControl {
+                // The release being downloaded or installed stays the one
+                // it was.
+                enabled: !panel.updates.busy
+                options: [qsTr("Stable"), qsTr("Beta")]
+                current: panel.updates.channel === "beta" ? 1 : 0
+                onChosen: index => panel.updates.channel = index === 1 ? "beta" : "stable"
+            }
+        }
+    }
+
+    // A newer release, in a group of its own under the settings.
+    Item {
+        width: 1
+        height: 12
+        visible: panel.updates.available
+    }
+    GroupList {
+        width: panel.columnWidth
+        visible: panel.updates.available
+
         // A newer release: what can be done with it, then its notes across
         // the row's whole width.
         GroupRow {
-            visible: panel.updates.available
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: 2
@@ -99,22 +145,16 @@ ScrollPage {
                 spacing: 6
                 FormRow {
                     Layout.fillWidth: true
-                    label: qsTr("SeventhSlide %1 is available").arg(panel.updates.latestVersion)
-                    hint: panel.updates.skipped ? qsTr("You chose to skip this version.") : ""
+                    label: panel.updates.installed
+                           ? qsTr("SeventhSlide %1 is installed").arg(panel.updates.latestVersion)
+                           : qsTr("SeventhSlide %1 is available").arg(panel.updates.latestVersion)
+                    hint: panel.updates.installed ? qsTr("Restart SeventhSlide to use it.") : ""
                     Row {
                         spacing: 6
                         ProgressRing {
                             anchors.verticalCenter: parent.verticalCenter
                             visible: panel.updates.downloading
                             value: panel.updates.progress
-                        }
-                        AppButton {
-                            visible: !panel.updates.skipped && !panel.updates.downloading
-                                     && !panel.updates.installed
-                            size: "control"
-                            label: qsTr("Skip This Version")
-                            enabled: !panel.updates.busy
-                            onClicked: panel.updates.skipVersion()
                         }
                         AppButton {
                             visible: panel.updates.canDownload
@@ -144,50 +184,114 @@ ScrollPage {
                             primary: true
                             label: panel.updates.downloaded ? qsTr("Install") : qsTr("Download")
                             enabled: !panel.updates.busy
-                            onClicked: panel.updates.downloaded ? panel.updates.install()
-                                                                : panel.updates.download()
+                            onClicked: {
+                                if (!panel.updates.downloaded)
+                                    panel.updates.download()
+                                else if (panel.updates.installCloses)
+                                    panel.installAsked()
+                                else
+                                    panel.updates.install()
+                            }
+                        }
+                        AppButton {
+                            visible: panel.updates.installed
+                            size: "control"
+                            primary: true
+                            label: qsTr("Restart Now")
+                            onClicked: panel.updates.restart()
                         }
                     }
                 }
-                Text {
+                // The notes, as GitHub's page lays them out: headings,
+                // bulleted and numbered items, paragraphs. The well keeps
+                // one height; notes longer than it scroll.
+                ListWell {
                     Layout.fillWidth: true
-                    visible: panel.notesShown.length > 0
-                    text: panel.notesShown
-                    color: Style.textCaption
-                    font.pixelSize: Style.fontSmall
-                    wrapMode: Text.Wrap
-                    textFormat: Text.PlainText
+                    // One height, whatever the notes: longer ones scroll.
+                    Layout.preferredHeight: 140
+                    visible: panel.updates.notes.length > 0
+
+                    WellPane {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        showHeader: false
+
+                        Flickable {
+                            id: notesView
+                            objectName: "releaseNotes"
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            Layout.rightMargin: Style.scrollGap
+                            topMargin: 10
+                            bottomMargin: 12
+                            leftMargin: 14
+                            rightMargin: Style.scrollGutter(notesView)
+                            contentWidth: notesView.width - notesView.leftMargin - notesView.rightMargin
+                            contentHeight: notesColumn.implicitHeight
+                            clip: true
+                            interactive: notesView.contentHeight + notesView.topMargin
+                                         + notesView.bottomMargin > notesView.height
+                            boundsBehavior: Flickable.StopAtBounds
+                            ScrollBar.vertical: AppScrollBar {}
+
+                            Column {
+                                id: notesColumn
+                                width: notesView.contentWidth
+
+                                Repeater {
+                                    model: panel.updates.notes
+                                    delegate: Item {
+                                        id: block
+                                        required property var modelData
+                                        required property int index
+                                        readonly property string kind: block.modelData.kind
+                                        readonly property bool item: block.kind === "item"
+                                        // A heading after other text stands off it; an
+                                        // item follows the one before closely.
+                                        readonly property int gap: block.index === 0 ? 0
+                                            : block.kind === "heading" ? 12
+                                            : block.item ? 3 : 8
+
+                                        width: notesColumn.width
+                                        height: body.implicitHeight + block.gap
+
+                                        Text {
+                                            id: marker
+                                            visible: block.item
+                                            x: block.modelData.depth * 16
+                                            y: block.gap
+                                            // Room for a number as long as "10.".
+                                            width: Math.max(16, marker.implicitWidth + 6)
+                                            text: block.modelData.marker
+                                            color: Style.textCaption
+                                            font.pixelSize: Style.fontBody
+                                        }
+                                        Text {
+                                            id: body
+                                            x: block.item ? marker.x + marker.width : 0
+                                            y: block.gap
+                                            width: block.width - body.x
+                                            text: block.modelData.text
+                                            textFormat: Text.PlainText
+                                            wrapMode: Text.Wrap
+                                            color: block.kind === "heading" ? Style.textStrong
+                                                 : block.kind === "code" ? Style.textCaption : Style.text
+                                            font.family: block.kind === "code" ? Platform.monoFamily
+                                                                               : Application.font.family
+                                            font.pixelSize: block.kind === "code" ? Style.fontSmall
+                                                                                  : Style.fontBody
+                                            font.weight: block.kind === "heading" ? Font.DemiBold
+                                                                                  : Font.Normal
+                                            lineHeight: 1.15
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
-        SettingRow {
-            visible: panel.updates.checks
-            label: qsTr("Check for updates automatically")
-            ToggleSwitch {
-                checked: panel.updates.autoCheck
-                onToggled: panel.updates.autoCheck = !panel.updates.autoCheck
-            }
-        }
-        SettingRow {
-            visible: panel.updates.checks
-            label: qsTr("Release channel")
-            SegmentedControl {
-                options: [qsTr("Stable"), qsTr("Beta")]
-                current: panel.updates.channel === "beta" ? 1 : 0
-                onChosen: index => panel.updates.channel = index === 1 ? "beta" : "stable"
-            }
-        }
-    }
-
-    Text {
-        width: panel.columnWidth
-        visible: panel.updates.checks
-        topPadding: 10
-        text: qsTr("SeventhSlide asks GitHub, where its releases are published, once a day. "
-                   + "Beta versions come before a release, for trying what is new.")
-        color: Style.textCaption
-        font.pixelSize: Style.fontSmall
-        wrapMode: Text.Wrap
     }
 
     GroupHeading {

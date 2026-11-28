@@ -127,11 +127,31 @@ std::string inline_text(std::string_view s);
 /// and its text. Nullopt when no link starts there.
 std::optional<std::pair<std::size_t, std::string_view>> link_at(std::string_view s, std::size_t at)
 {
-    const auto close = s.find(']', at + 1);
+    // The bracket that closes this one, past any inside it: a badge is a
+    // picture inside a link, [![build](badge.svg)](page).
+    std::size_t close = std::string_view::npos;
+    int depth = 0;
+    for (std::size_t j = at; j < s.size(); ++j) {
+        if (s[j] == '[') {
+            ++depth;
+        } else if (s[j] == ']' && --depth == 0) {
+            close = j;
+            break;
+        }
+    }
     if (close == std::string_view::npos || close + 1 >= s.size() || s[close + 1] != '(') {
         return std::nullopt;
     }
-    const auto end = s.find(')', close + 2);
+    std::size_t end = std::string_view::npos;
+    depth = 0;
+    for (std::size_t j = close + 1; j < s.size(); ++j) {
+        if (s[j] == '(') {
+            ++depth;
+        } else if (s[j] == ')' && --depth == 0) {
+            end = j;
+            break;
+        }
+    }
     if (end == std::string_view::npos) {
         return std::nullopt;
     }
@@ -195,35 +215,65 @@ bool is_rule(std::string_view line)
            && std::all_of(t.begin(), t.end(), [mark](char c) { return c == mark || c == ' '; });
 }
 
-/// One line of notes outside a code block, as plain text.
-std::string line_text(std::string_view line)
+/// ``text`` with each link to ``repo``'s own pull request or issue as its
+/// number (``#41``), and each comparing two of its versions as the two.
+std::string shorten_links(std::string_view text, const Repository& repo)
 {
-    if (is_rule(line)) {
-        return {};
+    constexpr std::string_view host = "https://github.com/";
+    std::string out;
+    while (true) {
+        const auto at = text.find(host);
+        out.append(text.substr(0, at));
+        if (at == std::string_view::npos) {
+            return out;
+        }
+        auto end = text.find_first_of(" \t\n)>]\"'", at);
+        end = end == std::string_view::npos ? text.size() : end;
+        // A sentence's own stop after a link is not the link's.
+        while (end > at && std::string_view{".,;:!?"}.find(text[end - 1]) != std::string_view::npos) {
+            --end;
+        }
+        const std::string_view url = text.substr(at, end - at);
+        const auto parts = split(url.substr(host.size()), '/');
+        std::string shown{url};
+        if (parts.size() == 4 && util::iequals(parts[0], repo.owner)
+            && util::iequals(parts[1], repo.name)) {
+            if ((parts[2] == "pull" || parts[2] == "issues") && all_digits(parts[3])) {
+                shown = "#" + std::string(parts[3]);
+            } else if (parts[2] == "compare" && parts[3].find("...") != std::string_view::npos) {
+                shown = std::string(parts[3]);
+            }
+        }
+        out += shown;
+        text.remove_prefix(end);
     }
-    const auto indent = line.find_first_not_of(" \t");
-    if (indent == std::string_view::npos) {
-        return {};
+}
+
+/// How far a line is indented, a tab counting four.
+int indent_of(std::string_view line)
+{
+    int n = 0;
+    for (const char c : line) {
+        if (c == ' ') {
+            ++n;
+        } else if (c == '\t') {
+            n += 4;
+        } else {
+            break;
+        }
     }
-    std::string out{line.substr(0, indent)};
-    std::string_view body = line.substr(indent);
-    while (body.starts_with('>')) {
-        body.remove_prefix(1);
-        body = util::trim_view(body);
+    return n;
+}
+
+/// A numbered item's number and what follows it (``2. Text``, ``2) Text``).
+std::optional<std::pair<std::string_view, std::string_view>> numbered(std::string_view body)
+{
+    const auto digits = body.find_first_not_of("0123456789");
+    if (digits == 0 || digits == std::string_view::npos || digits > 9 || digits + 1 >= body.size()
+        || (body[digits] != '.' && body[digits] != ')') || body[digits + 1] != ' ') {
+        return std::nullopt;
     }
-    const auto hashes = std::min(body.find_first_not_of('#'), body.size());
-    if (hashes > 0 && hashes <= 6 && (hashes == body.size() || body[hashes] == ' ')) {
-        body = util::trim_view(body.substr(hashes));
-    } else if (body.size() > 1 && (body[0] == '-' || body[0] == '*' || body[0] == '+')
-               && body[1] == ' ') {
-        out += "• ";
-        body.remove_prefix(2);
-    }
-    out += inline_text(body);
-    while (!out.empty() && util::is_space(out.back())) {
-        out.pop_back();
-    }
-    return out;
+    return std::pair{body.substr(0, digits), body.substr(digits + 2)};
 }
 
 } // namespace
@@ -385,11 +435,10 @@ const Release* newest_release(const std::vector<Release>& releases, Channel chan
 
 const Release* release_to_offer(const std::vector<Release>& releases,
                                 Channel channel,
-                                const Version& running,
-                                const std::optional<Version>& skipped)
+                                const Version& running)
 {
     const Release* newest = newest_release(releases, channel);
-    if (newest == nullptr || newest->version <= running || (skipped && newest->version == *skipped)) {
+    if (newest == nullptr || newest->version <= running) {
         return nullptr;
     }
     return newest;
@@ -422,9 +471,11 @@ std::vector<std::string> install_command(Installer installer, std::string_view p
     }
     switch (installer) {
     case Installer::deb:
-        return {"pkexec", "apt-get", "install", "--yes", std::string(path)};
+        // Waiting a while for the lock that unattended upgrades may hold.
+        return {"/usr/bin/pkexec", "/usr/bin/apt-get", "install", "--yes",
+                "-o", "DPkg::Lock::Timeout=120", std::string(path)};
     case Installer::rpm:
-        return {"pkexec", "dnf", "install", "--assumeyes", std::string(path)};
+        return {"/usr/bin/pkexec", "/usr/bin/dnf", "install", "--assumeyes", std::string(path)};
     case Installer::none:
     case Installer::windows_setup:
     case Installer::disk_image:
@@ -433,33 +484,103 @@ std::vector<std::string> install_command(Installer installer, std::string_view p
     return {};
 }
 
-std::string notes_text(std::string_view markdown)
+std::vector<NotesBlock> notes_blocks(std::string_view markdown, const Repository& repo)
 {
+    using Kind = NotesBlock::Kind;
     const std::string text = without_comments(markdown);
-    std::vector<std::string> lines;
-    bool in_code = false;
+    std::vector<NotesBlock> blocks;
+    // The last block takes the next line as more of itself: a paragraph's
+    // or a list item's line wrapped in the Markdown.
+    bool open = false;
+    // The fence a code block opened with, ``` or ~~~; empty outside one.
+    std::string_view fence;
+    // How far each list item around the next line is indented, outermost
+    // first: an item indented past one is inside it, however far.
+    std::vector<int> items;
     for (auto line : split(text, '\n')) {
         if (line.ends_with('\r')) {
             line.remove_suffix(1);
         }
-        if (util::trim_view(line).starts_with("```")) {
-            in_code = !in_code;
+        const std::string_view trimmed = util::trim_view(line);
+        if (!fence.empty()) {
+            if (trimmed.starts_with(fence)) {
+                fence = {};
+            } else {
+                std::string& code = blocks.back().text;
+                code += code.empty() ? "" : "\n";
+                code += line;
+            }
             continue;
         }
-        lines.push_back(in_code ? std::string{line} : line_text(line));
+        if (trimmed.starts_with("```") || trimmed.starts_with("~~~")) {
+            fence = trimmed.substr(0, 3);
+            blocks.push_back({Kind::code, {}, {}, 0});
+            open = false;
+            continue;
+        }
+        if (trimmed.empty()) {
+            open = false;
+            continue;
+        }
+        // A line of = or - under a paragraph makes the paragraph a heading.
+        if (open && blocks.back().kind == Kind::paragraph
+            && trimmed.find_first_not_of(trimmed.front() == '=' ? '=' : '-') == std::string_view::npos
+            && (trimmed.front() == '=' || trimmed.front() == '-')) {
+            blocks.back().kind = Kind::heading;
+            items.clear();
+            open = false;
+            continue;
+        }
+        if (is_rule(trimmed)) {
+            open = false;
+            continue;
+        }
+        std::string_view body = trimmed;
+        while (body.starts_with('>')) {
+            body = util::trim_view(body.substr(1));
+        }
+        const auto hashes = std::min(body.find_first_not_of('#'), body.size());
+        if (hashes > 0 && hashes <= 6 && (hashes == body.size() || body[hashes] == ' ')) {
+            blocks.push_back({Kind::heading, inline_text(body.substr(hashes)), {}, 0});
+            items.clear();
+            open = false;
+            continue;
+        }
+        const bool bullet =
+            body.size() > 1 && (body[0] == '-' || body[0] == '*' || body[0] == '+') && body[1] == ' ';
+        const auto number = bullet ? std::nullopt : numbered(body);
+        if (bullet || number) {
+            const int indent = indent_of(line);
+            while (!items.empty() && items.back() >= indent) {
+                items.pop_back();
+            }
+            const int depth = std::min(static_cast<int>(items.size()), 3);
+            items.push_back(indent);
+            blocks.push_back(bullet ? NotesBlock{Kind::item, inline_text(body.substr(2)), "\u2022", depth}
+                                    : NotesBlock{Kind::item, inline_text(number->second),
+                                                 std::string(number->first) + ".", depth});
+            open = true;
+            continue;
+        }
+        if (open) {
+            blocks.back().text += ' ';
+            blocks.back().text += inline_text(body);
+        } else {
+            blocks.push_back({Kind::paragraph, inline_text(body), {}, 0});
+            if (indent_of(line) == 0) {
+                items.clear();
+            }
+            open = true;
+        }
     }
-    std::string out;
-    bool blank = false;
-    for (const auto& line : lines) {
-        if (line.empty()) {
-            blank = !out.empty();
-            continue;
+    std::vector<NotesBlock> out;
+    for (auto& block : blocks) {
+        if (block.kind != Kind::code) {
+            block.text = util::trim(shorten_links(block.text, repo));
         }
-        if (!out.empty()) {
-            out += blank ? "\n\n" : "\n";
+        if (!util::trim_view(block.text).empty()) {
+            out.push_back(std::move(block));
         }
-        out += line;
-        blank = false;
     }
     return out;
 }

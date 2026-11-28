@@ -285,8 +285,10 @@ settings: `~/.config/SeventhSlide/SeventhSlide.conf` on Linux, the registry
 on Windows, and `~/Library/Preferences` on macOS. To store them as INI files
 in a different directory instead, set `SEVENTHSLIDE_SETTINGS_DIR`.
 
-An update that the app downloads is kept in the `updates` folder of the data
-directory until the next one replaces it.
+An update that the app downloads is kept in the `updates` folder of the
+platform's cache directory (`~/.cache/SeventhSlide/SeventhSlide` on Linux), or
+of the data directory when `SEVENTHSLIDE_DATA_DIR` is set. It is removed once
+it is installed, or the next time the app starts.
 
 ## macOS
 

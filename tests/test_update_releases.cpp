@@ -249,12 +249,11 @@ TEST_CASE("The stable channel offers final versions, the beta channel betas too"
     CHECK(default_channel(v("1.4.0-beta.1")) == Channel::beta);
 }
 
-TEST_CASE("Only a newer release is offered, and a skipped version is not", "[update]")
+TEST_CASE("Only a newer release is offered", "[update]")
 {
     const auto releases = fixture_releases();
-    const auto offered = [&](Channel channel, std::string_view running,
-                             std::optional<Version> skipped = std::nullopt) {
-        const Release* r = release_to_offer(releases, channel, v(running), skipped);
+    const auto offered = [&](Channel channel, std::string_view running) {
+        const Release* r = release_to_offer(releases, channel, v(running));
         return r == nullptr ? std::string{} : r->tag;
     };
 
@@ -269,46 +268,117 @@ TEST_CASE("Only a newer release is offered, and a skipped version is not", "[upd
     // version passes the beta they have.
     CHECK(offered(Channel::stable, "1.4.0-beta.1").empty());
     CHECK(offered(Channel::stable, "1.3.1-beta.3") == "v1.3.1");
-
-    // Skipping a version hides that version only.
-    CHECK(offered(Channel::stable, "1.3.0", v("1.3.1")).empty());
-    CHECK(offered(Channel::stable, "1.3.0", v("1.3.0")) == "v1.3.1");
-    CHECK(offered(Channel::beta, "1.3.0", v("1.3.1")) == "v1.4.0-beta.1");
-    CHECK(offered(Channel::beta, "1.3.0", v("1.4.0-beta.1")).empty());
 }
 
-TEST_CASE("Release notes read as plain text", "[update]")
+namespace {
+
+using Kind = NotesBlock::Kind;
+
+NotesBlock heading(std::string text)
+{
+    return {Kind::heading, std::move(text), {}, 0};
+}
+
+NotesBlock item(std::string text, int depth = 0, std::string marker = "\u2022")
+{
+    return {Kind::item, std::move(text), std::move(marker), depth};
+}
+
+NotesBlock paragraph(std::string text)
+{
+    return {Kind::paragraph, std::move(text), {}, 0};
+}
+
+std::vector<NotesBlock> blocks(std::string_view markdown)
+{
+    return notes_blocks(markdown, k_repo);
+}
+
+} // namespace
+
+TEST_CASE("Release notes come apart into headings, list items and paragraphs", "[update]")
 {
     const auto releases = fixture_releases();
-    CHECK(notes_text(releases[1].notes)
-          == "What's Changed\n"
-             "Fixes\n"
-             "• Outputs: A window keeps its screen after sleep by @UmpquaRiver in "
-             "https://github.com/umpquadigital/seventhslide/pull/41\n"
-             "• Fix --server start on Fedora by @UmpquaRiver in "
-             "https://github.com/umpquadigital/seventhslide/pull/43\n"
-             "\n"
-             "Full Changelog: https://github.com/umpquadigital/seventhslide/compare/v1.3.0...v1.3.1");
+    // GitHub's own notes: the repository's links shortened.
+    CHECK(blocks(releases[1].notes)
+          == std::vector<NotesBlock>{
+              heading("What's Changed"),
+              heading("Fixes"),
+              item("Outputs: A window keeps its screen after sleep by @UmpquaRiver in #41"),
+              item("Fix --server start on Fedora by @UmpquaRiver in #43"),
+              paragraph("Full Changelog: v1.3.0...v1.3.1"),
+          });
 
-    CHECK(notes_text("") == "");
-    CHECK(notes_text("\n\n  \n") == "");
-    CHECK(notes_text("# Title\n\n\n\nBody") == "Title\n\nBody");
-    CHECK(notes_text("####### seven") == "####### seven");
-    CHECK(notes_text("###") == "");
-    CHECK(notes_text("See [the guide](https://example.com/guide) and ![a picture](x.png).")
+    CHECK(blocks("").empty());
+    CHECK(blocks("\n\n  \n").empty());
+    CHECK(blocks("###").empty());
+    CHECK(blocks("# Title\n\n\n\nBody") == std::vector{heading("Title"), paragraph("Body")});
+    CHECK(blocks("####### seven") == std::vector{paragraph("####### seven")});
+
+    // Lines that follow one another are one paragraph, or one item.
+    CHECK(blocks("One line\nand the next.\n\nAnother.")
+          == std::vector{paragraph("One line and the next."), paragraph("Another.")});
+    CHECK(blocks("- An item\n  wrapped\n- Two")
+          == std::vector{item("An item wrapped"), item("Two")});
+    CHECK(blocks("Intro:\n- one\n  * nested\n      * deeper\n+ three")
+          == std::vector{paragraph("Intro:"), item("one"), item("nested", 1), item("deeper", 2),
+                         item("three")});
+    // However far each level is indented.
+    CHECK(blocks("- one\n    - four in\n        - eight in\n    - four again\n- two")
+          == std::vector{item("one"), item("four in", 1), item("eight in", 2), item("four again", 1),
+                         item("two")});
+    CHECK(blocks("1. First\n2) Second\n10. Tenth\n1.5 is not")
+          == std::vector{item("First", 0, "1."), item("Second", 0, "2."),
+                         item("Tenth 1.5 is not", 0, "10.")});
+    CHECK(blocks("> Quoted\n> on.") == std::vector{paragraph("Quoted on.")});
+    CHECK(blocks("Above\n\n---\n\nBelow") == std::vector{paragraph("Above"), paragraph("Below")});
+    CHECK(blocks("Run:\n```bash\nsudo apt install ./**x**.deb\n  indented\n```\nDone")
+          == std::vector<NotesBlock>{paragraph("Run:"),
+                                     {Kind::code, "sudo apt install ./**x**.deb\n  indented", {}, 0},
+                                     paragraph("Done")});
+    CHECK(blocks("```\n```").empty());
+    CHECK(blocks("~~~\nkept ``` inside\n~~~\nAfter")
+          == std::vector<NotesBlock>{{Kind::code, "kept ``` inside", {}, 0}, paragraph("After")});
+    // Headings underlined, as well as marked with #.
+    CHECK(blocks("Big\n===\nSmall title\n---\nText")
+          == std::vector{heading("Big"), heading("Small title"), paragraph("Text")});
+    CHECK(blocks("Text\n\n---") == std::vector{paragraph("Text")});
+}
+
+TEST_CASE("Release notes keep no Markdown, and the repository's links read short", "[update]")
+{
+    const auto text = [](std::string_view markdown) {
+        const auto b = blocks(markdown);
+        return b.size() == 1 ? b.front().text : std::string("<") + std::to_string(b.size()) + " blocks>";
+    };
+    CHECK(text("See [the guide](https://example.com/guide) and ![a picture](x.png).")
           == "See the guide and .");
-    CHECK(notes_text("[**Bold** link](u)") == "Bold link");
-    CHECK(notes_text("An [unclosed link and a ] lone bracket") == "An [unclosed link and a ] lone bracket");
-    CHECK(notes_text("Visit <https://seventhslide.org>.") == "Visit https://seventhslide.org.");
-    CHECK(notes_text("A \\*star\\* and a file_name and 2 * 3") == "A *star* and a file_name and 2 * 3");
-    CHECK(notes_text("> Quoted\n- one\n  * nested\n+ three") == "Quoted\n• one\n  • nested\n• three");
-    CHECK(notes_text("Above\n\n---\n\nBelow") == "Above\n\nBelow");
-    CHECK(notes_text("~~gone~~ and __under__") == "gone and under");
-    CHECK(notes_text("Run:\n```bash\nsudo apt install ./**x**.deb\n```\nDone")
-          == "Run:\nsudo apt install ./**x**.deb\nDone");
-    CHECK(notes_text("Before <!-- hidden\nacross lines --> after") == "Before  after");
-    CHECK(notes_text("Kept <!-- never closed") == "Kept");
-    CHECK(notes_text("<b>Not HTML</b>") == "<b>Not HTML</b>");
+    CHECK(text("[**Bold** link](u)") == "Bold link");
+    CHECK(text("Built [![CI](https://x/badge.svg)](https://x/actions) today") == "Built  today");
+    CHECK(text("[a link](https://example.com/a_(b)) after") == "a link after");
+    CHECK(text("An [unclosed link and a ] lone bracket") == "An [unclosed link and a ] lone bracket");
+    CHECK(text("Visit <https://seventhslide.org>.") == "Visit https://seventhslide.org.");
+    CHECK(text("A \\*star\\* and a file_name and 2 * 3") == "A *star* and a file_name and 2 * 3");
+    CHECK(text("~~gone~~ and __under__") == "gone and under");
+    CHECK(text("Before <!-- hidden\nacross lines --> after") == "Before  after");
+    CHECK(text("Kept <!-- never closed") == "Kept");
+    CHECK(text("<b>Not HTML</b>") == "<b>Not HTML</b>");
+
+    CHECK(text("Fixed in https://github.com/umpquadigital/seventhslide/pull/41.") == "Fixed in #41.");
+    CHECK(text("See https://github.com/UmpquaDigital/SeventhSlide/issues/7, and (https://github.com/umpquadigital/seventhslide/pull/8)")
+          == "See #7, and (#8)");
+    CHECK(text("<https://github.com/umpquadigital/seventhslide/compare/v1.3.0...v1.4.0-beta.1>")
+          == "v1.3.0...v1.4.0-beta.1");
+    // Anything else stays as it is.
+    for (const char* url : {"https://github.com/someone/else/pull/41",
+                            "https://github.com/umpquadigital/seventhslide/pull/41/files",
+                            "https://github.com/umpquadigital/seventhslide/pull/abc",
+                            "https://github.com/umpquadigital/seventhslide/compare/main",
+                            "https://github.com/umpquadigital/seventhslide",
+                            "https://github.com/"}) {
+        INFO(url);
+        CHECK(text(url) == url);
+    }
 }
 
 TEST_CASE("Each package is installed its own way", "[update]")
@@ -322,11 +392,13 @@ TEST_CASE("Each package is installed its own way", "[update]")
     CHECK(installer_for(".deb") == Installer::none);
     CHECK(installer_for("") == Installer::none);
 
-    CHECK(install_command(Installer::deb, "/home/me/.local/share/SeventhSlide/updates/s.deb")
-          == std::vector<std::string>{"pkexec", "apt-get", "install", "--yes",
-                                      "/home/me/.local/share/SeventhSlide/updates/s.deb"});
+    CHECK(install_command(Installer::deb, "/home/me/.cache/SeventhSlide/updates/s.deb")
+          == std::vector<std::string>{"/usr/bin/pkexec", "/usr/bin/apt-get", "install", "--yes",
+                                      "-o", "DPkg::Lock::Timeout=120",
+                                      "/home/me/.cache/SeventhSlide/updates/s.deb"});
     CHECK(install_command(Installer::rpm, "/tmp/s.rpm")
-          == std::vector<std::string>{"pkexec", "dnf", "install", "--assumeyes", "/tmp/s.rpm"});
+          == std::vector<std::string>{"/usr/bin/pkexec", "/usr/bin/dnf", "install", "--assumeyes",
+                                      "/tmp/s.rpm"});
     // A relative path could read as an option: "-o..." is apt-get's.
     CHECK(install_command(Installer::deb, "-oAPT::x=1").empty());
     CHECK(install_command(Installer::deb, "s.deb").empty());
