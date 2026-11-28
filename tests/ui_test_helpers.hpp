@@ -15,6 +15,7 @@
 #include <QQuickWindow>
 #include <QString>
 #include <QTest>
+#include <QtQuickTest/quicktest.h>
 
 namespace seventhslide::test {
 
@@ -142,14 +143,29 @@ inline QQuickItem* row_of(QQuickItem* view, int index)
     return item;
 }
 
+/// Wait until ``window`` has laid out what changed. A Column, a Row or a
+/// Layout places its items on the window's next frame, not as they change:
+/// until then an item just shown stands where it last was, perhaps over
+/// another, and a click sent there reaches the wrong one. On a busy
+/// computer that frame can come well after a short wait.
+inline void laid_out(const QQuickWindow* window)
+{
+    if (window != nullptr) {
+        (void)QQuickTest::qWaitForPolish(window, 2000);
+    }
+}
+
+/// The middle of ``item`` in its window's scene, once the window is laid out.
 inline QPoint centre_of(QQuickItem* item)
 {
+    laid_out(item->window());
     return item->mapToScene(QPointF(item->width() / 2, item->height() / 2)).toPoint();
 }
 
-/// Click at ``at`` with ``modifiers`` held.
+/// Click at ``at`` with ``modifiers`` held, once the window is laid out.
 inline void click(QQuickWindow* window, QPoint at, Qt::KeyboardModifiers modifiers = {})
 {
+    laid_out(window);
     QTest::mouseClick(window, Qt::LeftButton, modifiers, at);
     QTest::qWait(10);
 }
@@ -158,6 +174,7 @@ inline void click(QQuickWindow* window, QPoint at, Qt::KeyboardModifiers modifie
 inline void drag(QQuickWindow* window, QPoint from, QPoint to,
                  Qt::KeyboardModifiers modifiers = {})
 {
+    laid_out(window);
     QTest::mousePress(window, Qt::LeftButton, modifiers, from);
     constexpr int steps = 8;
     for (int i = 1; i <= steps; ++i) {

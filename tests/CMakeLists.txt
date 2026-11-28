@@ -9,8 +9,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 # Key presses in UI tests go through QTest so they reach window shortcuts the
-# way a real key does. Only the tests need it.
-find_package(Qt6 REQUIRED COMPONENTS Test)
+# way a real key does. Only the tests need it. QuickTest's qWaitForPolish lets
+# a UI test wait for a window's layout before it reads where to click.
+find_package(Qt6 REQUIRED COMPONENTS Test QuickTest)
 
 # Windows: the program a test's stand-in tool is (fake_tool.hpp), as Windows
 # runs no sh script as one.
@@ -98,7 +99,7 @@ function(seventhslide_add_tests name)
     )
     if(ARG_QML)
         target_link_libraries(${target}
-            PRIVATE SeventhSlide::ui seventhslide_uiplugin seventhslide_applibplugin)
+            PRIVATE SeventhSlide::ui seventhslide_uiplugin seventhslide_applibplugin Qt6::QuickTest)
         qt_import_qml_plugins(${target})
     endif()
     target_compile_features(${target} PRIVATE cxx_std_20)

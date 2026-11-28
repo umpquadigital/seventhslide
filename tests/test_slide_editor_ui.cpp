@@ -2257,9 +2257,10 @@ void check_sidebar_fields(EditorWindow& w)
 /// checked for one hairline between each two and none over the first.
 void check_sidebar_rules(EditorWindow& w)
 {
-    // Every section open; the rows lay out on the next polish.
+    // Every section open; the rows lay out on the next polish, which on a
+    // busy computer can come well after a short wait.
     w.state->setProperty("sectionClosed", QVariantMap{});
-    QTest::qWait(50);
+    seventhslide::test::laid_out(qobject_cast<QQuickWindow*>(w.window));
     int sections = 0;
     for (QObject* o : w.dialog->findChildren<QObject*>()) {
         auto* section = qobject_cast<QQuickItem*>(o);
