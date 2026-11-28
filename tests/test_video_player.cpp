@@ -114,6 +114,13 @@ long waits_so_far()
 TEST_CASE("No player call waits on mpv while a video starts, seeks or loops", "[media][mpv]")
 {
     seventhslide::test::ensure_qt_application();
+    // The first mpv in a program loads and readies its libraries: once, and
+    // on macOS a tenth of a second or more (measured on CI's runners, where
+    // later ones start in a hundredth). Not what this times.
+    {
+        MpvMediaPlayer first;
+        REQUIRE(first.load(SEVENTHSLIDE_FIXTURES_DIR "/video/solid_3366cc_64x36.mp4", false));
+    }
     MpvMediaPlayer p;
     double slowest = 0.0;
     std::string slowest_call;
