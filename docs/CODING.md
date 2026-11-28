@@ -52,10 +52,11 @@ this in CI, so if you change the list, change it there and here together.
    dependencies. `platform/paths` uses only `std::filesystem`. `crypto` is
    the only place that calls OpenSSL. It covers signing keys, SHA-256 and the
    passphrase-locked box.
-3. `fonts` and `library`. `fonts` reads font files and works out which file a
-   family name refers to. `library` is the registry of libraries on disk,
-   along with each library's output destinations and its audio mixer levels
-   on this computer.
+3. `fonts`, `library` and `update`. `fonts` reads font files and works out
+   which file a family name refers to. `library` is the registry of
+   libraries on disk, along with each library's output destinations and its
+   audio mixer levels on this computer. `update` reads the app's releases on
+   GitHub and decides which one to offer.
 4. `model`: the data types and their JSON codecs (nlohmann/json, no Qt).
 5. `parse`: parsing of lyrics, Bibles and song files (pugixml, no Qt). Every
    kind of song file comes in through `parse::read_song_file`
