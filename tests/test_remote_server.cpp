@@ -755,9 +755,15 @@ TEST_CASE("RemoteServer: a message or frame over 64 KiB closes the socket", "[re
     client.sendTextMessage(padded(60 * 1024));
     REQUIRE(wait_until([&snapshots] { return snapshots == 2; }));
 
-    client.sendTextMessage(padded(1024 * 1024));
+    // Over it: closed. Just over, so the client has sent it all by then; even
+    // so, a close while bytes are still arriving may reset the connection,
+    // and a reset drops the close frame unread (macOS does). The code on the
+    // wire is the next test's, read off a raw socket.
+    client.sendTextMessage(padded(65 * 1024));
     REQUIRE(wait_until([&client] { return client.state() == QAbstractSocket::UnconnectedState; }));
-    CHECK(client.closeCode() == QWebSocketProtocol::CloseCodeTooMuchData);
+    INFO("close code " << client.closeCode() << ", socket error " << client.error());
+    CHECK((client.closeCode() == QWebSocketProtocol::CloseCodeTooMuchData
+           || client.error() == QAbstractSocket::RemoteHostClosedError));
     CHECK(wait_until([&fx] { return fx.server.client_count() == 0; }));
     CHECK(snapshots == 2);
 }
