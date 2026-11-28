@@ -1631,13 +1631,17 @@ public:
     }
     ~OutputListener() override { mixer_.remove_sink(this); }
 
+    // On the mixer's thread. Only a louder block raises the peak, and in one
+    // step: a reset made while a silent block is read stays a reset.
     void push(const float* frames, std::size_t count) override
     {
-        float peak = peak_.load();
+        float loudest = 0.0f;
         for (std::size_t i = 0; i < count * seventhslide::audio::k_channels; ++i) {
-            peak = std::max(peak, std::abs(frames[i]));
+            loudest = std::max(loudest, std::abs(frames[i]));
         }
-        peak_.store(peak);
+        float peak = peak_.load();
+        while (loudest > peak && !peak_.compare_exchange_weak(peak, loudest)) {
+        }
     }
     [[nodiscard]] bool heard() const { return peak_.load() > 0.0f; }
     void reset() { peak_.store(0.0f); }
