@@ -59,7 +59,7 @@ Row {
         visible: tab.dialog.isFreeform
         height: parent.height
         row1: [
-            RibbonField {
+            NumberField {
                 objectName: "ribbonSlideTransitionMs"
                 label: qsTr("Duration")
                 unit: "s"
@@ -110,7 +110,7 @@ Row {
             }
         ]
         row2: [
-            RibbonField {
+            NumberField {
                 objectName: "ribbonBackgroundTransitionMs"
                 label: qsTr("Duration")
                 unit: "s"
@@ -167,7 +167,7 @@ Row {
         height: parent.height
         enabled: tab.dialog.themeContext !== "titles"
         row1: [
-            RibbonField {
+            NumberField {
                 objectName: "ribbonSlideChangeMs"
                 label: qsTr("Duration")
                 unit: "s"
@@ -219,7 +219,7 @@ Row {
             }
         ]
         row2: [
-            RibbonField {
+            NumberField {
                 objectName: "ribbonObjectTransitionMs"
                 label: qsTr("Duration")
                 unit: "s"
@@ -254,7 +254,7 @@ Row {
             }
         ]
         row2: [
-            RibbonField {
+            NumberField {
                 objectName: "ribbonBgFadeMs"
                 label: qsTr("Duration")
                 unit: "s"

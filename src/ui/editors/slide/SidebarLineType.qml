@@ -40,7 +40,7 @@ SidebarSection {
             value: String(sec.own("family") || "")
             onPicked: function (v) { sec.side.setProp(sec.line + "_family", v) }
         }
-        RibbonField {
+        NumberField {
             compact: true
             objectName: "side" + sec.tag + "Size"
             fieldWidth: 66

@@ -204,21 +204,11 @@ ScrollPage {
                 FormRow {
                     Layout.fillWidth: true
                     label: fadeRow.modelData.label
-                    Row {
-                        spacing: 8
-                        DialogField {
-                            objectName: "outputAudio_" + fadeRow.modelData.key
-                            width: 70
-                            text: panel.dialog.audioFades[fadeRow.modelData.key]
-                            validator: IntValidator { bottom: 0; top: 60000 }
-                            onEdited: function (v) { panel.dialog.setAudioFade(fadeRow.modelData.key, v) }
-                        }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: qsTr("ms")
-                            color: Style.textCaption
-                            font.pixelSize: Style.fontBody
-                        }
+                    FadeField {
+                        objectName: "outputAudio_" + fadeRow.modelData.key
+                        ms: panel.dialog.audioFades[fadeRow.modelData.key]
+                        allowEmpty: false
+                        onEdited: function (v) { panel.dialog.setAudioFade(fadeRow.modelData.key, v) }
                     }
                 }
             }

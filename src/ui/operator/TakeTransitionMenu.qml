@@ -52,7 +52,7 @@ AppMenu {
             color: Style.menuInk
             font.pixelSize: Style.fontBody
         }
-        RibbonField {
+        NumberField {
             id: fadeField
             objectName: "takeFadeLength"
             anchors.right: parent.right
