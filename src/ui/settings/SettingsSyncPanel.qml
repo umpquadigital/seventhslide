@@ -22,8 +22,7 @@ ScrollPage {
     /// A computer's state, in words.
     function computerStatus(c) {
         if (c.invite)
-            return qsTr("Waiting to join, until %1")
-                   .arg(new Date(c.expires).toLocaleDateString(Qt.locale(), Locale.ShortFormat))
+            return qsTr("Expires %1").arg(panel.dialog.dateText(c.expires))
         if (c.thisComputer)
             return qsTr("This computer")
         if (c.removed)
@@ -306,7 +305,6 @@ ScrollPage {
             AppButton {
                 size: "control"
                 iconSource: Icons.url("edit", ink)
-                label: qsTr("Edit…")
                 enabled: panel.dialog.canEditSelected && !panel.dialog.working
                 onClicked: panel.dialog.editSelected()
             },

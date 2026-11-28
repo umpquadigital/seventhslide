@@ -133,6 +133,24 @@ QtObject {
             state.editAsked(state.selectedComputer)
     }
 
+    /// ``iso`` (a time as sync writes it) as the short date, with the year in
+    /// full: 11/27/2026, not 11/27/26. Empty for nothing, or for something that
+    /// is not a time (written by another computer).
+    function dateText(iso) {
+        const at = iso ? new Date(iso) : null
+        if (!at || isNaN(at.getTime()))
+            return ""
+        return at.toLocaleDateString(Qt.locale(), Qt.locale().dateFormat(Locale.ShortFormat).replace(/y+/, "yyyy"))
+    }
+
+    /// ``iso`` as ``dateText`` has it, then the short time: "11/27/2026, 9:05 AM".
+    function dateTimeText(iso) {
+        const date = state.dateText(iso)
+        return date ? qsTr("%1, %2", "a date, then a time").arg(date)
+                      .arg(new Date(iso).toLocaleTimeString(Qt.locale(), Locale.ShortFormat))
+                    : ""
+    }
+
     /// ``typed`` as one more address for ``row``, beside those ``added``
     /// already: ``{address}`` or ``{error}``.
     function readAddress(row, typed, added) {

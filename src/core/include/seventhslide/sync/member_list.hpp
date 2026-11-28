@@ -164,6 +164,12 @@ struct Member {
     /// made then, which go in its change files and count if it is made an
     /// editor again; one that has not has nothing of its own.
     bool has_edited = false;
+    /// When it joined (founded the library, for the first computer), as its
+    /// own clock wrote it in that entry (``now_utc``'s form); empty when the
+    /// entry does not say.
+    std::string joined;
+    /// The first computer: it founded the library, rather than joining it.
+    bool founded = false;
 
     friend bool operator==(const Member&, const Member&) = default;
 };

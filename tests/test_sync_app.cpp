@@ -26,17 +26,22 @@
 #include <seventhslide/library/library.hpp>
 #include <seventhslide/sync/member_list.hpp>
 
+#include <QDateTime>
 #include <QElapsedTimer>
+#include <QLocale>
 #include <QImage>
 #include <QQuickItem>
+#include <QRegularExpression>
 #include <QScopeGuard>
 #include <QQuickWindow>
 #include <QSGRendererInterface>
 
+#include <functional>
 #include <iostream>
 #include <QSignalSpy>
 #include <QSqlQuery>
 #include <QTcpServer>
+#include <QTest>
 #include <QUrl>
 
 #include <atomic>
@@ -1087,7 +1092,7 @@ TEST_CASE("An invite waits among the computers until it is used or withdrawn", "
     CHECK(row.value(QStringLiteral("invite")).toString() == id);
     CHECK(row.value(QStringLiteral("key")).toString() == QStringLiteral("invite:") + id);
     CHECK(row.value(QStringLiteral("role")).toString() == QStringLiteral("viewer"));
-    CHECK(row.value(QStringLiteral("madeBy")).toString() == QStringLiteral("Church PC"));
+    CHECK(row.value(QStringLiteral("name")).toString() == QStringLiteral("Unclaimed Invite"));
 
     // Where its computer is, the usual port unless told; here alone.
     const auto uid = church.sync->open_sync()->uid();
@@ -2063,6 +2068,9 @@ TEST_CASE("The Sync page's address controls and Edit card do what they say", "[s
     CHECK(church.sync->portPending());
     CHECK(reported.size() == 1);
 
+    // When each joined, for the Edit card to say.
+    CHECK_FALSE(computer(machine).value(QStringLiteral("joined")).toString().isEmpty());
+
     // The Edit card: open for another computer, not for this one.
     const auto open_card = [&]() -> QObject* {
         const QString prefix = QStringLiteral("ComputerEditDialog_QMLTYPE_");
@@ -2074,18 +2082,241 @@ TEST_CASE("The Sync page's address controls and Edit card do what they say", "[s
         return nullptr;
     };
     const auto strings = [](const QVariant& v) { return v.toStringList(); };
+    const auto is_open = [](QObject* o) { return o->property("open").toBool(); };
     page->setProperty("selectedKey", q_machine(church));
     CHECK_FALSE(page->property("canEditSelected").toBool());
     page->setProperty("selectedKey", machine);
     REQUIRE(wait_until([&] { return page->property("canEditSelected").toBool(); }));
-    REQUIRE(QMetaObject::invokeMethod(page, "editSelected"));
-    QObject* card = open_card();
-    REQUIRE(card != nullptr);
+    /// The card opened afresh for the computer picked, as Edit… opens it.
+    const auto fresh_card = [&]() -> QObject* {
+        if (QObject* was = open_card()) {
+            was->setProperty("open", false);
+        }
+        REQUIRE(QMetaObject::invokeMethod(page, "editSelected"));
+        QObject* opened = open_card();
+        REQUIRE(opened != nullptr);
+        return opened;
+    };
+    QObject* card = fresh_card();
     CHECK(card->property("role").toString() == QStringLiteral("viewer"));
     CHECK(strings(card->property("typed")).isEmpty());
 
-    // An address added: set on Save, with no password, as the role is the same.
-    card->setProperty("typed", QStringList{QStringLiteral("stage.example.org")});
+    // Under its name, when it joined, as the short date with the year in
+    // full; the first computer founded it; nothing when its entry's time is
+    // not one.
+    {
+        const QLocale locale;
+        QString full_year = locale.dateFormat(QLocale::ShortFormat);
+        full_year.replace(QRegularExpression(QStringLiteral("y+")), QStringLiteral("yyyy"));
+        const auto date = [&](const QString& iso) {
+            return locale.toString(QDateTime::fromString(iso, Qt::ISODate).toLocalTime().date(), full_year);
+        };
+        QVariantMap row = card->property("row").toMap();
+        CHECK_FALSE(row.value(QStringLiteral("founded")).toBool());
+        row[QStringLiteral("joined")] = QStringLiteral("2026-11-23T06:00:18Z");
+        card->setProperty("row", row);
+        CHECK(card->property("subtitle").toString()
+              == QStringLiteral("Joined this library on ") + date(QStringLiteral("2026-11-23T06:00:18Z")));
+        CHECK(card->property("subtitle").toString().contains(QStringLiteral("2026")));
+        row[QStringLiteral("founded")] = true;
+        card->setProperty("row", row);
+        CHECK(card->property("subtitle").toString().startsWith(QStringLiteral("Founded this library on ")));
+        row[QStringLiteral("joined")] = QStringLiteral("not a time");
+        card->setProperty("row", row);
+        CHECK(card->property("subtitle").toString().isEmpty());
+    }
+
+    // An address it was learned at is listed, and stays: picked, neither the
+    // toolbar nor the keyboard takes it away. One added here, picked, the
+    // same key takes away.
+    {
+        card = fresh_card();
+        QVariantMap row = card->property("row").toMap();
+        row[QStringLiteral("addresses")] = QStringList{QStringLiteral("192.168.1.42:8766")};
+        card->setProperty("row", row);
+        card->setProperty("typed", QStringList{QStringLiteral("stage.example.org:8766")});
+        const auto rows = card->property("addressRows").toList();
+        REQUIRE(rows.size() == 2);
+        CHECK(rows.front().toMap().value(QStringLiteral("learned")).toBool());
+        CHECK_FALSE(rows.back().toMap().value(QStringLiteral("learned")).toBool());
+        card->setProperty("selectedAddress", QStringLiteral("192.168.1.42:8766"));
+        CHECK_FALSE(card->property("canRemoveSelected").toBool());
+        REQUIRE(QMetaObject::invokeMethod(card, "removeSelected"));
+        QTest::keyClick(ui.window(), Qt::Key_Backspace);
+        QTest::keyClick(ui.window(), Qt::Key_Delete);
+        CHECK(card->property("addressRows").toList().size() == 2);
+        CHECK(card->property("selectedAddress").toString() == QStringLiteral("192.168.1.42:8766"));
+        card->setProperty("selectedAddress", QStringLiteral("stage.example.org:8766"));
+        REQUIRE(card->property("canRemoveSelected").toBool());
+        QTest::keyClick(ui.window(), Qt::Key_Backspace);
+        CHECK(card->property("addressRows").toList().size() == 1);
+        CHECK(strings(card->property("typed")).isEmpty());
+    }
+
+    // Closed unchanged, it closes at once; changed, each way of closing
+    // (Escape, a click outside, Cancel) asks first, and Discard keeps nothing.
+    {
+        card = fresh_card();
+        QObject* confirm = card->findChild<QObject*>(QStringLiteral("computerDiscardConfirm"));
+        REQUIRE(confirm != nullptr);
+        // The window's own Cancel, not the prompt's or the confirm's.
+        QObject* shell = nullptr;
+        for (QObject* child : card->children()) {
+            if (QByteArray(child->metaObject()->className()).startsWith("WindowShell_QMLTYPE_")) {
+                shell = child;
+            }
+        }
+        REQUIRE(shell != nullptr);
+        QQuickItem* cancel = nullptr;
+        for (auto* item : shell->findChildren<QQuickItem*>()) {
+            if (QByteArray(item->metaObject()->className()).startsWith("AppButton_QMLTYPE_")
+                && item->property("label").toString() == QStringLiteral("Cancel")) {
+                cancel = item;
+            }
+        }
+        REQUIRE(cancel != nullptr);
+        const auto click = [&](QPointF at) {
+            QTest::mouseClick(ui.window(), Qt::LeftButton, {}, at.toPoint());
+        };
+        // Outside the window, over Settings; and the middle of Cancel.
+        const QPointF outside(5, 5);
+        const auto cancel_at = [&] { return cancel->mapToScene(QPointF(cancel->width() / 2, cancel->height() / 2)); };
+
+        click(cancel_at());
+        CHECK_FALSE(is_open(card));
+        CHECK_FALSE(is_open(confirm));
+        card = fresh_card();
+        click(outside);
+        CHECK_FALSE(is_open(card));
+        CHECK_FALSE(is_open(confirm));
+
+        card = fresh_card();
+        card->setProperty("role", QStringLiteral("editor"));
+        card->setProperty("typed", QStringList{QStringLiteral("stage.example.org:8766")});
+        const std::vector<std::pair<const char*, std::function<void()>>> ways{
+            {"Escape", [&] { QTest::keyClick(ui.window(), Qt::Key_Escape); }},
+            {"a click outside", [&] { click(outside); }},
+            {"Cancel", [&] { click(cancel_at()); }},
+        };
+        for (const auto& [way, close] : ways) {
+            INFO(way);
+            close();
+            CHECK(is_open(card));
+            CHECK(is_open(confirm));
+            // Escape over the confirm closes it alone.
+            QTest::keyClick(ui.window(), Qt::Key_Escape);
+            CHECK_FALSE(is_open(confirm));
+            CHECK(is_open(card));
+        }
+        // Discarded: closed, and nothing Save would set is set (a role
+        // changed would have asked the password).
+        REQUIRE(QMetaObject::invokeMethod(card, "requestCancel"));
+        REQUIRE(is_open(confirm));
+        REQUIRE(QMetaObject::invokeMethod(confirm, "submit"));
+        CHECK_FALSE(is_open(card));
+        CHECK(open_prompt() == nullptr);
+        CHECK(computer(machine).value(QStringLiteral("role")).toString() == QStringLiteral("viewer"));
+        CHECK(strings(computer(machine).value(QStringLiteral("typedAddresses"))).isEmpty());
+
+        // Put back as it was, there is nothing to lose.
+        card = fresh_card();
+        card->setProperty("role", QStringLiteral("editor"));
+        card->setProperty("role", QStringLiteral("viewer"));
+        QVariant changed;
+        REQUIRE(QMetaObject::invokeMethod(card, "hasChanges", Q_RETURN_ARG(QVariant, changed)));
+        CHECK_FALSE(changed.toBool());
+        // The admin key given to the viewer is one.
+        card->setProperty("holds", true);
+        REQUIRE(QMetaObject::invokeMethod(card, "hasChanges", Q_RETURN_ARG(QVariant, changed)));
+        CHECK(changed.toBool());
+    }
+
+    // Closed, it hands the keys back to Settings, even when what held them
+    // is gone (a row of the computers list, made again meanwhile): Escape
+    // then reaches Settings.
+    {
+        card = fresh_card();
+        card->setProperty("_restoreFocus", QVariant::fromValue<QObject*>(nullptr));
+        REQUIRE(QMetaObject::invokeMethod(card, "requestCancel"));
+        REQUIRE_FALSE(is_open(card));
+        const auto* settings = qobject_cast<QQuickItem*>(dialog);
+        REQUIRE(settings != nullptr);
+        bool in_settings = false;
+        for (auto* item = ui.window()->activeFocusItem(); item != nullptr; item = item->parentItem()) {
+            in_settings = in_settings || item == settings;
+        }
+        CHECK(in_settings);
+    }
+
+    // Grown past the room it has, it scrolls; shrunk to fit again, the
+    // scrollbar goes, with no margin left to scroll.
+    {
+        card = fresh_card();
+        QObject* scroll = nullptr;
+        for (QObject* o : card->findChildren<QObject*>()) {
+            if (QByteArray(o->metaObject()->className()).startsWith("ScrollPage_QMLTYPE_")) {
+                scroll = o;
+            }
+        }
+        REQUIRE(scroll != nullptr);
+        QObject* bar = nullptr;
+        for (QObject* o : card->findChildren<QObject*>()) {
+            if (QByteArray(o->metaObject()->className()).startsWith("AppScrollBar_QMLTYPE_")
+                && o->property("flick").value<QObject*>() == scroll) {
+                bar = o;
+            }
+        }
+        REQUIRE(bar != nullptr);
+        CHECK_FALSE(bar->property("barShown").toBool());
+        QStringList many;
+        for (int i = 0; i < 60; ++i) {
+            many.push_back(QStringLiteral("host%1.example.org:8766").arg(i));
+        }
+        card->setProperty("typed", many);
+        REQUIRE(wait_until([&] { return bar->property("reservedWidth").toInt() > 0; }));
+        CHECK(bar->property("overflowing").toBool());
+        card->setProperty("typed", QStringList{});
+        REQUIRE(wait_until([&] { return !bar->property("barShown").toBool(); }));
+        CHECK(bar->property("reservedWidth").toInt() == 0);
+        CHECK(scroll->property("bottomMargin").toReal() == 0);
+    }
+
+    // An address added, as Add… does: the prompt reads what is typed, and
+    // Add is off while it will not do, saying why.
+    card = fresh_card();
+    REQUIRE(QMetaObject::invokeMethod(card, "askAddress", Q_ARG(QVariant, QString())));
+    QObject* add = open_prompt();
+    REQUIRE(add != nullptr);
+    CHECK(add->property("title").toString() == QStringLiteral("Add an address"));
+    CHECK_FALSE(add->property("acceptEnabled").toBool());
+    add->setProperty("value", QStringLiteral("stage.example.org:notaport"));
+    CHECK_FALSE(add->property("acceptEnabled").toBool());
+    CHECK_FALSE(add->property("read").toMap().value(QStringLiteral("error")).toString().isEmpty());
+    // Escape over the prompt closes it alone.
+    QTest::keyClick(ui.window(), Qt::Key_Escape);
+    CHECK(open_prompt() == nullptr);
+    CHECK(is_open(card));
+    CHECK(strings(card->property("typed")).isEmpty());
+    REQUIRE(QMetaObject::invokeMethod(card, "askAddress", Q_ARG(QVariant, QString())));
+    add = open_prompt();
+    REQUIRE(add != nullptr);
+    add->setProperty("value", QStringLiteral("stage.example.org"));
+    REQUIRE(add->property("acceptEnabled").toBool());
+    REQUIRE(QMetaObject::invokeMethod(add, "submit"));
+    CHECK(open_prompt() == nullptr);
+    CHECK(strings(card->property("typed")) == QStringList{QStringLiteral("stage.example.org:8766")});
+    CHECK(card->property("selectedAddress").toString() == QStringLiteral("stage.example.org:8766"));
+    // The same again will not do.
+    REQUIRE(QMetaObject::invokeMethod(card, "askAddress", Q_ARG(QVariant, QStringLiteral("stage.example.org"))));
+    add = open_prompt();
+    REQUIRE(add != nullptr);
+    CHECK_FALSE(add->property("acceptEnabled").toBool());
+    CHECK(add->property("read").toMap().value(QStringLiteral("error")).toString().contains(QStringLiteral("added already")));
+    REQUIRE(QMetaObject::invokeMethod(add, "close"));
+    CHECK(is_open(card));
+    CHECK(strings(card->property("typed")).size() == 1);
+
+    // Set on Save, with no password, as the role is the same.
     REQUIRE(QMetaObject::invokeMethod(card, "submit"));
     CHECK(open_prompt() == nullptr);
     REQUIRE(wait_until([&] {
@@ -2106,7 +2337,11 @@ TEST_CASE("The Sync page's address controls and Edit card do what they say", "[s
     CHECK(strings(card->property("typed")) == QStringList{QStringLiteral("stage.example.org:8766")});
     CHECK_FALSE(card->property("holds").toBool());
     card->setProperty("holds", true);
-    card->setProperty("typed", QStringList{});
+    // Taken away as the keyboard does: picked, then Backspace (a Mac's Delete).
+    card->setProperty("selectedAddress", QStringLiteral("stage.example.org:8766"));
+    REQUIRE(card->property("canRemoveSelected").toBool());
+    QTest::keyClick(ui.window(), Qt::Key_Backspace);
+    CHECK(strings(card->property("typed")).isEmpty());
     REQUIRE(QMetaObject::invokeMethod(card, "submit"));
     REQUIRE(open_prompt() != nullptr);
     CHECK(open_prompt()->property("password").toBool());
@@ -2159,6 +2394,20 @@ TEST_CASE("The Sync page's address controls and Edit card do what they say", "[s
     card = open_card();
     REQUIRE(card != nullptr);
     CHECK(card->property("invite").toBool());
+    // When it expires: the short date with the year in full, a comma, then
+    // the short time.
+    {
+        const QLocale locale;
+        QString full_year = locale.dateFormat(QLocale::ShortFormat);
+        full_year.replace(QRegularExpression(QStringLiteral("y+")), QStringLiteral("yyyy"));
+        const auto expires = QDateTime::fromString(card->property("row").toMap().value(QStringLiteral("expires")).toString(),
+                                                   Qt::ISODate)
+                                 .toLocalTime();
+        REQUIRE(expires.isValid());
+        CHECK(card->property("subtitle").toString()
+              == QStringLiteral("Invitation expires %1, %2")
+                     .arg(locale.toString(expires.date(), full_year), locale.toString(expires.time(), QLocale::ShortFormat)));
+    }
     card->setProperty("typed", QStringList{QStringLiteral("far.example.org:9000")});
     REQUIRE(QMetaObject::invokeMethod(card, "submit"));
     CHECK(open_prompt() == nullptr);
@@ -2379,13 +2628,44 @@ TEST_CASE("Sync shots", "[.syncshots]")
         ui.find_component("SettingsSyncState")->setProperty("selectedKey", q_machine(laptop));
         ui.find_component("SettingsSyncPanel")->setProperty("contentY", 535);
     });
-    REQUIRE(church.sync->setComputerAddresses(q_machine(laptop), {QStringLiteral("laptop.example.org")}).isEmpty());
-    shoot(church, "sync", "sync_edit_computer", [&](seventhslide::test::OperatorUi& ui) {
+    // Where the laptop says it takes connections, which the church learns; and
+    // two added on the church.
+    REQUIRE(laptop.sync->setReachAddresses(QStringLiteral("192.168.1.42")).isEmpty());
+    REQUIRE(wait_until([&] {
+        for (const auto& c : church.sync->openLibrary().value(QStringLiteral("computers")).toList()) {
+            if (c.toMap().value(QStringLiteral("machine")).toString() == q_machine(laptop)) {
+                return !c.toMap().value(QStringLiteral("addresses")).toStringList().isEmpty();
+            }
+        }
+        return false;
+    }));
+    REQUIRE(church.sync->setComputerAddresses(q_machine(laptop), {QStringLiteral("laptop.example.org"),
+                                                                 QStringLiteral("203.0.113.7:9000")})
+                .isEmpty());
+    // The Edit window, an address added here picked; then adding another.
+    const auto edit_card = [&](seventhslide::test::OperatorUi& ui) -> QObject* {
         QObject* state = ui.find_component("SettingsSyncState");
         state->setProperty("selectedKey", q_machine(laptop));
         REQUIRE(QMetaObject::invokeMethod(state, "editSelected"));
+        for (QObject* o : ui.window()->findChildren<QObject*>()) {
+            if (QString::fromLatin1(o->metaObject()->className()).startsWith(QStringLiteral("ComputerEditDialog_QMLTYPE_"))) {
+                return o;
+            }
+        }
+        return nullptr;
+    };
+    shoot(church, "sync", "sync_edit_computer", [&](seventhslide::test::OperatorUi& ui) {
+        QObject* card = edit_card(ui);
+        REQUIRE(card != nullptr);
+        card->setProperty("selectedAddress", QStringLiteral("laptop.example.org:8766"));
+    });
+    shoot(church, "sync", "sync_edit_add_address", [&](seventhslide::test::OperatorUi& ui) {
+        QObject* card = edit_card(ui);
+        REQUIRE(card != nullptr);
+        REQUIRE(QMetaObject::invokeMethod(card, "askAddress", Q_ARG(QVariant, QStringLiteral("10.0.0.25"))));
     });
     REQUIRE(church.sync->setComputerAddresses(q_machine(laptop), {}).isEmpty());
+    REQUIRE(laptop.sync->setReachAddresses(QString()).isEmpty());
     REQUIRE(church.sync->admin()->invite(QStringLiteral("viewer"), 7, k_password).isEmpty());
     const auto waiting = church.await(QStringLiteral("invite"));
     const auto waiting_id = QString::fromStdString(

@@ -13,6 +13,7 @@
 #include <seventhslide/sync/gate.hpp>
 #include <seventhslide/sync/identity.hpp>
 #include <seventhslide/sync/member_list.hpp>
+#include <seventhslide/sync/now_utc.hpp>
 #include <seventhslide/crypto/sha256.hpp>
 #include <seventhslide/sync/snapshot.hpp>
 #include <seventhslide/sync/sync_store.hpp>
@@ -408,6 +409,15 @@ TEST_CASE("An invite admits a computer as the role it names", "[sync][members]")
     CHECK(m.may_write("laptop"));
     CHECK_FALSE(m.may_write("pew"));
     CHECK_FALSE(m.may_have_written("pew", 1));
+    // When each joined, as its join entry says; the first, when it founded it.
+    for (const auto* machine : {"church", "laptop", "pew"}) {
+        const auto& joined = m.find(machine)->joined;
+        CHECK(joined.size() == 20);
+        CHECK(joined <= seventhslide::sync::now_utc());
+    }
+    CHECK(m.find("church")->founded);
+    CHECK_FALSE(m.find("laptop")->founded);
+    CHECK_FALSE(m.find("pew")->founded);
 
     SECTION("the invite as a code")
     {

@@ -9,6 +9,7 @@ import SeventhSlide
 // window's edge, as far in as a well's from the well's; the column keeps to
 // the page area, whether the bar shows or not.
 // ``bleeds: false`` keeps it to where it is put, the bar in its own gutter.
+// ``stickyGutter: false`` lets the scrollbar go once the page fits again.
 // ``interactive: false`` holds the page still (while a row is being dragged).
 Flickable {
     id: page
@@ -16,6 +17,10 @@ Flickable {
     /// The column's width, for rows that size to it.
     readonly property alias columnWidth: column.width
     property bool bleeds: true
+    /// Whether the scrollbar's gutter stays once the page fits again, as it does
+    /// for 16:9 lists (AppScrollBar). Off for a page whose window grows and
+    /// shrinks with it.
+    property alias stickyGutter: bar.stickyGutter
 
     readonly property int bleedRight: page.bleeds ? Style.windowPagePadX - Style.scrollGap : 0
     readonly property int bleedTop: page.bleeds ? Style.windowPagePadTop : 0
@@ -30,7 +35,9 @@ Flickable {
     clip: true
     boundsBehavior: Flickable.StopAtBounds
     flickableDirection: Flickable.VerticalFlick
-    ScrollBar.vertical: AppScrollBar {}
+    ScrollBar.vertical: AppScrollBar {
+        id: bar
+    }
 
     Column {
         id: column
