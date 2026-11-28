@@ -48,7 +48,7 @@ Document two_outputs()
     };
     auto doc = Document::from_json({
         {"schema", "seventhslide.freeform"},
-        {"schema_version", 3},
+        {"schema_version", 4},
         {"name", "Two"},
         {"next_id", 100},
         {"decks",

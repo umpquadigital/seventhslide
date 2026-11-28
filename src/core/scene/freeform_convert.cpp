@@ -477,6 +477,9 @@ freeform::Document document_from_build(const build::SlideBuildResult& built,
     const bool show_refs = bible && std::ranges::any_of(built.outputs, [](const auto& rt) {
         return rt.theme.bible.shown && rt.theme.bible.show_verse_numbers;
     });
+    // The song's section the last labelled line was in: a line in another
+    // starts a section, so a verse played twice running stays two.
+    int last_section = -1;
     for (std::size_t i = 0; i < built.player.all_lines.size(); ++i) {
         freeform::Cue cue;
         cue.id = freeform::alloc_id(doc, 'c');
@@ -505,11 +508,15 @@ freeform::Document document_from_build(const build::SlideBuildResult& built,
                         rt.verse_codes[static_cast<std::size_t>(vi)]);
                     cue.verse_type = label.type;
                     cue.verse_number = label.number;
+                    cue.section_start = last_section >= 0 && vi != last_section;
+                    last_section = vi;
                 }
             }
         }
         doc.cues.push_back(std::move(cue));
     }
+    // ``normalize`` below keeps only the marks that part a verse from its
+    // repeat; a change of label parts them by itself.
 
     const auto mode = scene_mode_from_build_kind(built.kind);
     const auto element_ctx = built.kind == build::BuildKind::Bible

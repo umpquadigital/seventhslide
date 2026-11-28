@@ -171,6 +171,8 @@ public:
     [[nodiscard]] EditResult set_cue_verse(std::string type, int number);
     [[nodiscard]] EditResult set_cue_scripture(int chapter, int verse);
     [[nodiscard]] EditResult set_cue_ref_shown(bool shown);
+    /// ``freeform::set_cue_section_start`` on the selected cue.
+    [[nodiscard]] EditResult set_cue_section_start(bool on);
     [[nodiscard]] EditResult place_slide_thumb(int slide_index, int last_cue);
 
     /// Drop fields that could never be a token. Call immediately before persisting.

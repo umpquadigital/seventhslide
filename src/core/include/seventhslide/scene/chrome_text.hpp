@@ -11,6 +11,7 @@
 #include <nlohmann/json.hpp>
 
 #include <map>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -57,34 +58,51 @@ inline constexpr std::string_view k_bible_ref_variables[] = {
 [[nodiscard]] std::map<std::string, std::string> bible_ref_token_values(
     const model::BiblePassage& passage);
 
-/// Collapse lettered sections (v1a/v1b -> V1); mark the active verse.
+/// ``runtime``'s sections, the one the first line on ``slide_index`` is in
+/// active (``build_indicator_items_from_sections``).
 [[nodiscard]] std::vector<IndicatorItem> build_indicator_items(
     const build::OutputRuntime& runtime,
     int slide_index);
 
-/// Collapse consecutive same-base codes; ``current_code_index`` is the active
-/// entry in ``verse_codes`` (``-1`` = none active). Empty codes are skipped.
-/// A Bible verse code (``3:16``) is labelled by its verse number, with its
-/// chapter only where the chapter changes.
-[[nodiscard]] std::vector<IndicatorItem> build_indicator_items_from_codes(
-    const std::vector<std::string>& verse_codes,
-    int current_code_index);
+/**
+ * One item per entry of ``section_codes``: each entry is one section of the
+ * play order (``OutputRuntime::verse_codes``), so a verse played twice running
+ * shows twice. Nothing is merged here; whoever builds the list decides where a
+ * section starts. ``current_section`` is the active entry (``-1`` = none).
+ * Empty codes are skipped. A Bible verse code (``3:16``) is labelled by its
+ * verse number, with its chapter only where the chapter changes.
+ */
+[[nodiscard]] std::vector<IndicatorItem> build_indicator_items_from_sections(
+    std::span<const std::string> section_codes,
+    int current_section);
 
 /// First line mapped onto ``slide_index``, or ``-1`` if none.
-[[nodiscard]] int first_line_on_slide(const std::vector<int>& line_to_slide, int slide_index);
+[[nodiscard]] int first_line_on_slide(std::span<const int> line_to_slide, int slide_index);
 
 /// ``5/10`` (1-based slide / total). Empty when ``slide_count < 1``.
 [[nodiscard]] std::vector<IndicatorItem> slide_number_indicator(int slide_index, int slide_count);
 
+/// What an indicator reads of a play: its sections, and where each line falls.
+struct IndicatorSections {
+    /// One code per section, in play order (``OutputRuntime::verse_codes``).
+    std::span<const std::string> codes;
+    /// Each line's section, ``-1`` for none (``OutputRuntime::verse_indices``).
+    std::span<const int> line_section;
+    /// Each line's slide (``OutputRuntime::line_to_slide``).
+    std::span<const int> line_to_slide;
+};
+
 /**
- * Live indicator content. When ``verse_codes`` is empty or the current code is
- * unlabeled, returns a slide-number item - or nothing if ``blank_if_unlabeled``.
- * ``current_code_index < 0`` uses the first line on ``slide_index``.
+ * Live indicator content: ``play``'s sections as
+ * ``build_indicator_items_from_sections`` shows them, the section of
+ * ``current_line`` active. When there are no sections or the current one is
+ * unlabeled, returns a slide-number item - or nothing if
+ * ``blank_if_unlabeled``. ``current_line < 0`` uses the first line on
+ * ``slide_index``.
  */
 [[nodiscard]] std::vector<IndicatorItem> resolve_indicator_items(
-    const std::vector<std::string>& verse_codes,
-    const std::vector<int>& line_to_slide,
-    int current_code_index,
+    const IndicatorSections& play,
+    int current_line,
     int slide_index,
     int slide_count,
     bool blank_if_unlabeled);

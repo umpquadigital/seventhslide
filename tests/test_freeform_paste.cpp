@@ -54,7 +54,7 @@ Document song(nlohmann::json lt)
 {
     auto doc = Document::from_json({
         {"schema", "seventhslide.freeform"},
-        {"schema_version", 3},
+        {"schema_version", 4},
         {"name", "Song"},
         {"line_control", true},
         {"next_id", 100},
@@ -254,6 +254,26 @@ TEST_CASE("Slides pasted where they were copied repeat their lines", "[freeform]
         CHECK(lt.slides[4].id != "l2");
         CHECK(lt.slides[5].id == "l3");
     }
+}
+
+TEST_CASE("Lines pasted again after their verse play as a section of their own", "[freeform][paste][sections]")
+{
+    auto doc = song(lower_thirds());
+    REQUIRE(seventhslide::freeform::set_cue_verse(doc, 4, "Chorus", 1));
+    REQUIRE(seventhslide::freeform::set_cue_verse(doc, 5, "Chorus", 1));
+    Editor ed;
+    ed.load(doc, "out-main");
+    ed.select_slide(1);
+    REQUIRE(ed.copy_slides());
+    REQUIRE(ed.paste());
+
+    const auto& cues = ed.document().cues;
+    REQUIRE(cues.size() == 8);
+    CHECK(cues[6].section_start);
+    CHECK_FALSE(cues[7].section_start);
+    const auto sections = seventhslide::freeform::cue_sections(cues);
+    CHECK(sections.codes == std::vector<std::string>{"", "c1", "c1"});
+    CHECK(sections.cue_section == std::vector<int>{0, 0, 0, 0, 1, 1, 2, 2});
 }
 
 TEST_CASE("Pasted slides keep their transitions and notes", "[freeform][paste]")

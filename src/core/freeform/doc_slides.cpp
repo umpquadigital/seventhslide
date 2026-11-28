@@ -66,6 +66,8 @@ void permute_cues(Document& doc, const std::vector<int>& new_order)
     if (static_cast<int>(new_order.size()) != n) {
         return;
     }
+    // Each cue's section where it was.
+    const auto sections = cue_sections(doc.cues).cue_section;
     std::vector<Cue> next(static_cast<std::size_t>(n));
     for (int i = 0; i < n; ++i) {
         const int old = new_order[static_cast<std::size_t>(i)];
@@ -75,12 +77,19 @@ void permute_cues(Document& doc, const std::vector<int>& new_order)
         next[static_cast<std::size_t>(i)] = std::move(doc.cues[static_cast<std::size_t>(old)]);
     }
     doc.cues = std::move(next);
-    // A cue with another before it now starts a line of its own.
+    // A cue with another before it now starts a line of its own, and a
+    // section where the cue now before it was in another: a verse moved next
+    // to its repeat stays apart from it, and a verse's own slides swapped
+    // stay one section.
     for (int i = 0; i < n; ++i) {
         const int old = new_order[static_cast<std::size_t>(i)];
         if (i > 0 && new_order[static_cast<std::size_t>(i - 1)] == old - 1) {
             continue;
         }
+        const auto before = i > 0 ? new_order[static_cast<std::size_t>(i - 1)] : -1;
+        doc.cues[static_cast<std::size_t>(i)].section_start =
+            before >= 0
+            && sections[static_cast<std::size_t>(old)] != sections[static_cast<std::size_t>(before)];
         const auto& id = doc.cues[static_cast<std::size_t>(i)].id;
         for (auto& deck : doc.decks) {
             for (auto& flow : deck.cue_flow) {
@@ -101,6 +110,7 @@ void permute_cues(Document& doc, const std::vector<int>& new_order)
         }
         deck.line_to_slide = std::move(mapped);
     }
+    tidy_section_starts(doc.cues);
 }
 
 void compact_deck_slides(Deck& deck)

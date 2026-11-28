@@ -65,7 +65,7 @@ it is left out.
 {
   "format": "seventhslide.freeform-bundle",
   "format_version": 1,
-  "freeform_schema_version": 3,
+  "freeform_schema_version": 4,
   "made_by": "SeventhSlide 0.1.0",
   "made_at": "2026-11-26T14:03:00Z",
   "source_library": "<library_uid>",

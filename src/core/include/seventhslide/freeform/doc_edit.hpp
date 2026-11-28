@@ -98,6 +98,10 @@ void normalize(Document& doc);
 /// Show or hide the cue's ``chapter:verse`` in linked text. Fails for a cue
 /// with no Bible verse.
 [[nodiscard]] EditResult set_cue_ref_shown(Document& doc, int index, bool shown);
+/// Start a section at the cue though the cue before has its label, or join it
+/// to that cue's section again (``Cue::section_start``). Starting fails where
+/// ``can_start_section`` is false.
+[[nodiscard]] EditResult set_cue_section_start(Document& doc, int index, bool on);
 
 /// Grow/shrink slide ``slide_index`` so it ends at ``last_cue`` (inclusive).
 [[nodiscard]] EditResult move_span_end(Document& doc, std::string_view output_id,

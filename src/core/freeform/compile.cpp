@@ -474,7 +474,9 @@ CompiledPlayback compile(const Document& doc,
     if (working.line_control) {
         out.lines.reserve(working.cues.size());
         out.line_labels.reserve(working.cues.size());
-        out.verse_codes.reserve(working.cues.size());
+        auto sections = cue_sections(working.cues);
+        out.verse_codes = std::move(sections.codes);
+        out.verse_indices = std::move(sections.cue_section);
         for (const auto& cue : working.cues) {
             const auto code = cue_label_code(cue);
             // The line list reads a cue's words; chords are for its boxes. A cue
@@ -484,7 +486,6 @@ CompiledPlayback compile(const Document& doc,
             out.lines.push_back(line.empty() && ref ? parse::format_verse_ref(*ref)
                                                     : std::move(line));
             out.line_labels.push_back(code);
-            out.verse_codes.push_back(code);
         }
     } else {
         const int n = working.decks.empty() ? 0 : working.decks.front().slide_count();
@@ -611,6 +612,8 @@ namespace {
             cues.push_back(cue_label_code(cue));
         }
         j["indicator_cues"] = std::move(cues);
+        // Where sections start, which a label alone does not say.
+        j["indicator_sections"] = cue_sections(doc.cues).cue_section;
         j["line_to_slide"] = deck.line_to_slide;
         j["line_control"] = doc.line_control;
     }

@@ -63,8 +63,11 @@ struct CompiledPlayback {
     bool line_control = false;
     std::vector<std::string> lines;
     std::vector<std::string> line_labels;
-    /// Parallel to ``lines`` when line control is on (compact codes, empty if unset).
+    /// With line control, the sections the cues play in (``cue_sections``):
+    /// compact codes, empty for an unlabeled run.
     std::vector<std::string> verse_codes;
+    /// Parallel to ``lines`` with line control: each line's entry in ``verse_codes``.
+    std::vector<int> verse_indices;
     std::vector<CompiledDeck> decks;
 };
 

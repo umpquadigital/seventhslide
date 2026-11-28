@@ -210,6 +210,7 @@ void normalize(Document& doc)
         }
     }
 
+    tidy_section_starts(doc.cues);
     prune_cue_overlays(doc);
 }
 

@@ -13,7 +13,10 @@
 
 namespace seventhslide::parse {
 
-/// Ordered verse bodies + parallel codes.
+/// Ordered verse bodies + parallel codes: one entry per section played. With a
+/// verse order each token that names something is one entry, every block it
+/// names joined, so a verse ordered twice running is two. Without one, or when
+/// the order names nothing in the lyrics, each block is one, as written.
 struct LyricsBlocks {
     std::vector<std::string> verses;
     std::vector<std::string> verse_codes;
@@ -40,9 +43,10 @@ struct LabelledVerse {
 
 /// The verses of ``lyrics`` as the song editor edits them: one per
 /// ``---[Label]---`` section, in order, with the lettered sections of one verse
-/// (``Verse:1a``, ``Verse:1b``) joined exactly as ``parse_verses`` joins them for
-/// playback. Lyrics without headers split at blank lines into ``Verse:1``,
-/// ``Verse:2``, ...
+/// that follow each other (``Verse:1a``, ``Verse:1b``) joined as ``parse_verses``
+/// joins them; parts apart in the lyrics stay apart here, though a verse-order
+/// token plays them as one. Lyrics without headers split at blank lines into
+/// ``Verse:1``, ``Verse:2``, ...
 [[nodiscard]] std::vector<LabelledVerse> labelled_verses(std::string_view lyrics);
 
 /// ``verses`` back as lyrics: ``---[Label]---`` sections, a blank line apart.

@@ -313,6 +313,17 @@ EditResult Editor::set_cue_ref_shown(bool shown)
     });
 }
 
+EditResult Editor::set_cue_section_start(bool on)
+{
+    if (cue_index_ < 0) {
+        return EditResult::fail("no cue selected");
+    }
+    const int index = cue_index_;
+    return commit_document([&](Document& doc) {
+        return freeform::set_cue_section_start(doc, index, on);
+    });
+}
+
 EditResult Editor::place_slide_thumb(int slide_index, int last_cue)
 {
     const auto r = commit([&](Document& doc) {

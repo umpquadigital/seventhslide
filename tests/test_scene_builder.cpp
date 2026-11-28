@@ -14,6 +14,7 @@
 #include <seventhslide/theme/resolved_theme.hpp>
 #include <seventhslide/theme/theme_elements.hpp>
 
+#include "freeform_test_helpers.hpp"
 #include "scene_test_helpers.hpp"
 #include "theme_test_helpers.hpp"
 
@@ -1121,6 +1122,140 @@ TEST_CASE("A theme indicator sets its labels its gap apart", "[scene][indicator]
     REQUIRE(box->lines.size() == 1);
     CHECK(box->lines[0]
           == seventhslide::scene::indicator_line({{"V1", true}, {"C1", false}}, 2.0));
+}
+
+TEST_CASE("A theme indicator shows a verse played twice running twice", "[scene][indicator]")
+{
+    ApproxTextMeasurer measurer;
+    SlideBuildInput in;
+    in.kind = BuildKind::Song;
+    in.selection.kind = ContentKind::Song;
+    in.song.lyrics = "---[Verse:1]---\nOne\n\n---[Verse:2]---\nTwo\n\n---[Verse:3]---\nThree\n\n"
+                     "---[Verse:4]---\nFour\n";
+    in.song.verse_order = "V1 V2 V3 V3 V4";
+
+    auto oc = make_song_oc();
+    auto design = th::design_of(oc);
+    th::add_element(design.song, th::indicator_element());
+    th::use_design(oc, design);
+    in.outputs.push_back(oc);
+
+    const auto built = build_slides(in, measurer);
+    REQUIRE(built.outputs.size() == 1);
+    const auto& rt = built.outputs[0];
+    REQUIRE(rt.verse_codes == std::vector<std::string>{"v1", "v2", "v3", "v3", "v4"});
+
+    // The slide each V3 starts on.
+    const auto slide_of_section = [&rt](int section) {
+        for (std::size_t i = 0; i < rt.verse_indices.size() && i < rt.line_to_slide.size(); ++i) {
+            if (rt.verse_indices[i] == section) {
+                return rt.line_to_slide[i];
+            }
+        }
+        return -1;
+    };
+    const auto indicator_on = [&](int slide) {
+        seventhslide::scene::SceneFrameRequest req{rt, SceneMode::Song, 1920, 1080, slide, {}};
+        const auto frame = build_scene_frame(req);
+        for (const auto& so : frame.objects) {
+            if (so.id == "te_indicator" && so.text && !so.text->lines.empty()) {
+                return so.text->lines[0];
+            }
+        }
+        return seventhslide::model::RichLine{};
+    };
+    using seventhslide::scene::indicator_line;
+    const int first = slide_of_section(2);
+    const int again = slide_of_section(3);
+    REQUIRE(first >= 0);
+    REQUIRE(again > first);
+    CHECK(indicator_on(first)
+          == indicator_line({{"V1", false}, {"V2", false}, {"V3", true}, {"V3", false}, {"V4", false}}));
+    CHECK(indicator_on(again)
+          == indicator_line({{"V1", false}, {"V2", false}, {"V3", false}, {"V3", true}, {"V4", false}}));
+}
+
+TEST_CASE("A Freeform indicator shows a verse played twice running twice", "[scene][indicator][freeform]")
+{
+    // V1 V2 V3 V3 V4 as cues: each V3 is two lines on one slide, and the
+    // repeat's first line starts a section of its own.
+    const auto cue = [](const char* id, const char* text, int number, bool starts = false) {
+        json j = {{"id", id}, {"text", text}, {"verse_type", "Verse"}, {"verse_number", number}};
+        if (starts) {
+            j["section_start"] = true;
+        }
+        return j;
+    };
+    json slides = json::array();
+    for (int i = 1; i <= 5; ++i) {
+        slides.push_back({{"id", "s" + std::to_string(i)}, {"objects", json::array()}});
+    }
+    auto doc = seventhslide::freeform::Document::from_json({
+        {"schema", "seventhslide.freeform"},
+        {"schema_version", seventhslide::freeform::k_schema_version},
+        {"name", "Repeat"},
+        {"line_control", true},
+        {"next_id", 100},
+        {"cues",
+         {cue("c1", "one", 1), cue("c2", "two", 2), cue("c3", "three", 3), cue("c4", "more", 3),
+          cue("c5", "three", 3, true), cue("c6", "more", 3), cue("c7", "four", 4)}},
+        {"decks",
+         {{{"output", "out-main"},
+           {"canvas", {{"width", 1920}, {"height", 1080}}},
+           {"line_to_slide", {0, 1, 2, 2, 3, 3, 4}},
+           {"slides", slides}}}},
+    });
+    // One indicator per slide, all with one id: a frame has its slide's.
+    for (int slide = 0; slide < 5; ++slide) {
+        auto indicator = seventhslide::freeform::make_indicator_object(doc, {1920, 1080});
+        indicator.id = "indicator";
+        REQUIRE(seventhslide::test::add_object(doc, "out-main", slide, std::move(indicator)));
+    }
+    seventhslide::freeform::normalize(doc);
+    REQUIRE(doc.cues[4].section_start);
+
+    ApproxTextMeasurer measurer;
+    OutputConfig oc;
+    oc.name = "Main";
+    oc.id = "out-main";
+    const auto indicator_at = [&](const seventhslide::freeform::Document& d, int line) {
+        SlideBuildInput in;
+        in.kind = BuildKind::Freeform;
+        in.selection.kind = ContentKind::Freeform;
+        in.freeform.document = d;
+        in.outputs = {oc};
+        const auto built = build_slides(in, measurer);
+        REQUIRE(built.outputs.size() == 1);
+        const auto& rt = built.outputs[0];
+        REQUIRE(line < static_cast<int>(rt.line_to_slide.size()));
+        seventhslide::scene::SceneFrameRequest req{
+            rt, SceneMode::Freeform, 1920, 1080,
+            rt.line_to_slide[static_cast<std::size_t>(line)], {}, &measurer, line,
+        };
+        const auto frame = build_scene_frame(req);
+        for (const auto& so : frame.objects) {
+            if (so.id == "indicator" && so.text && !so.text->lines.empty()) {
+                return so.text->lines[0];
+            }
+        }
+        return seventhslide::model::RichLine{};
+    };
+
+    using seventhslide::scene::indicator_line;
+    // Both lines of the first V3 light the first; both of the repeat, the second.
+    for (const int line : {2, 3}) {
+        CHECK(indicator_at(doc, line)
+              == indicator_line({{"V1", false}, {"V2", false}, {"V3", true}, {"V3", false}, {"V4", false}}));
+    }
+    for (const int line : {4, 5}) {
+        CHECK(indicator_at(doc, line)
+              == indicator_line({{"V1", false}, {"V2", false}, {"V3", false}, {"V3", true}, {"V4", false}}));
+    }
+
+    // Without the mark the four V3 lines are one section, as before.
+    REQUIRE(seventhslide::freeform::set_cue_section_start(doc, 4, false));
+    CHECK(indicator_at(doc, 4)
+          == indicator_line({{"V1", false}, {"V2", false}, {"V3", true}, {"V4", false}}));
 }
 
 TEST_CASE("show_lyrics hides the song body and keeps the chrome", "[scene][show_lyrics]")

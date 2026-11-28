@@ -538,10 +538,8 @@ void apply_compiled_playback(SlideBuildResult& result,
                           std::max(0, static_cast<int>(deck->slides.size()) - 1));
         if (!compiled.verse_codes.empty()) {
             rt.verse_codes = compiled.verse_codes;
-            rt.verse_indices.resize(static_cast<std::size_t>(std::max(0, total_lines)), 0);
-            for (int i = 0; i < total_lines; ++i) {
-                rt.verse_indices[static_cast<std::size_t>(i)] = i;
-            }
+            rt.verse_indices = compiled.verse_indices;
+            rt.verse_indices.resize(static_cast<std::size_t>(std::max(0, total_lines)), -1);
         }
         rt.compiled_slides = deck->slides;
         rt.slide_texts.assign(deck->slides.size(), "");

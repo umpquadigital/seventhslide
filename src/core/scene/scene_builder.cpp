@@ -532,7 +532,10 @@ void append_resolved_indicators(SceneFrame& frame, const build::OutputRuntime& r
             continue;
         }
         const auto items = resolve_indicator_items(
-            rt.verse_codes, rt.line_to_slide, line_index, frame.slide_index, rt.slide_count(),
+            {.codes = rt.verse_codes,
+             .line_section = rt.verse_indices,
+             .line_to_slide = rt.line_to_slide},
+            line_index, frame.slide_index, rt.slide_count(),
             obj.indicator->fallback == freeform::IndicatorFallback::Blank);
         auto box = indicator_overlay(obj.indicator->box, items, obj.indicator->gap);
         box.id = obj.id;

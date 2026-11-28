@@ -551,7 +551,7 @@ TEST_CASE("Editor keeps the line when the output changes", "[freeform][editor]")
     };
     auto doc = Document::from_json({
         {"schema", "seventhslide.freeform"},
-        {"schema_version", 3},
+        {"schema_version", 4},
         {"name", "Lines"},
         {"line_control", true},
         {"next_id", 100},
