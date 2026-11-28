@@ -66,6 +66,8 @@ ALLOWED = {
     "test_throttle.cpp": (2, "a call that must not come, and a rate over a second"),
     "test_video_player.cpp": (2, "a paused clock that must not move, and four seconds of play, each call "
                                  "timed"),
+    "test_video_with_sound.cpp": (6, "stretches of play over which lip sync is measured, each as long as "
+                                     "it says"),
     "test_webengine.cpp": (3, "what Chromium must not draw over the page, in the hidden tests CI's "
                               "webengine job runs"),
 }
