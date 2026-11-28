@@ -376,8 +376,10 @@ TEST_CASE("A record's references are turned by a statement prepared once, howeve
     Database db = current_library();
     db.exec("WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 400) "
             "INSERT INTO songs (id, title, lyrics) SELECT i, 'Hymn ' || i, '' FROM n");
+    // json(): SQLite 3.54 (Qt 6.12.1's, and MSYS2's) hands a subquery's JSON
+    // out as text, which json_object would hold as a string; 3.53 did not.
     db.exec("INSERT INTO style_profiles (id, name, data) SELECT 1, 'Default', json_object('songs', "
-            "(SELECT json_group_object(id, json_object('main', 't1')) FROM songs))");
+            "json((SELECT json_group_object(id, json_object('main', 't1')) FROM songs)))");
     db.exec("INSERT INTO image_folders (id, name) VALUES (1, 'Backgrounds')");
     db.exec("WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 400) "
             "INSERT INTO image_folder_items (folder_id, filename) SELECT 1, 'p' || i || '.png' FROM n");
@@ -392,6 +394,7 @@ TEST_CASE("A record's references are turned by a statement prepared once, howeve
     std::optional<json> doc;
     CHECK(prepared([&] { doc = read_record(db, "style_profiles", profile); }) <= 3);
     REQUIRE(doc);
+    INFO("turned: " << (*doc)["data"].get<std::string>().substr(0, 300));
     CHECK(json::parse((*doc)["data"].get<std::string>())["songs"].size() == 400);
 
     // Written back, its songs turn to this library's ids again.

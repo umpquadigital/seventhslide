@@ -218,8 +218,8 @@ void fill_church(Database& db)
             "INSERT INTO image_folder_items (folder_id, filename, sort_order) "
             "SELECT i / 100 + 1, 'p' || i || '.png', i % 100 FROM n");
     db.exec("INSERT INTO style_profiles (id, name, data) SELECT 1, 'Default', "
-            "json_object('songs', (WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 3000) "
-            "SELECT json_group_object(i, json_object('main', 't1')) FROM n))");
+            "json_object('songs', json((WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 3000) "
+            "SELECT json_group_object(i, json_object('main', 't1')) FROM n)))");
 }
 
 }  // namespace
