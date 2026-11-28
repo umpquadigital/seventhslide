@@ -441,6 +441,63 @@ TEST_CASE("SlideBuilder theme chips resolve per-slide styles", "[session][theme_
     REQUIRE(rt.theme_for_slide(slides - 1).background.color == "#222222");
 }
 
+// A theme change takes what the one before it played with where it sets
+// nothing (Previous), and leaves a theme to the service where it says Above.
+TEST_CASE("SlideBuilder theme chips follow the change before them", "[session][theme_chips]")
+{
+    using seventhslide::model::ThemeEntry;
+
+    OutputConfig oc;
+    oc.name = "Main";
+    oc.id = "out-main";
+    seventhslide::test::set_look(oc, {{"font_size", 48}});
+    oc.song_themes = {
+        ThemeEntry{"t-a", "A", seventhslide::test::flat_style({{"font_size", 32}})},
+        ThemeEntry{"t-b", "B", seventhslide::test::flat_style({{"font_size", 64}})},
+    };
+    oc.bg_themes = {
+        ThemeEntry{"b-a", "BA", {{"background_color", "#111111"}}},
+        ThemeEntry{"b-s", "BS", {{"background_color", "#333333"}}},
+    };
+
+    // TH2 changes the text and keeps TH1's background; TH3 keeps TH2's text
+    // and hands the background back to the service.
+    const json pack = {
+        {"active", "a1"},
+        {"arrangements",
+         json::array({json{{"id", "a1"},
+                           {"name", "Default"},
+                           {"order", "TH1 v1 TH2 c1 TH3 v2"},
+                           {"chips",
+                            {{"TH1", {{"out-main", {{"song", {{"theme", "t-a"}, {"bg", "b-a"}}}}}}},
+                             {"TH2", {{"out-main", {{"song", {{"theme", "t-b"}}}}}}},
+                             {"TH3", {{"out-main", {{"song", {{"bg", "@above"}}}}}}}}}}})}};
+
+    SlideBuildInput in;
+    in.kind = BuildKind::Song;
+    in.selection.kind = ContentKind::Song;
+    in.selection.service_themes = seventhslide::theme::service_themes_from_json(
+        {{"out-main", {{"song", {{"bg", "b-s"}}}}}});
+    in.song.theme_map = pack;
+    in.song.lyrics = "---[Verse:1]---\nHello friends tonight\n\n---[Chorus:1]---\nChorus of the "
+                     "song\n\n---[Verse:2]---\nAnother verse here\n";
+    in.song.verse_order = "TH1 v1 TH2 c1 TH3 v2";
+    in.song.title = "Test";
+    in.outputs = {oc};
+
+    ApproxTextMeasurer measurer;
+    const auto built = build_slides(in, measurer);
+    REQUIRE_FALSE(built.outputs.empty());
+    const auto& rt = built.outputs.front();
+    REQUIRE(rt.segment_themes.size() == 3);
+    CHECK(rt.segment_themes[0].song.font_size == 32);
+    CHECK(rt.segment_themes[0].background.color == "#111111");
+    CHECK(rt.segment_themes[1].song.font_size == 64);
+    CHECK(rt.segment_themes[1].background.color == "#111111");
+    CHECK(rt.segment_themes[2].song.font_size == 64);
+    CHECK(rt.segment_themes[2].background.color == "#333333");
+}
+
 TEST_CASE("follow lines display past a theme chip", "[session][theme_chips][follow]")
 {
     using seventhslide::model::ThemeEntry;

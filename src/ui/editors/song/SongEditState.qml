@@ -100,6 +100,13 @@ QtObject {
     property var arrangements: []        // [{id, name, order, chips}]
     property string activeArrangementId: ""
     property string selectedThemeCode: ""
+    /// Where in the play order the selected theme change was picked: a chip
+    /// can play more than once, and what its Previous takes depends on where.
+    property int selectedThemeIndex: -1
+    /// ``selectedThemeIndex`` while it still holds the selected chip, else the
+    /// chip's first place in the play order; -1 when it has none.
+    readonly property int selectedThemePlace: state.themeChipPlace(state.selectedThemeCode,
+                                                                   state.selectedThemeIndex)
     readonly property var themeChipList: {
         const chips = state.orderChips
         const out = []
@@ -117,13 +124,20 @@ QtObject {
         }
         return state.arrangementLabel("")
     }
-    readonly property string themeInheritLabel: state.libraryMode
-                                               ? qsTr("(Use Service)")
-                                               : qsTr("(Use Service Default)")
-    /// The same choice named in a sentence, without the parentheses.
-    readonly property string themeInheritShort: state.libraryMode
-                                               ? qsTr("Use Service")
-                                               : qsTr("Use Service Default")
+    /// What a theme change's slot takes when it has no theme of its own:
+    /// Previous (unset), what the change before it played with, or Above
+    /// (SongText.inheritAboveId), the next tier in the theme priority. The
+    /// first change has none before it, so its Previous is Above.
+    readonly property var themeInheritChoices: [
+        { id: "", slotName: qsTr("Previous"), caption: qsTr("Inherit from Previous"),
+          label: qsTr("As the theme change before"), previous: true },
+        { id: SongText.inheritAboveId, slotName: qsTr("Above"), caption: qsTr("Inherit from Above"),
+          label: qsTr("Next in the theme priority"), previous: false }
+    ]
+    /// What the selected theme change's Previous takes, by output: what the
+    /// change before it in the play order played with.
+    readonly property var previousThemeMap: SongText.previousThemeMap(
+        state.chipMapsAsEdited(), state.orderChips.map(String), state.selectedThemePlace)
     readonly property bool hasAuthorSelection: state.selectedAuthorIndex >= 0
                                                && state.selectedAuthorIndex < state.authorModel.count
     /// Display wording for the roles the menu offers, in menu order. Mirrors
@@ -278,6 +292,7 @@ QtObject {
                 state.orderChips = SongText.orderTokens(String(cur.order))
             }
             state.selectedThemeCode = ""
+            state.selectedThemeIndex = -1
             state.themeMapEditor.themeMap = {}
             state.ensureThemeChip(false)
             return
@@ -291,6 +306,7 @@ QtObject {
         state.activeArrangementId = "a1"
         state.chipMaps = {}
         state.selectedThemeCode = ""
+        state.selectedThemeIndex = -1
         state.themeMapEditor.themeMap = {}
         state.ensureThemeChip(false)
     }
@@ -372,14 +388,34 @@ QtObject {
         return maps
     }
 
-    function syncThemeMapFromChip(code) {
+    /// Select theme chip ``code``, the one at ``orderIndex`` in the play order
+    /// when given, and load its map into the editor.
+    function syncThemeMapFromChip(code, orderIndex) {
         const id = String(code || "").toUpperCase()
         state.selectedThemeCode = SongText.isThemeCode(id) ? id : ""
+        if (orderIndex !== undefined)
+            state.selectedThemeIndex = orderIndex
         if (!state.selectedThemeCode.length) {
             state.themeMapEditor.themeMap = {}
             return
         }
         state.themeMapEditor.themeMap = Object.assign({}, (state.chipMaps && state.chipMaps[id]) || {})
+    }
+
+    /// ``orderIndex`` when the play order has theme chip ``code`` there, else
+    /// the chip's first place in it; -1 when it has none.
+    function themeChipPlace(code, orderIndex) {
+        const want = String(code || "").toUpperCase()
+        if (!want.length)
+            return -1
+        const at = function (i) { return String(state.orderChips[i] || "").toUpperCase() === want }
+        if (orderIndex >= 0 && orderIndex < state.orderChips.length && at(orderIndex))
+            return orderIndex
+        for (let i = 0; i < state.orderChips.length; ++i) {
+            if (at(i))
+                return i
+        }
+        return -1
     }
 
     function themeChipCodes() {
@@ -396,6 +432,7 @@ QtObject {
         const codes = state.themeChipCodes()
         if (!codes.length) {
             state.selectedThemeCode = ""
+            state.selectedThemeIndex = -1
             state.themeMapEditor.themeMap = {}
             return
         }
@@ -661,7 +698,7 @@ QtObject {
         state.selectedOrderIndex = index
         if (SongText.isThemeCode(code)) {
             state.flushSelectedChipMap()
-            state.syncThemeMapFromChip(code)
+            state.syncThemeMapFromChip(code, index)
             if (!(opts && opts.stayOnLyrics))
                 state.tab = "themes"
             return
@@ -833,7 +870,7 @@ QtObject {
         state.chipMaps = maps
         state.insertOrderChip(code)
         state.flushSelectedChipMap()
-        state.syncThemeMapFromChip(code)
+        state.syncThemeMapFromChip(code, state.orderChips.length - 1)
     }
 
     function removeOrderChip(index) {
@@ -854,6 +891,8 @@ QtObject {
             state.selectedOrderIndex = Math.min(index, next.length - 1)
         else if (state.selectedOrderIndex > index)
             state.selectedOrderIndex -= 1
+        if (state.selectedThemeIndex > index)
+            state.selectedThemeIndex -= 1
     }
 
     function selectArrangement(id) {
@@ -871,6 +910,7 @@ QtObject {
         state.chipMaps = state.cloneChipMaps((a && a.chips) || {})
         state.selectedOrderIndex = state.orderChips.length ? 0 : -1
         state.selectedThemeCode = ""
+        state.selectedThemeIndex = -1
         state.themeMapEditor.themeMap = {}
         state.ensureThemeChip(false)
     }
@@ -955,6 +995,7 @@ QtObject {
         state.chipMaps = state.cloneChipMaps(a.chips || {})
         state.selectedOrderIndex = state.orderChips.length ? 0 : -1
         state.selectedThemeCode = ""
+        state.selectedThemeIndex = -1
         state.themeMapEditor.themeMap = {}
         state.ensureThemeChip(false)
     }

@@ -8,8 +8,11 @@
 //                                                                "bg": id}}}}}]}
 //
 // Theme chips (TH1, TH2, ...) in an arrangement's play order switch themes from
-// that point on; each chip maps outputs to the themes it selects. ``{}`` means
-// the song picks no themes of its own.
+// that point on; each chip maps outputs to the themes it selects. A theme a
+// chip leaves unset is the one the chip before it in the play order played
+// with ("Previous"); ``k_inherit_above`` leaves it to the next tier in the
+// theme priority ("Above"), as does an unset theme on the first chip. ``{}``
+// means the song picks no themes of its own.
 
 #include "seventhslide/theme/theme_picks.hpp"
 
@@ -35,15 +38,43 @@ struct ThemeChipSegment {
     std::string verse_order;
 };
 
+/// One run of the play order and the picks it plays with.
+struct ThemeRun {
+    ThemeChipSegment segment;
+    /// Its chip's picks with Previous and Above settled
+    /// (``OutputThemeMap::following``): what the content tier picks while it
+    /// plays. Empty for the run before the first chip.
+    OutputThemeMap picks;
+};
+
+/// A song's theme chips, by canonical chip id (``TH1``), each holding song
+/// picks only, with ``k_inherit_above`` where it says Above. A chip that
+/// picks nothing is kept, empty.
+using ChipMaps = std::map<std::string, OutputThemeMap, std::less<>>;
+
+/// ``j`` (``{TH1: {<output id>: picks}}``) read as a song stores its chips:
+/// any case of a chip id is the one chip, anything that is not one is dropped.
+[[nodiscard]] ChipMaps chip_maps_from_json(const nlohmann::json& j);
+
+/// ``verse_order`` split at its theme chips (``split_order_by_theme_chips``),
+/// each run with what it plays with under ``chips``: its chip's picks laid
+/// over those of the chip before it in the order.
+[[nodiscard]] std::vector<ThemeRun> theme_runs(const ChipMaps& chips, std::string_view verse_order);
+
+/// What the theme change at token ``place`` of ``verse_order`` takes for
+/// Previous under ``chips``: what the change before it played with. Empty
+/// when no change comes before it.
+[[nodiscard]] OutputThemeMap previous_chip_picks(const ChipMaps& chips,
+                                                 std::string_view verse_order,
+                                                 std::size_t place);
+
 /// One of a song's arrangements: a named play order and the themes its chips pick.
 struct SongArrangement {
     /// Never empty.
     std::string id;
     std::string name;
     std::string order;
-    /// By canonical chip id (``TH1``), each holding song picks only. A chip
-    /// that picks nothing is kept, empty.
-    std::map<std::string, OutputThemeMap, std::less<>> chips;
+    ChipMaps chips;
 
     [[nodiscard]] bool operator==(const SongArrangement&) const = default;
 };
@@ -72,9 +103,14 @@ public:
         return arrangements_;
     }
 
-    /// The picks chip ``chip_id`` (any case) makes in the active arrangement.
-    /// Empty (inherit) for an empty or unknown chip, or a chip that picks nothing.
-    [[nodiscard]] OutputThemeMap chip(std::string_view chip_id) const;
+    /// The picks chip ``chip_id`` (any case) makes in the active arrangement,
+    /// as stored. Not what it plays with: it holds ``k_inherit_above`` for
+    /// Above and nothing for Previous, which ``runs`` settles. Empty for an
+    /// empty or unknown chip, or a chip that picks nothing.
+    [[nodiscard]] OutputThemeMap stored_chip(std::string_view chip_id) const;
+
+    /// ``theme_runs`` of ``verse_order`` under the active arrangement's chips.
+    [[nodiscard]] std::vector<ThemeRun> runs(std::string_view verse_order) const;
 
     [[nodiscard]] bool operator==(const SongThemeMap&) const = default;
 

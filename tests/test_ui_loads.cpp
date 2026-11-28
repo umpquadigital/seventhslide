@@ -8,6 +8,7 @@
 #include "library_models.hpp"
 #include "media_controller.hpp"
 #include "operator_ui.hpp"
+#include "qvariant_json.hpp"
 #include "output_settings_controller.hpp"
 #include "remote_controller.hpp"
 #include "facade_all.hpp"
@@ -1537,6 +1538,69 @@ TEST_CASE("The song editor renumbers and retypes verses", "[ui][song-edit]")
     const auto verses = state->property("verses").toList();
     CHECK(verses.at(1).toMap().value(QStringLiteral("content"))
           == verses.at(0).toMap().value(QStringLiteral("content")));
+    INFO(ui.warnings());
+    CHECK(ui.warnings().empty());
+}
+
+// A chip can play more than once: the theme change picked is the one at the
+// place it was picked, and its Previous is what played before that place.
+TEST_CASE("The song editor's Previous follows the place a theme change is picked",
+          "[ui][song-edit]")
+{
+    seventhslide::test::ensure_qt_application();
+    const seventhslide::test::TempDir dir;
+    SessionFacade facade;
+    REQUIRE(facade.open_database(dir.path / "library.db"));
+    const auto song_pick = [](nlohmann::json pick) {
+        return nlohmann::json{{"out-x", {{"song", std::move(pick)}}}};
+    };
+    seventhslide::model::Song song;
+    song.title = "Changes";
+    song.lyrics = "---[Verse:1]---\nOne\n---[Verse:2]---\nTwo\n---[Chorus:1]---\nChorus";
+    song.verse_order = "TH1 v1 TH2 v2 TH1 c1";
+    song.theme_map = {
+        {"active", "a1"},
+        {"arrangements",
+         nlohmann::json::array({{{"id", "a1"},
+                                 {"name", "Default"},
+                                 {"order", song.verse_order},
+                                 {"chips",
+                                  {{"TH1", song_pick({{"theme", "t-a"}, {"bg", "b-a"}})},
+                                   {"TH2", song_pick({{"theme", "t-b"}})}}}}})}};
+    const auto id = facade.song_repo()->insert(song);
+
+    OperatorUi ui(facade);
+    QObject* dialog = ui.find_component("SongEditDialog");
+    REQUIRE(dialog != nullptr);
+    REQUIRE(QMetaObject::invokeMethod(dialog, "openLibrary",
+                                      Q_ARG(QVariant, QVariant::fromValue<qint64>(id))));
+    QObject* state = qml_object(dialog, "SongEditState");
+    REQUIRE(state != nullptr);
+    QTest::qWait(20);
+    const QVariant on_lyrics = QVariantMap{{QStringLiteral("stayOnLyrics"), true}};
+    const auto pick = [&](int index) {
+        REQUIRE(QMetaObject::invokeMethod(state, "selectOrderChip", Q_ARG(QVariant, index),
+                                          Q_ARG(QVariant, on_lyrics)));
+    };
+    const auto previous = [&] {
+        return seventhslide::app::to_json(state->property("previousThemeMap"));
+    };
+
+    pick(4);
+    CHECK(state->property("selectedThemeCode").toString() == QStringLiteral("TH1"));
+    CHECK(state->property("selectedThemePlace").toInt() == 4);
+    CHECK(previous() == song_pick({{"theme", "t-b"}, {"bg", "b-a"}}));
+
+    // Picking a verse moves the order's selection, not the theme change's.
+    pick(5);
+    CHECK(state->property("selectedThemePlace").toInt() == 4);
+
+    pick(0);
+    CHECK(state->property("selectedThemePlace").toInt() == 0);
+    CHECK(previous() == nlohmann::json::object());
+
+    pick(2);
+    CHECK(previous() == song_pick({{"theme", "t-a"}, {"bg", "b-a"}}));
     INFO(ui.warnings());
     CHECK(ui.warnings().empty());
 }

@@ -535,6 +535,8 @@ QtObject {
     readonly property int sidebarRowH: 32
     /// How far a switched-off row's name and tile fade (a Bible that is off).
     readonly property real offOpacity: 0.45
+    /// How far a theme slot's thumbnail fades when it shows a theme it inherits.
+    readonly property real inheritedOpacity: 0.45
     /// A pick-list row with a second line; one line is listRowH.
     readonly property int listRowTallH: 44
     /// Field widths, so right edges line up down a form.

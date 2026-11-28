@@ -37,6 +37,20 @@ enum class ThemeField {
 /// The field ``name`` spells, if any.
 [[nodiscard]] std::optional<ThemeField> theme_field_from_string(std::string_view name) noexcept;
 
+/// What a song's theme change stores in place of an id to leave that theme to
+/// the next tier in the theme priority ("Above"). An unset id there takes what
+/// the change before it played with ("Previous"). No theme id is spelled so:
+/// they are hex (``new_theme_id``).
+inline constexpr std::string_view k_inherit_above = "@above";
+
+/// Whether picks read from storage keep ``k_inherit_above``. Only a song's
+/// theme changes do: they are the only picks with a change before them, so
+/// the only ones where an unset id does not already mean Above.
+enum class AboveMarks {
+    Drop,
+    Keep,
+};
+
 /**
  * The text and background theme one tier picks for one category, by library id.
  *
@@ -65,8 +79,10 @@ public:
     ThemePicks() = default;
 
     /// ``j``'s picks for the ``allowed`` categories, ids trimmed. Anything not
-    /// a non-blank string is unset, as is everything when ``j`` is not an object.
-    [[nodiscard]] static ThemePicks from_json(const nlohmann::json& j, CategorySet allowed);
+    /// a non-blank string is unset, as is everything when ``j`` is not an object,
+    /// and so is ``k_inherit_above`` unless ``above`` keeps it.
+    [[nodiscard]] static ThemePicks from_json(const nlohmann::json& j, CategorySet allowed,
+                                              AboveMarks above = AboveMarks::Drop);
     /// The categories with a pick, and in each only the ids set.
     [[nodiscard]] nlohmann::json to_json() const;
 
@@ -76,6 +92,12 @@ public:
     bool set(ThemeCategory category, ThemeField field, std::string id);
 
     [[nodiscard]] bool empty() const noexcept;
+
+    /// What a song's theme change making these picks plays with, after one
+    /// that played with ``previous``: each id it sets, ``previous``'s where it
+    /// sets none, and none where it says ``k_inherit_above``. Holds no
+    /// ``k_inherit_above`` itself.
+    [[nodiscard]] ThemePicks following(const ThemePicks& previous) const;
 
     [[nodiscard]] bool operator==(const ThemePicks&) const = default;
 
@@ -93,14 +115,19 @@ public:
     OutputThemeMap() = default;
 
     /// ``j``'s per-output picks for the ``allowed`` categories
-    /// (``ThemePicks::from_json``). An entry that is not an object, or picks
-    /// nothing, is dropped; so is everything when ``j`` is not an object.
-    [[nodiscard]] static OutputThemeMap from_json(const nlohmann::json& j, CategorySet allowed);
+    /// (``ThemePicks::from_json``, keeping ``k_inherit_above`` as ``above``
+    /// says). An entry that is not an object, or picks nothing, is dropped; so
+    /// is everything when ``j`` is not an object.
+    [[nodiscard]] static OutputThemeMap from_json(const nlohmann::json& j, CategorySet allowed,
+                                                  AboveMarks above = AboveMarks::Drop);
     [[nodiscard]] nlohmann::json to_json() const;
 
     /// What the tier picks for ``output_id``; empty when it picks nothing.
     [[nodiscard]] const ThemePicks& picks(std::string_view output_id) const;
     [[nodiscard]] bool empty() const noexcept { return picks_.empty(); }
+
+    /// ``ThemePicks::following`` for every output either map picks for.
+    [[nodiscard]] OutputThemeMap following(const OutputThemeMap& previous) const;
 
     [[nodiscard]] bool operator==(const OutputThemeMap&) const = default;
 

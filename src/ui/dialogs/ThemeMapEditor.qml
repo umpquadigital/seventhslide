@@ -21,8 +21,15 @@ QtObject {
     required property string scope
     /// The map being edited. The owner loads it and reads it back to save.
     property var themeMap: ({})
-    /// What an unset slot falls back to ("Use Service", "Output Default").
-    property string inheritShort: ""
+    /// What a slot can take in place of a theme of its own, first the one an
+    /// unset slot means: each ``{id, slotName, caption, label, previous}``, with
+    /// the id stored for it, what a slot shows ("Previous", "Output Default"),
+    /// the picker tile's name and the words in its frame, and whether it takes
+    /// ``previousMap``'s theme.
+    property var inheritChoices: [{ id: "", slotName: "", caption: "", label: "", previous: false }]
+    /// What a slot that takes the previous theme takes, a map of this shape
+    /// (the song editor's change before the selected one).
+    property var previousMap: ({})
     /// The picker's subtitle per theme library; empty keeps the picker's own
     /// wording.
     property string pickerTextSubtitle: ""
@@ -52,6 +59,25 @@ QtObject {
         editor.themeMap = ThemeMap.withThemeId(editor.themeMap, outputId, category, field,
                                                themeId)
         editor.edited()
+    }
+
+    /// The choice of ``inheritChoices`` that ``themeId`` stands for, or null
+    /// for a theme.
+    function inheritChoice(themeId) {
+        const id = String(themeId || "")
+        for (let i = 0; i < editor.inheritChoices.length; ++i) {
+            if (String(editor.inheritChoices[i].id || "") === id)
+                return editor.inheritChoices[i]
+        }
+        return id.length ? null : editor.inheritChoices[0] || null
+    }
+
+    /// The theme ``outputId``'s slot takes through its inherit choice
+    /// ``themeId``, where the editor knows it; "" otherwise.
+    function inheritedId(outputId, category, field, themeId) {
+        const choice = editor.inheritChoice(themeId)
+        return choice && choice.previous
+               ? ThemeMap.themeId(editor.previousMap, outputId, category, field) : ""
     }
 
     /// The name of theme ``themeId`` in the ``kind`` library ("Inherit" for
@@ -88,11 +114,9 @@ QtObject {
         editor.picker.titleText = ""
         editor.picker.subtitleText = slot.kind === "bg" ? editor.pickerBgSubtitle
                                                         : editor.pickerTextSubtitle
-        editor.picker.showInherit = true
-        // The Inherit card is named as the slots name it; its thumbnail is
-        // the same empty frame.
-        editor.picker.inheritLabel = ""
-        editor.picker.inheritCaption = editor.inheritShort
+        editor.picker.inheritTiles = editor.inheritChoices.map(function (choice) {
+            return { id: choice.id, label: choice.label, caption: choice.caption }
+        })
         editor.picker.openFor(outputName, slot.kind,
                               editor.themeId(outputId, slot.category, slot.field))
     }

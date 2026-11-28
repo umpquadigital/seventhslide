@@ -192,7 +192,12 @@ FocusScope {
         session: root.session
         picker: themePicker
         scope: "song"
-        inheritShort: songEditState.themeInheritShort
+        inheritChoices: songEditState.themeInheritChoices
+        previousMap: songEditState.previousThemeMap
+        pickerTextSubtitle: qsTr("Choose a theme for this output from this change on, or inherit it "
+                                 + "from the change before or from above.")
+        pickerBgSubtitle: qsTr("Choose a background theme for this output from this change on, or "
+                               + "inherit it from the change before or from above.")
         editable: songEditState.selectedThemeCode.length > 0
         onEdited: songEditState.flushSelectedChipMap()
     }

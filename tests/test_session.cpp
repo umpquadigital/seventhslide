@@ -103,8 +103,9 @@ TEST_CASE("Session play_song matches the song fixtures end to end", "[session][o
 }
 
 // A rundown song carries its theme chips in its snapshot; each run of its play
-// order takes its chip's picks over the service's, and the service's where a
-// chip leaves one to it.
+// order takes its chip's picks over the service's, what the chip before it
+// played with where it sets none (Previous), and the service's where a chip
+// leaves one to it (Above).
 TEST_CASE("Session plays a rundown song's theme chips over the service's themes",
           "[session][theme_chips]")
 {
@@ -127,17 +128,18 @@ TEST_CASE("Session plays a rundown song's theme chips over the service's themes"
     song_item.item_id = 1;
     song_item.data = {
         {"title", "Chips"},
-        {"lyrics", "---[Verse:1]---\nOne\n---[Verse:2]---\nTwo\n"},
-        {"verse_order", "TH1 v1 TH2 v2"},
+        {"lyrics", "---[Verse:1]---\nOne\n---[Verse:2]---\nTwo\n---[Verse:3]---\nThree\n"},
+        {"verse_order", "TH1 v1 TH2 v2 TH3 v3"},
         {"theme_map",
          {{"active", "a1"},
           {"arrangements",
            json::array({{{"id", "a1"},
                          {"name", "Default"},
-                         {"order", "TH1 v1 TH2 v2"},
+                         {"order", "TH1 v1 TH2 v2 TH3 v3"},
                          {"chips",
                           {{"TH1", {{"out-main", {{"song", {{"bg", "dusk"}}}}}}},
-                           {"TH2", {{"out-main", {{"song", {{"theme", "t2"}}}}}}}}}}})}}},
+                           {"TH2", {{"out-main", {{"song", {{"theme", "t2"}}}}}}},
+                           {"TH3", {{"out-main", {{"song", {{"bg", "@above"}}}}}}}}}}})}}},
     };
     session.open_service(1,
                          seventhslide::theme::service_themes_from_json(
@@ -148,9 +150,11 @@ TEST_CASE("Session plays a rundown song's theme chips over the service's themes"
     const auto& rt = session.focused_stack().program.last_build().outputs.front();
     const int last = rt.slide_count() - 1;
     REQUIRE(last >= 1);
-    REQUIRE(rt.segment_themes.size() == 2);
+    REQUIRE(rt.segment_themes.size() == 3);
     CHECK(rt.theme_for_slide(0).background.color == "#303030");
     CHECK(rt.theme_for_slide(0).song.font_size == 56);
+    CHECK(rt.segment_themes[1].background.color == "#303030");
+    CHECK(rt.segment_themes[1].song.font_size == 72);
     CHECK(rt.theme_for_slide(last).background.color == "#202020");
     CHECK(rt.theme_for_slide(last).song.font_size == 72);
 }

@@ -260,7 +260,7 @@ TEST_CASE("A converted library holds Song, Bible and Media themes, and picks per
 
         // A song's chips choose song themes.
         const auto chips_of = [](const json& pack) {
-            return seventhslide::theme::SongThemeMap::from_json(pack).chip("TH1").picks("out-main");
+            return seventhslide::theme::SongThemeMap::from_json(pack).stored_chip("TH1").picks("out-main");
         };
         const auto song_map = json_of(db, QStringLiteral("SELECT theme_map FROM songs"));
         CHECK(chips_of(song_map).of(ThemeCategory::Song) == ThemePick{.theme = "t1", .bg = "b2"});

@@ -9,6 +9,7 @@
 
 #include <QString>
 #include <QStringList>
+#include <QVariantMap>
 
 using seventhslide::app::SongText;
 
@@ -47,4 +48,36 @@ TEST_CASE("SongText: a topic is added as a save would store it", "[app][songtext
         full.push_back(QStringLiteral("Topic %1").arg(i));
     }
     CHECK(SongText::withTopic(full, QStringLiteral("One more")) == full);
+}
+
+TEST_CASE("SongText: a theme change's Previous is what the change before it played with",
+          "[app][songtext]")
+{
+    const auto song_pick = [](QVariantMap pick) {
+        return QVariantMap{{QStringLiteral("out-main"), QVariantMap{{QStringLiteral("song"), pick}}}};
+    };
+    const QVariantMap chips{
+        {QStringLiteral("TH1"),
+         song_pick({{QStringLiteral("theme"), QStringLiteral("t-a")},
+                    {QStringLiteral("bg"), QStringLiteral("b-a")}})},
+        {QStringLiteral("TH2"), song_pick({{QStringLiteral("theme"), QStringLiteral("t-b")}})},
+        {QStringLiteral("TH3"), song_pick({{QStringLiteral("bg"), SongText::inheritAboveId()}})},
+    };
+    const QStringList order{QStringLiteral("TH1"), QStringLiteral("V1"), QStringLiteral("TH2"),
+                            QStringLiteral("C1"),  QStringLiteral("TH3"), QStringLiteral("V2"),
+                            QStringLiteral("TH1"), QStringLiteral("C1")};
+
+    CHECK(SongText::previousThemeMap(chips, order, 0).isEmpty());
+    CHECK(SongText::previousThemeMap(chips, order, 2)
+          == song_pick({{QStringLiteral("theme"), QStringLiteral("t-a")},
+                        {QStringLiteral("bg"), QStringLiteral("b-a")}}));
+    CHECK(SongText::previousThemeMap(chips, order, 4)
+          == song_pick({{QStringLiteral("theme"), QStringLiteral("t-b")},
+                        {QStringLiteral("bg"), QStringLiteral("b-a")}}));
+    // TH1 again, after TH3's Above: where a chip plays decides its Previous.
+    CHECK(SongText::previousThemeMap(chips, order, 6)
+          == song_pick({{QStringLiteral("theme"), QStringLiteral("t-b")}}));
+    // A place outside the order has no change before it.
+    CHECK(SongText::previousThemeMap(chips, order, -1).isEmpty());
+    CHECK(SongText::previousThemeMap(chips, order, 8).isEmpty());
 }

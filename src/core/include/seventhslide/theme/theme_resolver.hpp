@@ -26,9 +26,9 @@ struct ThemeSelection {
     /// The open service's picks.
     OutputThemeMap service_themes;
     /// The content's own picks: a rundown item's (a Bible passage, a picture),
-    /// or a song's for the part of it being resolved, those of the theme chip
-    /// it plays under (``SongThemeMap::chip``). A song's are set only by the
-    /// build, per run of the play order, from the song it lays out
+    /// or a song's for the part of it being resolved, what the theme chip it
+    /// plays under plays with (``SongThemeMap::runs``). A song's are set only
+    /// by the build, per run of the play order, from the song it lays out
     /// (``build::SlideBuildInput::song``).
     OutputThemeMap content_themes;
     /// Highest->lowest priority permutation of content/service/global (empty -> default).

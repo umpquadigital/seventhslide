@@ -224,7 +224,8 @@ Item {
         session: root.session
         picker: themePicker
         scope: "service"
-        inheritShort: qsTr("Output Default")
+        inheritChoices: [{ id: "", slotName: qsTr("Output Default"),
+                           caption: qsTr("Output Default"), label: "", previous: false }]
         pickerTextSubtitle: qsTr("Choose a theme for this output, or keep the output default.")
         pickerBgSubtitle: qsTr("Choose a background theme for this output, or keep the output default.")
     }

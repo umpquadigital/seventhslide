@@ -3,7 +3,7 @@ import SeventhSlide
 
 // Picks a theme of one kind (song, Bible, media or background) for one output
 // (song editor, service settings, Freeform fill), in a WindowShell: the theme gallery the output
-// dialog shows, led by an Inherit tile, with Cancel / Select. The caller's
+// dialog shows, led by its Inherit tiles, with Cancel / Select. The caller's
 // hint (``subtitleText``) sits in the footer.
 Item {
     id: root
@@ -17,9 +17,10 @@ Item {
     property string outputName: ""
     property string kind: "song" // one of session.themes.kinds
     property string selectedId: ""
-    property bool showInherit: true
-    property string inheritLabel: qsTr("Inherit")
-    property string inheritCaption: qsTr("Inherit")
+    /// The tiles that lead the gallery for no theme of its own, each
+    /// ``{id, label, caption}`` (ThemeGalleryView.inheritTiles): what a pick
+    /// of one hands back, the words in its frame and its name.
+    property var inheritTiles: [{ id: "", label: qsTr("Inherit"), caption: qsTr("Inherit") }]
     property string titleText: ""
     property string subtitleText: ""
     property int galleryRevision: 0
@@ -129,9 +130,7 @@ Item {
             outputName: root.outputName
             kind: root.kind
             selectedId: root.selectedId
-            showInherit: root.showInherit
-            inheritLabel: root.inheritLabel
-            inheritCaption: root.inheritCaption
+            inheritTiles: root.inheritTiles
             onPicked: function (themeId) { root.selectedId = themeId }
             onActivated: function (themeId) {
                 root.selectedId = themeId

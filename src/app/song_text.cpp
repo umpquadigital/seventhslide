@@ -51,6 +51,11 @@ QString SongText::defaultArrangementName()
     return QString::fromUtf8(theme::k_default_arrangement_name);
 }
 
+QString SongText::inheritAboveId()
+{
+    return QString::fromUtf8(theme::k_inherit_above);
+}
+
 QVariantList SongText::verses(const QString& lyrics)
 {
     QVariantList out;
@@ -192,6 +197,19 @@ QVariantMap SongText::packThemeMap(const QVariantList& arrangements, const QStri
     return to_qvariant(
                theme::pack_song_theme_map(to_json(arrangements), active.toStdString()).to_json())
         .toMap();
+}
+
+QVariantMap SongText::previousThemeMap(const QVariantMap& chips,
+                                       const QStringList& order,
+                                       int place)
+{
+    if (place < 0 || place >= order.size()) {
+        return {};
+    }
+    const auto picks = theme::previous_chip_picks(theme::chip_maps_from_json(to_json(chips)),
+                                                  order.join(QLatin1Char(' ')).toStdString(),
+                                                  static_cast<std::size_t>(place));
+    return to_qvariant(picks.to_json()).toMap();
 }
 
 }  // namespace seventhslide::app

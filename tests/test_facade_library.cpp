@@ -2,6 +2,7 @@
 
 #include "session_facade_fixture.hpp"
 #include "refusals.hpp"
+#include "song_text.hpp"
 #include "test_temp_dir.hpp"
 
 #include <seventhslide/db/service_repository.hpp>
@@ -958,6 +959,58 @@ TEST_CASE("SessionFacade library song theme pack round-trip", "[app][theme_map]"
                 .value(QStringLiteral("song")).toMap()
                 .value(QStringLiteral("theme")).toString()
             == QStringLiteral("tid-pack"));
+}
+
+// Above is stored as itself through every save a song's themes go through:
+// the library's, and the service's copy of the song.
+TEST_CASE("SessionFacade keeps a theme change's Above through library and service saves",
+          "[app][theme_map]")
+{
+    seventhslide::test::ensure_qt_application();
+    SessionFacade facade;
+    REQUIRE(facade.open_memory_database());
+
+    const QString above = seventhslide::app::SongText::inheritAboveId();
+    QVariantMap main;
+    main.insert(QStringLiteral("theme"), QStringLiteral("tid-1"));
+    main.insert(QStringLiteral("bg"), above);
+    QVariantMap theme_map;
+    theme_map.insert(QStringLiteral("Main"), in_category(QStringLiteral("song"), main));
+    const auto bg_of = [](const QVariant& stored) {
+        return first_chip(stored)
+            .value(QStringLiteral("Main"))
+            .toMap()
+            .value(QStringLiteral("song"))
+            .toMap()
+            .value(QStringLiteral("bg"))
+            .toString();
+    };
+
+    QVariantMap meta;
+    meta.insert(QStringLiteral("themeMap"), song_theme_map_with_chip(theme_map));
+    const auto created = facade.library()->createSong(
+        QStringLiteral("Hope"), QStringLiteral("---[Verse:1]---\nLine one\n"),
+        QStringLiteral("TH1 v1"), meta);
+    REQUIRE_FALSE(created.contains(QStringLiteral("error")));
+    const auto song_id = created.value(QStringLiteral("songId")).toLongLong();
+    CHECK(bg_of(facade.library()->getSong(song_id).value(QStringLiteral("themeMap"))) == above);
+
+    REQUIRE(facade.library()->createService(QStringLiteral("Theme svc")) > 0);
+    REQUIRE(facade.library()->addSongToService(song_id));
+    const auto item_id = facade.serviceItems()
+                             ->data(facade.serviceItems()->index(0),
+                                    seventhslide::app::ServiceItemModel::ItemIdRole)
+                             .toLongLong();
+    CHECK(bg_of(facade.library()->getServiceSongItem(item_id).value(QStringLiteral("themeMap")))
+          == above);
+    REQUIRE(facade.library()
+                ->updateServiceSongItem(item_id, QStringLiteral("Hope"),
+                                        QStringLiteral("---[Verse:1]---\nLine one\n"),
+                                        QStringLiteral("TH1 v1"),
+                                        song_theme_map_with_chip(theme_map))
+                .isEmpty());
+    CHECK(bg_of(facade.library()->getServiceSongItem(item_id).value(QStringLiteral("themeMap")))
+          == above);
 }
 
 TEST_CASE("SessionFacade service song themeMap round-trip", "[app][theme_map]")

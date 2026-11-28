@@ -3,8 +3,9 @@ import QtQuick.Layouts
 import SeventhSlide
 
 // One of an output's theme choices in a theme map: a tile with the theme's
-// thumbnail (an empty frame for Inherit), what it is (Text, Background) and
-// its name; clicking opens the picker. Shared by the song editor's and the
+// thumbnail (an empty frame for Inherit, or faded, the theme it inherits when
+// the map knows it), what it is (Text, Background) and its name; clicking
+// opens the picker. Shared by the song editor's and the
 // service settings' Themes pages, which each hand it their ThemeMapEditor and
 // one of its slots. The caller gives it a width; two sit side by side.
 Rectangle {
@@ -17,12 +18,29 @@ Rectangle {
     readonly property string kind: String(slot.pick.kind || "")
     readonly property string selectedId: slot.map.themeId(slot.outputId, slot.pick.category,
                                                           slot.pick.field)
+    /// The map's inherit choice the slot holds, or null for a theme of its own.
+    readonly property var inheritChoice: slot.map.inheritChoice(slot.selectedId)
+    readonly property bool isInherit: slot.inheritChoice !== null
+    /// The theme the slot shows: its own, or the one it inherits ("" for none known).
+    readonly property string shownId: slot.isInherit
+                                      ? slot.map.inheritedId(slot.outputId, slot.pick.category,
+                                                             slot.pick.field, slot.selectedId)
+                                      : slot.selectedId
     readonly property string displayName: slot.map.displayName(slot.outputName, slot.kind,
-                                                               slot.selectedId)
+                                                               slot.shownId)
     readonly property string thumbUrl: slot.map.thumbUrl(slot.outputName, slot.kind,
-                                                         slot.selectedId)
-    readonly property bool isInherit: slot.selectedId.length === 0
-    readonly property bool isUnknown: !slot.isInherit && slot.displayName === qsTr("Unknown")
+                                                         slot.shownId)
+    readonly property bool isUnknown: slot.shownId.length > 0
+                                      && slot.displayName === qsTr("Unknown")
+    /// The second line: the theme's name, or the inherit choice's, with the
+    /// theme it inherits after it.
+    readonly property string nameText: {
+        if (!slot.isInherit)
+            return slot.displayName
+        const choiceName = String(slot.inheritChoice.slotName || "")
+        return slot.shownId.length ? qsTr("%1 · %2").arg(choiceName).arg(slot.displayName)
+                                   : choiceName
+    }
     readonly property int thumbW: 68
     readonly property int thumbH: 38
 
@@ -50,7 +68,9 @@ Rectangle {
                 id: slotThumb
                 anchors.fill: parent
                 anchors.margins: 1
-                visible: !slot.isInherit && !slot.isUnknown
+                visible: slot.shownId.length > 0 && !slot.isUnknown
+                // An inherited theme is not the slot's own.
+                opacity: slot.isInherit ? Style.inheritedOpacity : 1
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 cache: true
@@ -78,7 +98,7 @@ Rectangle {
             }
             Text {
                 width: parent.width
-                text: slot.isInherit ? slot.map.inheritShort : slot.displayName
+                text: slot.nameText
                 color: slot.isInherit ? Style.textSoft : Style.textBright
                 font.pixelSize: Style.fontBody
                 font.weight: Font.DemiBold

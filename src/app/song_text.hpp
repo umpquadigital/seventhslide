@@ -22,12 +22,16 @@ class SongText : public QObject {
     /// What an arrangement the operator has not named is stored as
     /// (theme::k_default_arrangement_name). Shown as qsTr("Default").
     Q_PROPERTY(QString defaultArrangementName READ defaultArrangementName CONSTANT)
+    /// What a theme change stores for a theme it leaves to the theme priority
+    /// ("Above", theme::k_inherit_above). An unset one is "Previous".
+    Q_PROPERTY(QString inheritAboveId READ inheritAboveId CONSTANT)
 
 public:
     using QObject::QObject;
 
     [[nodiscard]] static QStringList verseTypes();
     [[nodiscard]] static QString defaultArrangementName();
+    [[nodiscard]] static QString inheritAboveId();
 
     /// ``lyrics`` as ``[{label, content}]`` (parse::labelled_verses).
     Q_INVOKABLE [[nodiscard]] static QVariantList verses(const QString& lyrics);
@@ -84,6 +88,14 @@ public:
     /// (theme::pack_song_theme_map): ``{}`` for a song with no themes of its own.
     Q_INVOKABLE [[nodiscard]] static QVariantMap packThemeMap(const QVariantList& arrangements,
                                                               const QString& active);
+    /// What the theme change at ``place`` in the play order ``order`` takes
+    /// for Previous ({outputId: {category: {theme, bg}}}): what the change
+    /// before it played with (theme::previous_chip_picks). ``chips`` is the
+    /// editor's ``{TH1: map}``. ``{}`` when no change comes before it, or
+    /// ``place`` is not in the order.
+    Q_INVOKABLE [[nodiscard]] static QVariantMap previousThemeMap(const QVariantMap& chips,
+                                                                  const QStringList& order,
+                                                                  int place);
 };
 
 }  // namespace seventhslide::app

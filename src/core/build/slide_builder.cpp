@@ -106,16 +106,18 @@ struct ThemeOrderSegment {
 {
     std::vector<ThemeOrderSegment> out;
     if (theme::verse_order_has_theme_chips(input.song.verse_order)) {
+        // A chip with nothing after it plays nothing, but the next one can
+        // still take its picks: runs() settles them before any is skipped.
         const auto stored = theme::SongThemeMap::from_json(input.song.theme_map);
-        for (auto& seg : theme::split_order_by_theme_chips(input.song.verse_order)) {
-            if (seg.verse_order.empty()) {
+        for (auto& run : stored.runs(input.song.verse_order)) {
+            if (run.segment.verse_order.empty()) {
                 continue;
             }
             ThemeOrderSegment w;
-            w.chip_id = seg.chip_id;
-            w.verse_order = std::move(seg.verse_order);
+            w.chip_id = std::move(run.segment.chip_id);
+            w.verse_order = std::move(run.segment.verse_order);
             w.selection = input.selection;
-            w.selection.content_themes = stored.chip(w.chip_id);
+            w.selection.content_themes = std::move(run.picks);
             out.push_back(std::move(w));
         }
         return out;

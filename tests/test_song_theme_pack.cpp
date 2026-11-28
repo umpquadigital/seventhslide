@@ -4,10 +4,13 @@
 
 #include <nlohmann/json.hpp>
 
+#include <string>
 #include <string_view>
+#include <vector>
 
 using nlohmann::json;
 using seventhslide::theme::canonical_theme_chip_id;
+using seventhslide::theme::k_inherit_above;
 using seventhslide::theme::SongThemeMap;
 using seventhslide::theme::split_order_by_theme_chips;
 using seventhslide::theme::verse_order_has_theme_chips;
@@ -23,7 +26,7 @@ namespace {
 /// What chip ``chip_id`` of ``raw`` picks, as stored.
 [[nodiscard]] json chip_of(const json& raw, std::string_view chip_id)
 {
-    return SongThemeMap::from_json(raw).chip(chip_id).to_json();
+    return SongThemeMap::from_json(raw).stored_chip(chip_id).to_json();
 }
 
 }  // namespace
@@ -187,4 +190,97 @@ TEST_CASE("The song editor's arrangements pack to what a song stores", "[theme][
     CHECK(two.at("active") == "a1");
     CHECK(two.at("arrangements")[0].at("name") == k_default_arrangement_name);
     CHECK(two.at("arrangements")[1].at("id") == "a2");
+}
+
+namespace {
+
+/// A one-arrangement song map whose chips are ``chips``.
+[[nodiscard]] json song_map(const json& chips)
+{
+    return {{"active", "a1"},
+            {"arrangements", json::array({json{{"id", "a1"}, {"chips", chips}}})}};
+}
+
+/// What each run of ``order`` plays with in ``map``, as stored.
+[[nodiscard]] std::vector<json> played(const json& map, std::string_view order)
+{
+    std::vector<json> out;
+    for (const auto& run : SongThemeMap::from_json(map).runs(order)) {
+        out.push_back(run.picks.to_json());
+    }
+    return out;
+}
+
+[[nodiscard]] json main_song(const json& song_pick)
+{
+    return {{"out-main", {{"song", song_pick}}}};
+}
+
+}  // namespace
+
+TEST_CASE("A song keeps a theme change's Above, and nothing else does", "[theme][song_pack]")
+{
+    const auto above = std::string(k_inherit_above);
+    const json chips = {{"TH2", main_song({{"theme", "t-b"}, {"bg", above}})}};
+    REQUIRE(chip_of(song_map(chips), "TH2") == main_song({{"theme", "t-b"}, {"bg", above}}));
+    REQUIRE(compact(song_map(chips))["arrangements"][0]["chips"] == chips);
+
+    // A service, a rundown item or an output default has no change before it:
+    // unset is already Above there, and Above is not a theme.
+    const auto service =
+        seventhslide::theme::service_themes_from_json(main_song({{"theme", "t-s"}, {"bg", above}}));
+    REQUIRE(service.to_json() == main_song({{"theme", "t-s"}}));
+}
+
+TEST_CASE("A theme change takes what the one before it played with", "[theme][song_pack]")
+{
+    const auto above = std::string(k_inherit_above);
+    const json map = song_map({{"TH1", main_song({{"theme", "t-a"}, {"bg", "b-a"}})},
+                               {"TH2", main_song({{"theme", "t-b"}})},
+                               {"TH3", main_song({{"bg", above}})},
+                               {"TH4", json::object()}});
+
+    // Previous (unset) keeps the change before's; Above hands the slot on,
+    // and the change after an Above takes the Above too.
+    const auto runs = played(map, "V1 TH1 V2 TH2 C1 TH3 V3 TH4 V4");
+    REQUIRE(runs.size() == 5);
+    CHECK(runs[0].empty());
+    CHECK(runs[1] == main_song({{"theme", "t-a"}, {"bg", "b-a"}}));
+    CHECK(runs[2] == main_song({{"theme", "t-b"}, {"bg", "b-a"}}));
+    CHECK(runs[3] == main_song({{"theme", "t-b"}}));
+    CHECK(runs[4] == main_song({{"theme", "t-b"}}));
+
+    // The first change has none before it: Previous there is Above.
+    CHECK(played(map, "TH2 V1") == std::vector<json>{main_song({{"theme", "t-b"}})});
+    CHECK(played(map, "TH3 V1") == std::vector<json>{json::object()});
+
+    // Previous is the change before in the play order, wherever a chip
+    // appears; a chip with nothing after it still hands its picks on.
+    CHECK(played(map, "TH2 V1 TH1 V2 TH2 C1").back()
+          == main_song({{"theme", "t-b"}, {"bg", "b-a"}}));
+    const auto adjacent = played(map, "TH1 TH2 V1");
+    REQUIRE(adjacent.size() == 2);
+    CHECK(adjacent[1] == main_song({{"theme", "t-b"}, {"bg", "b-a"}}));
+
+    // Each output follows its own changes.
+    const json two = song_map({{"TH1", {{"out-a", {{"song", {{"bg", "b-a"}}}}},
+                                        {"out-b", {{"song", {{"bg", "b-b"}}}}}}},
+                               {"TH2", {{"out-b", {{"song", {{"bg", above}}}}}}}});
+    CHECK(played(two, "TH1 V1 TH2 C1").back() == json{{"out-a", {{"song", {{"bg", "b-a"}}}}}});
+}
+
+TEST_CASE("A theme change's Previous is what played before its place in the order",
+          "[theme][song_pack]")
+{
+    using seventhslide::theme::chip_maps_from_json;
+    using seventhslide::theme::previous_chip_picks;
+    // Chip ids in any case are the one chip, as a song stores them.
+    const auto chips = chip_maps_from_json({{"th1", main_song({{"theme", "t-a"}, {"bg", "b-a"}})},
+                                            {"TH2", main_song({{"theme", "t-b"}})}});
+    const std::string_view order = "TH1 V1 TH2 C1 TH1 V2";
+    CHECK(previous_chip_picks(chips, order, 0).empty());
+    CHECK(previous_chip_picks(chips, order, 2).to_json()
+          == main_song({{"theme", "t-a"}, {"bg", "b-a"}}));
+    CHECK(previous_chip_picks(chips, order, 4).to_json()
+          == main_song({{"theme", "t-b"}, {"bg", "b-a"}}));
 }

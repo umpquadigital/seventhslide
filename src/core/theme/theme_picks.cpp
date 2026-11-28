@@ -4,6 +4,7 @@
 #include "seventhslide/util/strings.hpp"
 
 #include <algorithm>
+#include <ranges>
 #include <utility>
 
 namespace seventhslide::theme {
@@ -53,7 +54,7 @@ std::string& ThemePick::id(ThemeField field) noexcept
     return field == ThemeField::Theme ? theme : bg;
 }
 
-ThemePicks ThemePicks::from_json(const nlohmann::json& j, CategorySet allowed)
+ThemePicks ThemePicks::from_json(const nlohmann::json& j, CategorySet allowed, AboveMarks above)
 {
     ThemePicks picks;
     for (const auto category : k_theme_categories) {
@@ -65,7 +66,11 @@ ThemePicks ThemePicks::from_json(const nlohmann::json& j, CategorySet allowed)
             continue;
         }
         for (const auto& f : k_fields) {
-            (void)picks.set(category, f.field, util::trim(json::str_or(*raw, f.name)));
+            auto id = util::trim(json::str_or(*raw, f.name));
+            if (above == AboveMarks::Drop && id == k_inherit_above) {
+                continue;
+            }
+            (void)picks.set(category, f.field, std::move(id));
         }
     }
     return picks;
@@ -109,14 +114,31 @@ bool ThemePicks::empty() const noexcept
     return std::ranges::all_of(picks_, &ThemePick::empty);
 }
 
-OutputThemeMap OutputThemeMap::from_json(const nlohmann::json& j, CategorySet allowed)
+ThemePicks ThemePicks::following(const ThemePicks& previous) const
+{
+    ThemePicks out = previous;
+    for (const auto category : k_theme_categories) {
+        for (const auto& f : k_fields) {
+            const auto& id = of(category).id(f.field);
+            if (id == k_inherit_above) {
+                (void)out.set(category, f.field, {});
+            } else if (!id.empty()) {
+                (void)out.set(category, f.field, id);
+            }
+        }
+    }
+    return out;
+}
+
+OutputThemeMap OutputThemeMap::from_json(const nlohmann::json& j, CategorySet allowed,
+                                         AboveMarks above)
 {
     OutputThemeMap map;
     if (!j.is_object()) {
         return map;
     }
     for (auto it = j.begin(); it != j.end(); ++it) {
-        auto picks = ThemePicks::from_json(it.value(), allowed);
+        auto picks = ThemePicks::from_json(it.value(), allowed, above);
         if (!picks.empty()) {
             map.picks_.insert_or_assign(it.key(), std::move(picks));
         }
@@ -129,6 +151,27 @@ nlohmann::json OutputThemeMap::to_json() const
     nlohmann::json out = nlohmann::json::object();
     for (const auto& [output_id, picks] : picks_) {
         out[output_id] = picks.to_json();
+    }
+    return out;
+}
+
+OutputThemeMap OutputThemeMap::following(const OutputThemeMap& previous) const
+{
+    OutputThemeMap out;
+    const auto add = [&](const std::string& output_id) {
+        if (out.picks_.contains(output_id)) {
+            return;
+        }
+        auto played = picks(output_id).following(previous.picks(output_id));
+        if (!played.empty()) {
+            out.picks_.emplace(output_id, std::move(played));
+        }
+    };
+    for (const auto& output_id : std::views::keys(picks_)) {
+        add(output_id);
+    }
+    for (const auto& output_id : std::views::keys(previous.picks_)) {
+        add(output_id);
     }
     return out;
 }

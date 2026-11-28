@@ -542,7 +542,7 @@ Item {
         id: slideThemePicker
         onOpenChanged: if (!open) root.forceActiveFocus()
         session: root.session
-        showInherit: false
+        inheritTiles: []
         onAccepted: function (themeId) {
             if (!root.edit)
                 return

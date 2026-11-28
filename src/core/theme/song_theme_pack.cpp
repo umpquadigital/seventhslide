@@ -10,6 +10,54 @@ namespace seventhslide::theme {
 
 using seventhslide::json::str_or;
 
+ChipMaps chip_maps_from_json(const nlohmann::json& j)
+{
+    ChipMaps chips;
+    if (!j.is_object()) {
+        return chips;
+    }
+    for (auto it = j.begin(); it != j.end(); ++it) {
+        auto chip_id = canonical_theme_chip_id(it.key());
+        if (!chip_id.empty()) {
+            chips.insert_or_assign(std::move(chip_id),
+                                   OutputThemeMap::from_json(
+                                       it.value(), categories_for(model::ContentKind::Song),
+                                       AboveMarks::Keep));
+        }
+    }
+    return chips;
+}
+
+std::vector<ThemeRun> theme_runs(const ChipMaps& chips, std::string_view verse_order)
+{
+    std::vector<ThemeRun> out;
+    OutputThemeMap played;
+    for (auto& segment : split_order_by_theme_chips(verse_order)) {
+        if (!segment.chip_id.empty()) {
+            const auto it = chips.find(segment.chip_id);
+            played = (it != chips.end() ? it->second : OutputThemeMap{}).following(played);
+        }
+        out.push_back({.segment = std::move(segment), .picks = played});
+    }
+    return out;
+}
+
+OutputThemeMap previous_chip_picks(const ChipMaps& chips,
+                                   std::string_view verse_order,
+                                   std::size_t place)
+{
+    std::string before;
+    std::size_t index = 0;
+    for (const auto token : util::split_ws(verse_order)) {
+        if (index++ == place) {
+            break;
+        }
+        before.append(token).push_back(' ');
+    }
+    auto runs = theme_runs(chips, before);
+    return runs.empty() ? OutputThemeMap{} : std::move(runs.back().picks);
+}
+
 SongThemeMap SongThemeMap::from_json(const nlohmann::json& j)
 {
     SongThemeMap map;
@@ -26,16 +74,7 @@ SongThemeMap SongThemeMap::from_json(const nlohmann::json& j)
         }
         arr.name = str_or(a, "name");
         arr.order = str_or(a, "order");
-        const auto& raw_chips = seventhslide::json::object_or_empty(a, "chips");
-        for (auto it = raw_chips.begin(); it != raw_chips.end(); ++it) {
-            auto chip_id = canonical_theme_chip_id(it.key());
-            if (!chip_id.empty()) {
-                arr.chips.insert_or_assign(
-                    std::move(chip_id),
-                    OutputThemeMap::from_json(it.value(),
-                                              categories_for(model::ContentKind::Song)));
-            }
-        }
+        arr.chips = chip_maps_from_json(seventhslide::json::object_or_empty(a, "chips"));
         if (arr.id == active) {
             map.active_ = active;
         }
@@ -66,7 +105,7 @@ nlohmann::json SongThemeMap::to_json() const
     return {{"active", active_}, {"arrangements", std::move(arrs)}};
 }
 
-OutputThemeMap SongThemeMap::chip(std::string_view chip_id) const
+OutputThemeMap SongThemeMap::stored_chip(std::string_view chip_id) const
 {
     const auto canonical = canonical_theme_chip_id(chip_id);
     if (canonical.empty()) {
@@ -79,6 +118,14 @@ OutputThemeMap SongThemeMap::chip(std::string_view chip_id) const
     }
     const auto it = arr->chips.find(canonical);
     return it != arr->chips.end() ? it->second : OutputThemeMap{};
+}
+
+std::vector<ThemeRun> SongThemeMap::runs(std::string_view verse_order) const
+{
+    // ``active_`` names an arrangement whenever there is one (from_json).
+    const auto arr = std::ranges::find(arrangements_, active_, &SongArrangement::id);
+    static const ChipMaps k_none;
+    return theme_runs(arr != arrangements_.end() ? arr->chips : k_none, verse_order);
 }
 
 SongThemeMap pack_song_theme_map(const nlohmann::json& arrangements, std::string_view active)

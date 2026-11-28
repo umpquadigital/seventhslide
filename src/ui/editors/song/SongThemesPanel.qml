@@ -18,11 +18,12 @@ Item {
     /// ``dialog.session``, typed, so calls on it are checked.
     readonly property SessionFacade session: panel.dialog.session
 
-    /// The picked change's place in the list, or -1.
+    /// The picked change's place in the list, or -1: a chip that plays more
+    /// than once is picked where it was picked.
     readonly property int selectedIndex: {
         const list = panel.dialog.themeChipList
         for (let i = 0; i < list.length; ++i) {
-            if (list[i].code === String(panel.dialog.selectedThemeCode).toUpperCase())
+            if (Number(list[i].orderIndex) === panel.dialog.selectedThemePlace)
                 return i
         }
         return -1
@@ -41,7 +42,7 @@ Item {
     function pick(code, orderIndex) {
         panel.dialog.flushSelectedChipMap()
         panel.dialog.selectedOrderIndex = orderIndex
-        panel.dialog.syncThemeMapFromChip(code)
+        panel.dialog.syncThemeMapFromChip(code, orderIndex)
     }
 
     ColumnLayout {

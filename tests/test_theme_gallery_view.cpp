@@ -15,6 +15,8 @@
 #include <QTest>
 #include <QUrl>
 #include <QVariant>
+#include <QVariantList>
+#include <QVariantMap>
 
 #include <functional>
 
@@ -105,11 +107,18 @@ TEST_CASE("Theme gallery view narrows and orders the owner's themes", "[ui][gall
     CHECK(g.ids("matches") == QStringLiteral("c"));
 }
 
-TEST_CASE("Theme gallery view leads the unfiltered list with the Inherit tile", "[ui][gallery]")
+TEST_CASE("Theme gallery view leads the unfiltered list with the Inherit tiles", "[ui][gallery]")
 {
     GalleryWindow g;
-    g.view->setProperty("showInherit", true);
+    const auto tile = [](const QString& id) {
+        return QVariantMap{{QStringLiteral("id"), id}, {QStringLiteral("caption"), id}};
+    };
+    g.view->setProperty("inheritTiles", QVariantList{tile(QString())});
     CHECK(g.ids("items") == QStringLiteral(",b,a,c"));
+    // Each tile picks its own id, in the order given.
+    g.view->setProperty("inheritTiles",
+                        QVariantList{tile(QString()), tile(QStringLiteral("@above"))});
+    CHECK(g.ids("items") == QStringLiteral(",@above,b,a,c"));
 
     // A search hides it: it is not a match for anything.
     g.view->setProperty("searchText", QStringLiteral("a"));

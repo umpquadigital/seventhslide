@@ -34,11 +34,10 @@ Item {
     property string selectedId: ""
     property bool editable: false
 
-    /// A leading tile that stands for "no theme here" (the picker's Inherit).
-    /// It leads the unfiltered list only.
-    property bool showInherit: false
-    property string inheritLabel: ""
-    property string inheritCaption: ""
+    /// Leading tiles that stand for "no theme here" (the picker's Inherit
+    /// choices), each ``{id, label, caption}``: the id it picks, the words in
+    /// its empty frame and its name. They lead the unfiltered list only.
+    property var inheritTiles: []
 
     /// A page header over the gallery, or none (the picker).
     property string title: ""
@@ -141,8 +140,12 @@ Item {
         sortAsc: view.sortAsc,
         tagsOf: view.tagsOf
     })
-    readonly property var items: (view.showInherit && !view.filtered)
-                                 ? [{ inherit: true, id: "" }].concat(view.matches)
+    readonly property var items: (view.inheritTiles.length && !view.filtered)
+                                 ? view.inheritTiles.map(function (tile) {
+                                     return { inherit: true, id: String(tile.id || ""),
+                                              label: String(tile.label || ""),
+                                              caption: String(tile.caption || "") }
+                                 }).concat(view.matches)
                                  : view.matches
     readonly property var tagCatalog: ThemeGallery.tagCatalog(view.themes, view.tagsOf)
     readonly property var tagMenuItems: ThemeGallery.tagMenuItems(view.tagCatalog, view.tagSearch,
@@ -369,7 +372,7 @@ Item {
                                         verticalAlignment: Text.AlignVCenter
                                         wrapMode: Text.WordWrap
                                         elide: Text.ElideRight
-                                        text: view.inheritLabel
+                                        text: card.isInherit ? card.modelData.label : ""
                                         color: Style.textCaption
                                         font.pixelSize: Style.fontSmall
                                     }
@@ -422,7 +425,7 @@ Item {
                                     leftPadding: 10
                                     rightPadding: 10
                                     verticalAlignment: Text.AlignVCenter
-                                    text: card.isInherit ? view.inheritCaption
+                                    text: card.isInherit ? card.modelData.caption
                                                          : (card.modelData.name || qsTr("Untitled"))
                                     color: card.selected ? Style.textStrong : Style.textBright
                                     font.pixelSize: Style.fontBody

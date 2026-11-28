@@ -11,6 +11,8 @@
 
 #include <QStringList>
 #include <QVariant>
+#include <QVariantList>
+#include <QVariantMap>
 
 namespace {
 
@@ -36,7 +38,8 @@ Window {
         session: win.facade
         picker: picker
         scope: "service"
-        inheritShort: "Output Default"
+        inheritChoices: [{ id: "", slotName: "Output Default", caption: "Output Default",
+                           label: "", previous: false }]
         onEdited: win.edits++
     }
     ThemeSlot {
@@ -180,7 +183,99 @@ TEST_CASE("Theme map editor opens the picker on the slot's current theme", "[ui]
     CHECK(w.picker->property("selectedId").toString() == QStringLiteral("bold"));
     CHECK(w.picker->property("kind").toString() == QStringLiteral("media"));
     // The Inherit card is named as the slots name it.
-    CHECK(w.picker->property("inheritCaption").toString() == QStringLiteral("Output Default"));
+    const auto tiles = w.picker->property("inheritTiles").toList();
+    REQUIRE(tiles.size() == 1);
+    CHECK(tiles[0].toMap().value(QStringLiteral("caption")).toString()
+          == QStringLiteral("Output Default"));
+    CHECK(tiles[0].toMap().value(QStringLiteral("id")).toString().isEmpty());
+}
+
+// A song's theme change offers Previous (unset) and Above; a slot on Previous
+// shows the theme the change before it played with.
+TEST_CASE("Theme map editor offers a song's Previous and Above", "[ui][theme-map]")
+{
+    EditorWindow w;
+    w.editor->setProperty("scope", QStringLiteral("song"));
+    const auto choice = [](const char* id, const char* slot_name, bool previous) {
+        return QVariantMap{{QStringLiteral("id"), QString::fromLatin1(id)},
+                           {QStringLiteral("slotName"), QString::fromLatin1(slot_name)},
+                           {QStringLiteral("caption"), QString::fromLatin1(slot_name)},
+                           {QStringLiteral("label"), QString()},
+                           {QStringLiteral("previous"), previous}};
+    };
+    w.editor->setProperty("inheritChoices", QVariantList{choice("", "Previous", true),
+                                                         choice("@above", "Above", false)});
+    QObject* slot = w.window->property("slot").value<QObject*>();
+    REQUIRE(slot != nullptr);
+
+    // Unset is the first choice.
+    CHECK(slot->property("isInherit").toBool());
+    CHECK(slot->property("nameText").toString() == QStringLiteral("Previous"));
+
+    // With the change before known, Previous shows what it takes (here a
+    // theme the library does not have).
+    w.editor->setProperty(
+        "previousMap",
+        QVariantMap{{QStringLiteral("out-1"),
+                     QVariantMap{{QStringLiteral("song"),
+                                  QVariantMap{{QStringLiteral("theme"), QStringLiteral("gone")}}}}}});
+    CHECK(slot->property("shownId").toString() == QStringLiteral("gone"));
+    CHECK(slot->property("nameText").toString() == QStringLiteral("Previous · Unknown"));
+
+    // Above is stored as its id, and takes nothing from the change before.
+    w.choose("out-1", "song", "theme", "@above");
+    CHECK(w.theme_id("out-1", "song", "theme") == QStringLiteral("@above"));
+    CHECK(slot->property("isInherit").toBool());
+    CHECK(slot->property("shownId").toString().isEmpty());
+    CHECK(slot->property("nameText").toString() == QStringLiteral("Above"));
+
+    // The picker leads with both, Previous first.
+    REQUIRE(QMetaObject::invokeMethod(w.window, "open", Q_ARG(QVariant, QStringLiteral("out-1")),
+                                      Q_ARG(QVariant, QStringLiteral("song")),
+                                      Q_ARG(QVariant, QStringLiteral("theme"))));
+    const auto tiles = w.picker->property("inheritTiles").toList();
+    REQUIRE(tiles.size() == 2);
+    CHECK(tiles[0].toMap().value(QStringLiteral("id")).toString().isEmpty());
+    CHECK(tiles[1].toMap().value(QStringLiteral("id")).toString() == QStringLiteral("@above"));
+    CHECK(w.picker->property("selectedId").toString() == QStringLiteral("@above"));
+
+    // Previous clears the slot again.
+    w.choose("out-1", "song", "theme", "");
+    CHECK(w.theme_id("out-1", "song", "theme").isEmpty());
+}
+
+// A slot on Previous names, and shows faded, the theme the change before it
+// played with, as the library has it.
+TEST_CASE("Theme map editor shows the theme a slot's Previous takes", "[ui][theme-map]")
+{
+    // Made first, so the library outlives the window.
+    const seventhslide::test::TempDir dir;
+    EditorWindow w;
+    REQUIRE(w.facade.open_database(dir.path / "library.db"));
+    const auto created = w.facade.themes()->create(QStringLiteral("Main"), QStringLiteral("song"),
+                                                   QStringLiteral("Dawn"));
+    const QString id = created.value(QStringLiteral("id")).toString();
+    REQUIRE_FALSE(id.isEmpty());
+
+    w.editor->setProperty("scope", QStringLiteral("song"));
+    w.editor->setProperty(
+        "inheritChoices",
+        QVariantList{QVariantMap{{QStringLiteral("id"), QString()},
+                                 {QStringLiteral("slotName"), QStringLiteral("Previous")},
+                                 {QStringLiteral("previous"), true}}});
+    w.editor->setProperty(
+        "previousMap",
+        QVariantMap{{QStringLiteral("out-1"),
+                     QVariantMap{{QStringLiteral("song"), QVariantMap{{QStringLiteral("theme"), id}}}}}});
+    QObject* slot = w.window->property("slot").value<QObject*>();
+    REQUIRE(slot != nullptr);
+    CHECK(slot->property("isInherit").toBool());
+    CHECK(slot->property("shownId").toString() == id);
+    CHECK(slot->property("nameText").toString() == QStringLiteral("Previous · Dawn"));
+    CHECK_FALSE(slot->property("isUnknown").toBool());
+    CHECK_FALSE(slot->property("thumbUrl").toString().isEmpty());
+    // Nothing of its own is stored.
+    CHECK(w.theme_id("out-1", "song", "theme").isEmpty());
 }
 
 // A slot names its theme as the library has it now: a rename shows at once.
