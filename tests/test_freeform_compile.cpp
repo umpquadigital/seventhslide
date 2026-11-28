@@ -136,8 +136,26 @@ TEST_CASE("compile emits compact verse codes from cues", "[freeform][compile]")
     REQUIRE(seventhslide::freeform::set_cue_verse(doc, 1, "Chorus", 1));
     const auto built = compile(doc);
     REQUIRE(built.verse_codes == std::vector<std::string>({"v1", "c1"}));
+    REQUIRE(built.verse_indices == std::vector<int>({0, 1}));
     REQUIRE(built.line_labels == std::vector<std::string>({"v1", "c1"}));
     REQUIRE(built.lines == std::vector<std::string>({"", "line two"}));
+}
+
+TEST_CASE("compile groups a run of cues with one label into one section", "[freeform][compile]")
+{
+    auto doc = make_document("x", {"out-main"});
+    REQUIRE(seventhslide::freeform::set_line_control(doc, true));
+    REQUIRE(seventhslide::freeform::set_cue_verse(doc, 0, "Verse", 1));
+    REQUIRE(seventhslide::freeform::insert_cue(doc, 1, "verse line two"));
+    REQUIRE(seventhslide::freeform::insert_cue(doc, 2, "unlabeled"));
+    REQUIRE(seventhslide::freeform::set_cue_verse(doc, 2, "", 1));
+    REQUIRE(seventhslide::freeform::insert_cue(doc, 3, "chorus"));
+    REQUIRE(seventhslide::freeform::set_cue_verse(doc, 3, "Chorus", 1));
+    const auto built = compile(doc);
+    REQUIRE(built.verse_codes == std::vector<std::string>({"v1", "", "c1"}));
+    REQUIRE(built.verse_indices == std::vector<int>({0, 0, 1, 2}));
+    // Labels stay per line.
+    REQUIRE(built.line_labels == std::vector<std::string>({"v1", "v1", "", "c1"}));
 }
 
 TEST_CASE("compile substitutes tokens and drops {-empty} lines", "[freeform][compile]")
@@ -786,7 +804,14 @@ TEST_CASE("slide_preview_key tracks indicator cue verses", "[freeform][compile][
     const auto k1 = slide_preview_key(doc, deck, 0);
     REQUIRE(k0 != k1);
     REQUIRE(set_cue_verse(doc, 0, "Chorus", 1));
-    REQUIRE(slide_preview_key(doc, deck, 0) != k1);
+    const auto k2 = slide_preview_key(doc, deck, 0);
+    REQUIRE(k2 != k1);
+
+    // Where a repeat starts is not in the labels.
+    REQUIRE(insert_cue(doc, 1, "again"));
+    const auto k3 = slide_preview_key(doc, deck, 0);
+    REQUIRE(seventhslide::freeform::set_cue_section_start(doc, 1, true));
+    REQUIRE(slide_preview_key(doc, deck, 0) != k3);
 }
 
 TEST_CASE("linked text paints cue span instead of object.text", "[freeform][compile][link]")

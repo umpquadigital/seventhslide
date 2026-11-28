@@ -182,6 +182,15 @@ struct Source {
     }
     const int k = static_cast<int>(new_cues.size());
     doc.cues.insert(doc.cues.begin() + at, new_cues.begin(), new_cues.end());
+    // The lines that came again play as a section of their own, and the lines
+    // after them as theirs: V3 pasted after V3 is V3 V3.
+    if (k > 0) {
+        doc.cues[static_cast<std::size_t>(at)].section_start = true;
+        if (at < cues) {
+            doc.cues[static_cast<std::size_t>(at + k)].section_start = true;
+        }
+        tidy_section_starts(doc.cues);
+    }
 
     for (auto& deck : doc.decks) {
         const bool is_target = &deck == target;

@@ -7,6 +7,7 @@
 #include <seventhslide/scene/scene_builder.hpp>
 #include <seventhslide/theme/theme_elements.hpp>
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -150,19 +151,62 @@ TEST_CASE("The stock Bible reference fills its tokens", "[scene][bible_ref]")
     REQUIRE(reference_text(built, "{-ref} ({-version})") == "Revelation 14:6 (NKJV)");
 }
 
-TEST_CASE("indicator collapses sections and marks active", "[scene]")
+namespace {
+
+[[nodiscard]] std::vector<std::string> labels_of(
+    const std::vector<seventhslide::scene::IndicatorItem>& items)
+{
+    std::vector<std::string> labels;
+    labels.reserve(items.size());
+    for (const auto& item : items) {
+        labels.push_back(item.label);
+    }
+    return labels;
+}
+
+[[nodiscard]] std::vector<int> active_of(
+    const std::vector<seventhslide::scene::IndicatorItem>& items)
+{
+    std::vector<int> active;
+    for (std::size_t i = 0; i < items.size(); ++i) {
+        if (items[i].active) {
+            active.push_back(static_cast<int>(i));
+        }
+    }
+    return active;
+}
+
+}  // namespace
+
+TEST_CASE("indicator shows a verse played twice running twice", "[scene][indicator]")
+{
+    // A song ordered V1 V2 V3 V3 V4: one section each, two lines each, a slide
+    // a section.
+    OutputRuntime rt;
+    rt.verse_codes = {"v1", "v2", "v3", "v3", "v4"};
+    rt.verse_indices = {0, 0, 1, 1, 2, 2, 3, 3, 4, 4};
+    rt.line_to_slide = {0, 0, 1, 1, 2, 2, 3, 3, 4, 4};
+
+    const auto first = build_indicator_items(rt, 2);
+    REQUIRE(labels_of(first) == std::vector<std::string>{"V1", "V2", "V3", "V3", "V4"});
+    REQUIRE(active_of(first) == std::vector<int>{2});
+
+    const auto again = build_indicator_items(rt, 3);
+    REQUIRE(labels_of(again) == labels_of(first));
+    REQUIRE(active_of(again) == std::vector<int>{3});
+}
+
+TEST_CASE("indicator marks the active section", "[scene][indicator]")
 {
     OutputRuntime rt;
-    rt.verse_codes = {"v1a", "v1b", "c1", "b"};
-    rt.verse_indices = {0, 1, 2, 3};
+    rt.verse_codes = {"v1", "c1", "b1"};
+    rt.verse_indices = {0, 0, 1, 2};
     rt.line_to_slide = {0, 0, 1, 2};
 
     const auto items0 = build_indicator_items(rt, 0);
-    REQUIRE(items0.size() == 3);
-    REQUIRE(items0[0].label == "V1");
-    REQUIRE(items0[0].active);
-    REQUIRE(items0[1].label == "C1");
-    REQUIRE_FALSE(items0[1].active);
+    REQUIRE(labels_of(items0) == std::vector<std::string>{"V1", "C1", "B1"});
+    REQUIRE(active_of(items0) == std::vector<int>{0});
+    REQUIRE(active_of(build_indicator_items(rt, 1)) == std::vector<int>{1});
 }
 
 TEST_CASE("indicator skips empty verse codes", "[scene]")
@@ -180,6 +224,24 @@ TEST_CASE("indicator skips empty verse codes", "[scene]")
     REQUIRE_FALSE(items[1].active);
 }
 
+TEST_CASE("resolve_indicator_items follows the current line to its section", "[scene][indicator]")
+{
+    using seventhslide::scene::resolve_indicator_items;
+
+    // Freeform cues V3 V3 | V3 V3 (two sections), one cue a slide.
+    const std::vector<std::string> codes{"v3", "v3"};
+    const std::vector<int> sections{0, 0, 1, 1};
+    const std::vector<int> map{0, 1, 2, 3};
+    const seventhslide::scene::IndicatorSections play{
+        .codes = codes, .line_section = sections, .line_to_slide = map};
+    const auto second = resolve_indicator_items(play, 2, 2, 4, false);
+    REQUIRE(labels_of(second) == std::vector<std::string>{"V3", "V3"});
+    REQUIRE(active_of(second) == std::vector<int>{1});
+    // No current line: the first line on the slide.
+    const auto first = resolve_indicator_items(play, -1, 1, 4, false);
+    REQUIRE(active_of(first) == std::vector<int>{0});
+}
+
 TEST_CASE("resolve_indicator_items uses slide numbers when unlabeled", "[scene]")
 {
     using seventhslide::scene::resolve_indicator_items;
@@ -191,22 +253,25 @@ TEST_CASE("resolve_indicator_items uses slide numbers when unlabeled", "[scene]"
     REQUIRE(numbered[0].active);
 
     const std::vector<std::string> codes{"v1", "", "c1"};
+    const std::vector<int> sections{0, 1, 2};
     const std::vector<int> map{0, 0, 1};
-    const auto verse = resolve_indicator_items(codes, map, 0, 0, 2, false);
+    const seventhslide::scene::IndicatorSections play{
+        .codes = codes, .line_section = sections, .line_to_slide = map};
+    const auto verse = resolve_indicator_items(play, 0, 0, 2, false);
     REQUIRE(verse.size() == 2);
     REQUIRE(verse[0].label == "V1");
     REQUIRE(verse[0].active);
     REQUIRE(verse[1].label == "C1");
     REQUIRE_FALSE(verse[1].active);
 
-    const auto unlabeled = resolve_indicator_items(codes, map, 1, 0, 2, false);
+    const auto unlabeled = resolve_indicator_items(play, 1, 0, 2, false);
     REQUIRE(unlabeled.size() == 1);
     REQUIRE(unlabeled[0].label == "1/2");
 
-    const auto blank = resolve_indicator_items(codes, map, 1, 0, 2, true);
+    const auto blank = resolve_indicator_items(play, 1, 0, 2, true);
     REQUIRE(blank.empty());
 
-    const auto simple = resolve_indicator_items({}, {}, -1, 2, 8, false);
+    const auto simple = resolve_indicator_items({}, -1, 2, 8, false);
     REQUIRE(simple.size() == 1);
     REQUIRE(simple[0].label == "3/8");
 }
@@ -298,13 +363,9 @@ TEST_CASE("format_wall_clock_hms formats 12 and 24 hour clocks", "[scene]")
 
 TEST_CASE("indicator labels Bible verses by number, with the chapter where it changes", "[scene][indicator][bible]")
 {
-    const auto items = seventhslide::scene::build_indicator_items_from_codes(
-        {"3:35", "3:36", "3:36", "4:1", "4:2"}, 2);
-    std::vector<std::string> labels;
-    for (const auto& item : items) {
-        labels.push_back(item.label);
-    }
-    REQUIRE(labels == std::vector<std::string>{"35", "36", "4:1", "2"});
+    const std::vector<std::string> codes{"3:35", "3:36", "4:1", "4:2"};
+    const auto items = seventhslide::scene::build_indicator_items_from_sections(codes, 1);
+    REQUIRE(labels_of(items) == std::vector<std::string>{"35", "36", "4:1", "2"});
     REQUIRE(items[1].active);
     REQUIRE_FALSE(items[0].active);
 }

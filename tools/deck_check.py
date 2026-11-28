@@ -2264,7 +2264,7 @@ class Converter:
         for number, part in enumerate(self.visible_slides(), 1):
             self.counts.slide = number
             slides.append(self.convert_slide(part))
-        doc = {"schema": SCHEMA, "schema_version": 3, "name": name, "line_control": False,
+        doc = {"schema": SCHEMA, "schema_version": 4, "name": name, "line_control": False,
                "next_id": self.next_id + 10, "cues": [], "fields": {},
                "decks": [{"output": "out-main",
                           "canvas": {"width": CANVAS_W, "height": self.canvas_h},

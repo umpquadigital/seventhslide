@@ -13,6 +13,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <map>
@@ -385,6 +386,191 @@ TEST_CASE("cue verse type round-trips and insert inherits", "[freeform][document
     REQUIRE(set_cue_verse(doc, 1, "", 9));
     REQUIRE(doc.cues[1].verse_type.empty());
     REQUIRE_FALSE(doc.to_json().at("cues").at(1).contains("verse_type"));
+}
+
+namespace {
+
+/// Verse 3 twice running, two lines a slide: c3 starts the repeat.
+[[nodiscard]] Document repeated_verse()
+{
+    const auto cue = [](const char* id, const char* text, bool starts = false) {
+        nlohmann::json j = {{"id", id}, {"text", text}, {"verse_type", "Verse"}, {"verse_number", 3}};
+        if (starts) {
+            j["section_start"] = true;
+        }
+        return j;
+    };
+    auto doc = Document::from_json({
+        {"schema", "seventhslide.freeform"},
+        {"schema_version", seventhslide::freeform::k_schema_version},
+        {"name", "Repeat"},
+        {"line_control", true},
+        {"next_id", 100},
+        {"cues", {cue("c1", "one"), cue("c2", "two"), cue("c3", "one", true), cue("c4", "two")}},
+        {"decks",
+         {{{"output", "out-main"},
+           {"canvas", {{"width", 1920}, {"height", 1080}}},
+           {"line_to_slide", {0, 0, 1, 1}},
+           {"slides",
+            {{{"id", "s1"}, {"objects", nlohmann::json::array()}},
+             {{"id", "s2"}, {"objects", nlohmann::json::array()}}}}}}},
+    });
+    normalize(doc);
+    return doc;
+}
+
+[[nodiscard]] std::vector<int> sections_of(const Document& doc)
+{
+    return seventhslide::freeform::cue_sections(doc.cues).cue_section;
+}
+
+/// A line-control document of one cue per ``labels`` entry (verse type and
+/// number), cue ``i`` with id ``c<i+1>`` on slide ``line_to_slide[i]``.
+[[nodiscard]] Document labelled(const std::vector<std::pair<std::string, int>>& labels,
+                                const std::vector<int>& line_to_slide)
+{
+    nlohmann::json cues = nlohmann::json::array();
+    for (std::size_t i = 0; i < labels.size(); ++i) {
+        cues.push_back({{"id", "c" + std::to_string(i + 1)},
+                        {"text", "line " + std::to_string(i + 1)},
+                        {"verse_type", labels[i].first},
+                        {"verse_number", labels[i].second}});
+    }
+    nlohmann::json slides = nlohmann::json::array();
+    const int count = line_to_slide.empty() ? 0 : *std::ranges::max_element(line_to_slide) + 1;
+    for (int i = 0; i < count; ++i) {
+        slides.push_back({{"id", "s" + std::to_string(i + 1)}, {"objects", nlohmann::json::array()}});
+    }
+    auto doc = Document::from_json({
+        {"schema", "seventhslide.freeform"},
+        {"schema_version", seventhslide::freeform::k_schema_version},
+        {"name", "Sections"},
+        {"line_control", true},
+        {"next_id", 100},
+        {"cues", cues},
+        {"decks",
+         {{{"output", "out-main"},
+           {"canvas", {{"width", 1920}, {"height", 1080}}},
+           {"line_to_slide", line_to_slide},
+           {"slides", slides}}}},
+    });
+    normalize(doc);
+    return doc;
+}
+
+}  // namespace
+
+TEST_CASE("A cue marked section_start parts a verse played twice running", "[freeform][document][sections]")
+{
+    const auto doc = repeated_verse();
+    const auto sections = seventhslide::freeform::cue_sections(doc.cues);
+    CHECK(sections.codes == std::vector<std::string>{"v3", "v3"});
+    CHECK(sections.cue_section == std::vector<int>{0, 0, 1, 1});
+
+    // Stored only where it is set.
+    const auto json = doc.to_json();
+    CHECK(json.at("cues").at(2).at("section_start") == true);
+    CHECK_FALSE(json.at("cues").at(1).contains("section_start"));
+    CHECK(Document::from_json(json).cues == doc.cues);
+
+    // Without the mark the run is one section, as before.
+    auto merged = doc;
+    REQUIRE(seventhslide::freeform::set_cue_section_start(merged, 2, false));
+    CHECK(sections_of(merged) == std::vector<int>{0, 0, 0, 0});
+}
+
+TEST_CASE("Only a cue with the label of the cue before can start a section", "[freeform][document][sections]")
+{
+    using seventhslide::freeform::can_start_section;
+    using seventhslide::freeform::set_cue_section_start;
+    auto doc = repeated_verse();
+    CHECK_FALSE(can_start_section(doc.cues, 0));
+    CHECK(can_start_section(doc.cues, 1));
+    CHECK_FALSE(set_cue_section_start(doc, 0, true));
+    REQUIRE(set_cue_section_start(doc, 1, true));
+    CHECK(sections_of(doc) == std::vector<int>{0, 1, 2, 2});
+
+    // A change of label parts the cues anyway: the mark goes.
+    REQUIRE(set_cue_verse(doc, 2, "Verse", 4));
+    CHECK_FALSE(doc.cues[2].section_start);
+    CHECK_FALSE(set_cue_section_start(doc, 2, true));
+    CHECK(sections_of(doc) == std::vector<int>{0, 1, 2, 3});
+
+    // Unlabeled lines are never parted: the indicator shows none of them.
+    REQUIRE(set_cue_verse(doc, 0, "", 1));
+    REQUIRE(set_cue_verse(doc, 1, "", 1));
+    CHECK_FALSE(doc.cues[1].section_start);
+    CHECK_FALSE(can_start_section(doc.cues, 1));
+
+    // A stored mark that parts nothing is dropped on load.
+    auto json = repeated_verse().to_json();
+    json["cues"][0]["section_start"] = true;
+    json["cues"][1]["verse_number"] = 5;
+    json["cues"][1]["section_start"] = true;
+    auto loaded = Document::from_json(json);
+    normalize(loaded);
+    CHECK_FALSE(loaded.cues[0].section_start);
+    CHECK_FALSE(loaded.cues[1].section_start);
+    CHECK(loaded.cues[2].section_start == false);  // after Verse 5, not Verse 3
+}
+
+TEST_CASE("Deleting the first line of a section leaves the next starting it", "[freeform][document][sections]")
+{
+    auto doc = repeated_verse();
+    REQUIRE(insert_cue(doc, 4, "three"));
+    REQUIRE(delete_cue(doc, 2));
+    CHECK(doc.cues[2].id == "c4");
+    CHECK(doc.cues[2].section_start);
+    CHECK(sections_of(doc) == std::vector<int>{0, 0, 1, 1});
+}
+
+TEST_CASE("Deleting the section between a verse and its repeat keeps them apart", "[freeform][document][sections]")
+{
+    // V3 C1 | V3: the chorus goes, and V3 V3 stay two.
+    auto doc = labelled({{"Verse", 3}, {"Chorus", 1}, {"Verse", 3}}, {0, 0, 1});
+    REQUIRE(sections_of(doc) == std::vector<int>{0, 1, 2});
+    REQUIRE(delete_cue(doc, 1));
+    CHECK(doc.cues[1].id == "c3");
+    CHECK(doc.cues[1].section_start);
+    CHECK(sections_of(doc) == std::vector<int>{0, 1});
+
+    // V1 C1 | V2: no repeat either side, so no mark.
+    auto other = labelled({{"Verse", 1}, {"Chorus", 1}, {"Verse", 2}}, {0, 0, 1});
+    REQUIRE(delete_cue(other, 1));
+    CHECK_FALSE(other.cues[1].section_start);
+    CHECK(sections_of(other) == std::vector<int>{0, 1});
+}
+
+TEST_CASE("Reordering a verse's own slides keeps it one section", "[freeform][document][sections]")
+{
+    // V1 | V2 V2 over two slides: swapping V2's slides is still V1 V2.
+    auto doc = labelled({{"Verse", 1}, {"Verse", 1}, {"Verse", 2}, {"Verse", 2}, {"Verse", 2}, {"Verse", 2}},
+                        {0, 0, 1, 1, 2, 2});
+    REQUIRE(reorder_slides(doc, 2, 1, "out-main"));
+    REQUIRE(doc.cues[2].id == "c5");
+    REQUIRE(doc.cues[4].id == "c3");
+    CHECK(sections_of(doc) == std::vector<int>{0, 0, 1, 1, 1, 1});
+    for (const auto& cue : doc.cues) {
+        CHECK_FALSE(cue.section_start);
+    }
+
+    // The first verse's two slides swapped: still one V1.
+    auto first = labelled({{"Verse", 1}, {"Verse", 1}, {"Chorus", 1}}, {0, 1, 2});
+    REQUIRE(reorder_slides(first, 1, 0, "out-main"));
+    REQUIRE(first.cues[0].id == "c2");
+    CHECK(sections_of(first) == std::vector<int>{0, 0, 1});
+    CHECK_FALSE(first.cues[1].section_start);
+}
+
+TEST_CASE("A verse reordered next to its repeat stays a section of its own", "[freeform][document][sections]")
+{
+    auto doc = repeated_verse();
+    REQUIRE(reorder_slides(doc, 1, 0, "out-main"));
+    REQUIRE(doc.cues[0].id == "c3");
+    CHECK_FALSE(doc.cues[0].section_start);
+    CHECK(doc.cues[2].id == "c1");
+    CHECK(doc.cues[2].section_start);
+    CHECK(sections_of(doc) == std::vector<int>{0, 0, 1, 1});
 }
 
 TEST_CASE("A new table of many rows fits on the canvas", "[freeform]")

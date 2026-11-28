@@ -182,6 +182,15 @@ struct Block {
     bool lettered = false;
 };
 
+/// ``next`` after ``body`` in one verse, a forced break between them.
+void join_section(std::string& body, std::string_view next)
+{
+    body.push_back('\n');
+    body.append(model::k_forced_split);
+    body.push_back('\n');
+    body.append(next);
+}
+
 /// The sections of ``raw_parts`` (from split_verse_headers) as verses: lettered
 /// sections of one verse that follow each other become one block, their bodies
 /// split by forced breaks. Titles are never joined, and with ``skip_titles``
@@ -201,10 +210,7 @@ struct Block {
         if (!blocks.empty() && blocks.back().code == code && !is_title_code(code)
             && (lettered || blocks.back().lettered)) {
             Block& joined = blocks.back();
-            joined.content.push_back('\n');
-            joined.content.append(model::k_forced_split);
-            joined.content.push_back('\n');
-            joined.content.append(content);
+            join_section(joined.content, content);
             joined.lettered = true;
             continue;
         }
@@ -242,11 +248,26 @@ struct Block {
             out.verse_codes.emplace_back("t1");
             continue;
         }
+        // One token is one section, even where its verse's lettered sections
+        // are apart in the lyrics: they play joined, as adjacent ones do. A
+        // title in parts is one title slide too; it shows the song's title,
+        // not its body.
+        const Block* first = nullptr;
+        std::string section;
         for (const auto& b : blocks) {
-            if (matches_token(b.code, token)) {
-                out.verses.push_back(b.content);
-                out.verse_codes.push_back(b.code);
+            if (!matches_token(b.code, token)) {
+                continue;
             }
+            if (first == nullptr) {
+                first = &b;
+                section = b.content;
+            } else {
+                join_section(section, b.content);
+            }
+        }
+        if (first != nullptr) {
+            out.verses.push_back(std::move(section));
+            out.verse_codes.push_back(first->code);
         }
     }
     if (!out.verses.empty()) {

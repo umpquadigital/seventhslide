@@ -100,7 +100,11 @@ struct OutputRuntime {
     /// (``build::BibleSlide::citations``). Empty for other kinds.
     std::vector<std::vector<std::string>> slide_citations;
     std::vector<int> line_to_slide;
+    /// The sections the item plays, in order: a song's verse-order entries, a
+    /// Freeform document's runs of cues (``freeform::cue_sections``). A verse
+    /// played twice running is two entries. What indicators show.
     std::vector<std::string> verse_codes;
+    /// Each line's section: an index into ``verse_codes``, or -1 for none.
     std::vector<int> verse_indices;
     /// Resolved theme per segment when theme chips change the look mid-song;
     /// ``slide_style_index`` maps each slide to its segment. Empty -> ``theme``

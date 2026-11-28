@@ -177,13 +177,23 @@ EditResult delete_cue(Document& doc, int index)
     if (!can_delete_cue(doc, index)) {
         return EditResult::fail("would orphan a slide");
     }
-    const Cue* next = index + 1 < static_cast<int>(doc.cues.size())
-                          ? &doc.cues[static_cast<std::size_t>(index + 1)]
-                          : nullptr;
+    Cue* next = index + 1 < static_cast<int>(doc.cues.size())
+                    ? &doc.cues[static_cast<std::size_t>(index + 1)]
+                    : nullptr;
     for (auto& deck : doc.decks) {
         forget_cue_flow(deck, doc.cues[static_cast<std::size_t>(index)], next);
     }
+    // The next cue starts a section where it started one, and where the cue
+    // gone started its: neither the first line of a section going nor a
+    // section going whole, between a verse and its repeat, joins two.
+    if (next != nullptr) {
+        const auto sections = cue_sections(doc.cues);
+        if (sections.starts_section(index) || sections.starts_section(index + 1)) {
+            next->section_start = true;
+        }
+    }
     doc.cues.erase(doc.cues.begin() + index);
+    tidy_section_starts(doc.cues);
     for (auto& deck : doc.decks) {
         if (index < static_cast<int>(deck.line_to_slide.size())) {
             deck.line_to_slide.erase(deck.line_to_slide.begin() + index);
@@ -221,6 +231,7 @@ EditResult set_cue_verse(Document& doc, int index, std::string type, int number)
     cue.verse = 0;
     cue.show_ref = false;
     carry_cue_overlays(doc, before, cue);
+    tidy_section_starts(doc.cues);
     return EditResult::success();
 }
 
@@ -240,6 +251,21 @@ EditResult set_cue_scripture(Document& doc, int index, int chapter, int verse)
     cue.chapter = std::clamp(chapter, 1, parse::k_max_bible_chapter);
     cue.verse = std::clamp(verse, 1, parse::k_max_bible_verse);
     carry_cue_overlays(doc, before, cue);
+    tidy_section_starts(doc.cues);
+    return EditResult::success();
+}
+
+EditResult set_cue_section_start(Document& doc, int index, bool on)
+{
+    auto target = cue_to_edit(doc, index);
+    if (!target.cue) {
+        return target.error;
+    }
+    if (on && !can_start_section(doc.cues, index)) {
+        return EditResult::fail("only a cue with the same label as the cue before can start a "
+                                "section of its own");
+    }
+    target.cue->section_start = on;
     return EditResult::success();
 }
 

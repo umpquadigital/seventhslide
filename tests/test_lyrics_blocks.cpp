@@ -122,6 +122,33 @@ TEST_CASE("parse_verses applies verse_order and repeats", "[parse][lyrics]")
     REQUIRE(blocks.verses == std::vector<std::string>{"A", "C", "A"});
 }
 
+TEST_CASE("parse_verses keeps a verse ordered twice running as two sections", "[parse][lyrics]")
+{
+    const auto blocks = parse_verses(
+        "---[Verse:1]---\nA\n\n---[Verse:2]---\nB\n\n---[Verse:3]---\nC\n\n"
+        "---[Verse:4]---\nD\n",
+        "V1 V2 V3 V3 V4");
+    REQUIRE(blocks.verse_codes == std::vector<std::string>{"v1", "v2", "v3", "v3", "v4"});
+    REQUIRE(blocks.verses == std::vector<std::string>{"A", "B", "C", "C", "D"});
+}
+
+TEST_CASE("parse_verses plays a verse's lettered sections apart in the lyrics as one",
+          "[parse][lyrics]")
+{
+    const auto blocks = parse_verses(
+        "---[Verse:1a]---\nA\n\n---[Chorus:1]---\nC\n\n---[Verse:1b]---\nB\n", "v1 c1 v1");
+    REQUIRE(blocks.verse_codes == std::vector<std::string>{"v1", "c1", "v1"});
+    const std::string joined = "A\n" + std::string(k_forced_split) + "\nB";
+    REQUIRE(blocks.verses == std::vector<std::string>{joined, "C", joined});
+
+    // A title in parts is one title slide too.
+    const auto titles = parse_verses(
+        "---[Title:1a]---\nT\n\n---[Verse:1]---\nA\n\n---[Title:1b]---\nU\n", "t1 v1");
+    REQUIRE(titles.verse_codes == std::vector<std::string>{"t1", "v1"});
+    REQUIRE(titles.verses
+            == std::vector<std::string>{"T\n" + std::string(k_forced_split) + "\nU", "A"});
+}
+
 TEST_CASE("parse_verses merges lettered sections into one verse", "[parse][lyrics]")
 {
     const auto all = parse_verses(

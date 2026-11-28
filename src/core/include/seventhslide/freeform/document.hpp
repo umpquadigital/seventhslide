@@ -24,7 +24,7 @@ inline constexpr std::string_view k_schema = "seventhslide.freeform";
 /// Written into every document; this build reads exactly this version and
 /// refuses any other (see document_refusal). Bump it with any change to the
 /// stored shape.
-inline constexpr int k_schema_version = 3;
+inline constexpr int k_schema_version = 4;
 
 // An object is canvas::Object (its geometry, type, parts and stored form)
 // with the cue fields below; these names are its, said once.
@@ -87,6 +87,10 @@ struct Cue {
     /// Text linked to cues shows ``chapter:verse`` before the cue's text. A box
     /// may restyle it like the rest of the cue, but not retype it.
     bool show_ref = false;
+    /// The cue starts a section of its own though the cue before has the same
+    /// label: a verse played twice running. Only set where it does that
+    /// (``tidy_section_starts``); a change of label starts a section anyway.
+    bool section_start = false;
 
     [[nodiscard]] bool operator==(const Cue&) const noexcept = default;
 };
@@ -98,6 +102,33 @@ struct Cue {
 /// indicators: ``3:16`` for a Bible verse, a song code (``v1``) for a song
 /// section, empty for neither.
 [[nodiscard]] std::string cue_label_code(const Cue& cue);
+
+/// The sections ``cues`` play in, as indicators show them: a section starts
+/// at the first cue, at a change of label (``cue_label_code``), and at a cue
+/// marked ``section_start``.
+struct CueSections {
+    /// Each section's label code, in order; empty for a run with no label.
+    std::vector<std::string> codes;
+    /// Parallel to ``cues``: the index in ``codes`` of each cue's section.
+    std::vector<int> cue_section;
+
+    /// True when cue ``cue`` is the first of its section.
+    [[nodiscard]] bool starts_section(int cue) const noexcept
+    {
+        const auto i = static_cast<std::size_t>(cue);
+        return cue >= 0 && i < cue_section.size() && (i == 0 || cue_section[i] != cue_section[i - 1]);
+    }
+};
+[[nodiscard]] CueSections cue_sections(const std::vector<Cue>& cues);
+
+/// True when ``cues[index]`` could be marked ``section_start``: it has a label,
+/// and the cue before has the same one, so only the mark parts them.
+[[nodiscard]] bool can_start_section(const std::vector<Cue>& cues, int index);
+
+/// Clear ``section_start`` wherever ``can_start_section`` is false, so a mark
+/// is only ever where it parts two sections. Every edit that changes a label or
+/// which cue follows which calls this.
+void tidy_section_starts(std::vector<Cue>& cues);
 
 /// The colour of "show upcoming" cue lines that name none.
 inline constexpr std::string_view k_default_upcoming_color = "#888888";

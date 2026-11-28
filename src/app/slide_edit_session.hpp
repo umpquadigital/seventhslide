@@ -362,6 +362,7 @@ public:
     Q_INVOKABLE QString setVerse(const QString& type, int number);
     Q_INVOKABLE QString setScripture(int chapter, int verse);
     Q_INVOKABLE QString setRefShown(bool shown);
+    Q_INVOKABLE QString setSectionStart(bool on);
     /// The selected text box shows the slide's cues, or its own text again.
     Q_INVOKABLE QString setLinked(bool on);
     Q_INVOKABLE QString setLinkedStyle(const QString& markup);

@@ -1198,6 +1198,23 @@ TEST_CASE("document_from_build emits live Indicator objects not baked V1 text", 
     REQUIRE(indicator_slides >= 1);
 }
 
+TEST_CASE("document_from_build keeps a verse played twice running two sections", "[freeform][convert][sections]")
+{
+    ApproxTextMeasurer measurer;
+    auto in = song_input();
+    in.song.lyrics = "---[Verse:1]---\nHello\n\n---[Verse:3]---\nOne\nTwo\n";
+    in.song.verse_order = "V1 V3 V3";
+    const auto built = build_slides(in, measurer);
+    const auto doc = document_from_build(built, in.outputs, measurer, FreeformConvertOptions{});
+    const auto sections = seventhslide::freeform::cue_sections(doc.cues);
+    CHECK(sections.codes == std::vector<std::string>{"v1", "v3", "v3"});
+    REQUIRE(doc.cues.size() == 5);
+    CHECK(sections.cue_section == std::vector<int>{0, 1, 1, 2, 2});
+    CHECK(doc.cues[3].section_start);
+    // A change of label needs no mark.
+    CHECK_FALSE(doc.cues[1].section_start);
+}
+
 TEST_CASE("document_from_build keeps a theme indicator's label gap", "[freeform][convert]")
 {
     ApproxTextMeasurer measurer;

@@ -1011,6 +1011,34 @@ TEST_CASE("SessionFacade Freeform delete cue is gated on orphans", "[app][freefo
     edit->cancel();
 }
 
+TEST_CASE("SessionFacade Freeform cue starts a section of its own", "[app][freeform][sections]")
+{
+    seventhslide::test::ensure_qt_application();
+    SessionFacade facade;
+    REQUIRE(facade.open_memory_database());
+    const auto id = facade.freeformLibrary()->createFreeform(QStringLiteral("Repeat"));
+    auto* edit = facade.slideEdit();
+    REQUIRE(edit->openFreeform(id));
+    auto* cues = edit->cues();
+    REQUIRE(cues->setLineControl(true).isEmpty());
+    cues->select(0);
+    REQUIRE(cues->setVerse(QStringLiteral("Verse"), 3).isEmpty());
+    REQUIRE(cues->insert(QStringLiteral("again")).isEmpty());
+
+    cues->select(0);
+    CHECK_FALSE(cues->current().value(QStringLiteral("can_start_section")).toBool());
+    CHECK_FALSE(cues->setSectionStart(true).isEmpty());
+
+    cues->select(1);
+    CHECK(cues->current().value(QStringLiteral("can_start_section")).toBool());
+    CHECK_FALSE(cues->current().value(QStringLiteral("section_start")).toBool());
+    REQUIRE(cues->setSectionStart(true).isEmpty());
+    CHECK(cues->current().value(QStringLiteral("section_start")).toBool());
+    REQUIRE(cues->setSectionStart(false).isEmpty());
+    CHECK_FALSE(cues->current().value(QStringLiteral("section_start")).toBool());
+    edit->cancel();
+}
+
 TEST_CASE("SessionFacade Freeform controller labels use cue verse codes", "[app][freeform]")
 {
     seventhslide::test::ensure_qt_application();

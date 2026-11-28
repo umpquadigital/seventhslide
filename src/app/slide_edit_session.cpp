@@ -477,13 +477,8 @@ QVariantList SlideObjectsSession::build_canvas_objects() const
     std::stable_sort(objs.begin(), objs.end(),
                      [](const freeform::Object* a, const freeform::Object* b) { return a->z < b->z; });
     const auto& doc = editor.document();
-    std::vector<std::string> verse_codes;
-    if (doc.line_control) {
-        verse_codes.reserve(doc.cues.size());
-        for (const auto& cue : doc.cues) {
-            verse_codes.push_back(freeform::cue_label_code(cue));
-        }
-    }
+    const auto sections = doc.line_control ? freeform::cue_sections(doc.cues)
+                                           : freeform::CueSections{};
     const auto* deck = editor.current_deck();
     const int slide_index = editor.slide_index();
     const int slide_count = deck ? deck->slide_count() : 0;
@@ -498,7 +493,10 @@ QVariantList SlideObjectsSession::build_canvas_objects() const
         std::string text;
         if (obj->type == freeform::ObjectType::Indicator) {
             const auto items = scene::resolve_indicator_items(
-                verse_codes, line_to_slide, cue_index, slide_index, slide_count,
+                {.codes = sections.codes,
+                 .line_section = sections.cue_section,
+                 .line_to_slide = line_to_slide},
+                cue_index, slide_index, slide_count,
                 obj->indicator_fallback == freeform::IndicatorFallback::Blank);
             text = scene::format_indicator_markup(items, obj->indicator_gap);
         } else if (obj->type == freeform::ObjectType::Clock) {
@@ -867,6 +865,11 @@ QString SlideCuesSession::setRefShown(bool shown)
     return owner_.apply(owner_.freeform_.set_cue_ref_shown(shown));
 }
 
+QString SlideCuesSession::setSectionStart(bool on)
+{
+    return owner_.apply(owner_.freeform_.set_cue_section_start(on));
+}
+
 QString SlideCuesSession::setLinked(bool on)
 {
     return owner_.apply(owner_.freeform_.set_cue_linked(on));
@@ -1013,8 +1016,11 @@ QVariantMap SlideCuesSession::current() const
             {QStringLiteral("chapter"), none.chapter},
             {QStringLiteral("verse"), none.verse},
             {QStringLiteral("show_ref"), none.show_ref},
+            {QStringLiteral("section_start"), none.section_start},
+            {QStringLiteral("can_start_section"), false},
         };
     }
+    const auto& editor = owner_.freeform_;
     return {
         {QStringLiteral("text"), QString::fromStdString(cue->text)},
         {QStringLiteral("verse_type"), QString::fromStdString(cue->verse_type)},
@@ -1022,6 +1028,10 @@ QVariantMap SlideCuesSession::current() const
         {QStringLiteral("chapter"), cue->chapter},
         {QStringLiteral("verse"), cue->verse},
         {QStringLiteral("show_ref"), cue->show_ref},
+        {QStringLiteral("section_start"), cue->section_start},
+        // The cue before has its label: only a mark can part them.
+        {QStringLiteral("can_start_section"),
+         freeform::can_start_section(editor.document().cues, editor.cue_index())},
     };
 }
 

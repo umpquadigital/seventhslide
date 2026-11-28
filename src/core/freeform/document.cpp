@@ -65,6 +65,40 @@ std::string cue_label_code(const Cue& cue)
     return parse::verse_code_from_label(cue.verse_type, cue.verse_number);
 }
 
+CueSections cue_sections(const std::vector<Cue>& cues)
+{
+    CueSections out;
+    out.cue_section.reserve(cues.size());
+    for (std::size_t i = 0; i < cues.size(); ++i) {
+        auto code = cue_label_code(cues[i]);
+        if (i == 0 || cues[i].section_start || code != out.codes.back()) {
+            out.codes.push_back(std::move(code));
+        }
+        out.cue_section.push_back(static_cast<int>(out.codes.size()) - 1);
+    }
+    return out;
+}
+
+bool can_start_section(const std::vector<Cue>& cues, int index)
+{
+    if (index <= 0 || index >= static_cast<int>(cues.size())) {
+        return false;
+    }
+    const auto i = static_cast<std::size_t>(index);
+    const auto code = cue_label_code(cues[i]);
+    return !code.empty() && code == cue_label_code(cues[i - 1]);
+}
+
+void tidy_section_starts(std::vector<Cue>& cues)
+{
+    for (int i = 0; i < static_cast<int>(cues.size()); ++i) {
+        auto& cue = cues[static_cast<std::size_t>(i)];
+        if (cue.section_start && !can_start_section(cues, i)) {
+            cue.section_start = false;
+        }
+    }
+}
+
 void to_json(nlohmann::json& j, const Cue& v)
 {
     j = nlohmann::json{{"id", v.id}, {"text", v.text}};
@@ -76,6 +110,9 @@ void to_json(nlohmann::json& j, const Cue& v)
         j["chapter"] = v.chapter;
         j["verse"] = v.verse;
         j["show_ref"] = v.show_ref;
+    }
+    if (v.section_start) {
+        j["section_start"] = true;
     }
 }
 
@@ -100,6 +137,7 @@ void from_json(const nlohmann::json& j, Cue& v)
         v.verse_type.clear();
         v.verse_number = parse::k_min_verse_number;
     }
+    v.section_start = bool_or(j, "section_start", false);
 }
 
 void to_json(nlohmann::json& j, const Object& v)

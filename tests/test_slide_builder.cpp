@@ -5,6 +5,7 @@
 #include <seventhslide/devsupport/scene_dump.hpp>
 #include <seventhslide/freeform/doc_edit.hpp>
 #include <seventhslide/layout/text_measurer.hpp>
+#include <seventhslide/scene/chrome_text.hpp>
 #include <seventhslide/scene/scene_builder.hpp>
 #include <seventhslide/theme/song_theme_pack.hpp>
 #include <seventhslide/theme/theme_resolver.hpp>
@@ -439,6 +440,44 @@ TEST_CASE("SlideBuilder theme chips resolve per-slide styles", "[session][theme_
     REQUIRE(rt.theme_for_slide(slides - 1).song.font_size == 64);
     REQUIRE(rt.theme_for_slide(0).background.color == "#111111");
     REQUIRE(rt.theme_for_slide(slides - 1).background.color == "#222222");
+}
+
+TEST_CASE("A verse either side of a theme chip is two sections", "[session][theme_chips][indicator]")
+{
+    OutputConfig oc;
+    oc.name = "Main";
+    oc.id = "out-main";
+    oc.song_themes = {ThemeEntry{"t-a", "A", seventhslide::test::flat_style({{"font_size", 32}})}};
+    json pack = {
+        {"active", "a1"},
+        {"arrangements",
+         json::array({json{{"id", "a1"},
+                           {"name", "Default"},
+                           {"order", "v3 TH1 v3"},
+                           {"chips", {{"TH1", {{"out-main", {{"song", {{"theme", "t-a"}}}}}}}}}}})}};
+
+    SlideBuildInput in;
+    in.kind = BuildKind::Song;
+    in.selection.kind = ContentKind::Song;
+    in.song.theme_map = pack;
+    in.song.lyrics = "---[Verse:3]---\nThree\n";
+    in.song.verse_order = "v3 TH1 v3";
+    in.outputs = {oc};
+
+    ApproxTextMeasurer measurer;
+    const auto built = build_slides(in, measurer);
+    REQUIRE_FALSE(built.outputs.empty());
+    const auto& rt = built.outputs.front();
+    REQUIRE(rt.verse_codes == std::vector<std::string>{"v3", "v3"});
+    REQUIRE(rt.verse_indices == std::vector<int>{0, 1});
+    REQUIRE(rt.slide_count() == 2);
+
+    const auto items = seventhslide::scene::build_indicator_items(rt, 1);
+    REQUIRE(items.size() == 2);
+    CHECK(items[0].label == "V3");
+    CHECK_FALSE(items[0].active);
+    CHECK(items[1].label == "V3");
+    CHECK(items[1].active);
 }
 
 TEST_CASE("follow lines display past a theme chip", "[session][theme_chips][follow]")

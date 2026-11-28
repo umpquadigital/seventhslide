@@ -98,6 +98,15 @@ Row {
                 enabled: String(tab.cue.verse_type || "").length > 0
                 value: Number(tab.cue.verse_number)
                 onCommit: function (n) { tab.dialog.report(tab.cues.setVerse(String(tab.cue.verse_type), n)) }
+            },
+            // A verse played twice running: the cue starts the repeat, which
+            // the indicator then shows as a section of its own.
+            RibbonButton {
+                objectName: "ribbonCueNewSection"
+                label: qsTr("New section")
+                enabled: !!tab.cue.can_start_section
+                on: !!tab.cue.section_start
+                onClicked: tab.dialog.report(tab.cues.setSectionStart(!tab.cue.section_start))
             }
         ]
         row2: [

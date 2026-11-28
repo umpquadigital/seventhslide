@@ -55,7 +55,7 @@ void append_indicator_gap(model::RichLine& line, double gap)
 
 }  // namespace
 
-int first_line_on_slide(const std::vector<int>& line_to_slide, int slide_index)
+int first_line_on_slide(std::span<const int> line_to_slide, int slide_index)
 {
     for (std::size_t i = 0; i < line_to_slide.size(); ++i) {
         if (line_to_slide[i] == slide_index) {
@@ -65,38 +65,29 @@ int first_line_on_slide(const std::vector<int>& line_to_slide, int slide_index)
     return -1;
 }
 
-std::vector<IndicatorItem> build_indicator_items_from_codes(
-    const std::vector<std::string>& verse_codes,
-    int current_code_index)
+std::vector<IndicatorItem> build_indicator_items_from_sections(
+    std::span<const std::string> section_codes,
+    int current_section)
 {
-    if (verse_codes.empty()) {
-        return {};
-    }
     std::vector<IndicatorItem> items;
-    std::size_t i = 0;
-    const std::size_t n = verse_codes.size();
     // A Bible verse shows its number alone, and its chapter too where the
     // chapter changes from the verse before: ``16 17 18``, ``36 4:1``.
     int chapter = 0;
-    while (i < n) {
-        if (verse_codes[i].empty()) {
-            ++i;
+    for (std::size_t i = 0; i < section_codes.size(); ++i) {
+        const auto& code = section_codes[i];
+        if (code.empty()) {
             continue;
         }
-        const auto base = parse::base_verse_code(verse_codes[i]);
-        bool active = false;
-        while (i < n && parse::base_verse_code(verse_codes[i]) == base) {
-            active = active || (static_cast<int>(i) == current_code_index);
-            ++i;
-        }
         IndicatorItem item;
-        if (const auto ref = parse::parse_verse_ref(base)) {
-            item.label = chapter == 0 || chapter == ref->chapter ? std::to_string(ref->verse) : base;
+        if (const auto ref = parse::parse_verse_ref(code)) {
+            item.label = chapter == 0 || chapter == ref->chapter ? std::to_string(ref->verse)
+                                                                 : code;
             chapter = ref->chapter;
         } else {
+            const auto base = parse::base_verse_code(code);
             item.label = base.empty() ? "?" : util::to_upper(base);
         }
-        item.active = active;
+        item.active = static_cast<int>(i) == current_section;
         items.push_back(std::move(item));
     }
     return items;
@@ -116,28 +107,27 @@ std::vector<IndicatorItem> slide_number_indicator(int slide_index, int slide_cou
 }
 
 std::vector<IndicatorItem> resolve_indicator_items(
-    const std::vector<std::string>& verse_codes,
-    const std::vector<int>& line_to_slide,
-    int current_code_index,
+    const IndicatorSections& play,
+    int current_line,
     int slide_index,
     int slide_count,
     bool blank_if_unlabeled)
 {
-    int current = current_code_index;
-    if (current < 0) {
-        current = first_line_on_slide(line_to_slide, slide_index);
+    const int line = current_line >= 0 ? current_line
+                                       : first_line_on_slide(play.line_to_slide, slide_index);
+    int section = -1;
+    if (line >= 0 && line < static_cast<int>(play.line_section.size())) {
+        section = play.line_section[static_cast<std::size_t>(line)];
     }
-    std::string current_code;
-    if (current >= 0 && current < static_cast<int>(verse_codes.size())) {
-        current_code = verse_codes[static_cast<std::size_t>(current)];
-    }
-    if (verse_codes.empty() || current_code.empty()) {
+    const bool labelled = section >= 0 && section < static_cast<int>(play.codes.size())
+        && !play.codes[static_cast<std::size_t>(section)].empty();
+    if (!labelled) {
         if (blank_if_unlabeled) {
             return {};
         }
         return slide_number_indicator(slide_index, slide_count);
     }
-    return build_indicator_items_from_codes(verse_codes, current);
+    return build_indicator_items_from_sections(play.codes, section);
 }
 
 model::RichLine indicator_line(const std::vector<IndicatorItem>& items, double gap)
@@ -240,8 +230,8 @@ std::map<std::string, std::string> bible_ref_token_values(const model::BiblePass
 std::vector<IndicatorItem> build_indicator_items(const build::OutputRuntime& runtime,
                                                  int slide_index)
 {
-    return build_indicator_items_from_codes(runtime.verse_codes,
-                                            current_verse_index(runtime, slide_index));
+    return build_indicator_items_from_sections(runtime.verse_codes,
+                                               current_verse_index(runtime, slide_index));
 }
 
 std::string format_wall_clock_hms(int hour24,
