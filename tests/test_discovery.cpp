@@ -376,7 +376,10 @@ TEST_CASE("An address that answers with another key is tried again only after a 
     // 0.3 s, then 0.6, 1.2: four tries at most in 2.5 s, not one each check.
     CHECK(wrong >= 2);
     CHECK(wrong <= 4);
-    CHECK(laptop.link.peer_with(pretend.key()) == nullptr);
+    // Never connected to it. A try still on its way when the time is up (a
+    // handshake can take a while on a busy computer) is not a connection.
+    const auto* to_pretend = laptop.link.peer_with(pretend.key());
+    CHECK((to_pretend == nullptr || !to_pretend->ready()));
 }
 
 TEST_CASE("An address that never answers is given up, for the computer's others", "[discovery]")
