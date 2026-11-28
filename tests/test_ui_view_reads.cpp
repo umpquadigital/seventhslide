@@ -1097,6 +1097,37 @@ TEST_CASE("Service Settings: General keeps a service's title, date, time and tag
     CHECK(call(general, "parseTime", QStringLiteral("25:00")).isNull());
     CHECK(call(general, "parseTime", QStringLiteral("13pm")).isNull());
 
+    // Dates as typed in their three fields; a two-digit year is this
+    // century's.
+    const auto date_of = [&](const char* d, const char* m, const char* y) {
+        return call(general, "dateOf", QString::fromUtf8(d), QString::fromUtf8(m), QString::fromUtf8(y));
+    };
+    CHECK(date_of("3", "4", "2026").toString() == QStringLiteral("2026-04-03"));
+    CHECK(date_of("03", "04", "26").toString() == QStringLiteral("2026-04-03"));
+    CHECK(date_of("29", "2", "2028").toString() == QStringLiteral("2028-02-29"));
+    CHECK(date_of("", "", "").toString().isEmpty());
+    CHECK_FALSE(date_of("", "", "").isNull());
+    CHECK(date_of("3", "4", "").isNull());
+    CHECK(date_of("30", "2", "2026").isNull());
+    CHECK(date_of("1", "13", "2026").isNull());
+    CHECK(date_of("1", "1", "202").isNull());
+    const auto tidy = [&](const char* part, const char* text) {
+        return call(general, "tidyDatePart", QString::fromUtf8(part), QString::fromUtf8(text)).toString();
+    };
+    CHECK(tidy("D", "4") == QStringLiteral("04"));
+    CHECK(tidy("M", "12") == QStringLiteral("12"));
+    CHECK(tidy("Y", "26") == QStringLiteral("2026"));
+    CHECK(tidy("Y", "2026") == QStringLiteral("2026"));
+    // The fields' order and what is between them follow the locale's date.
+    CHECK(call(general, "orderOf", QStringLiteral("M/d/yy")).toString() == QStringLiteral("MDY"));
+    CHECK(call(general, "orderOf", QStringLiteral("dd.MM.yy")).toString() == QStringLiteral("DMY"));
+    CHECK(call(general, "orderOf", QStringLiteral("yyyy-MM-dd")).toString() == QStringLiteral("YMD"));
+    CHECK(call(general, "separatorOf", QStringLiteral("dd.MM.yy")).toString() == QStringLiteral("."));
+    CHECK(call(general, "separatorOf", QStringLiteral("d MMM yyyy")).toString() == QStringLiteral("/"));
+    CHECK(call(general, "separatorOf", QStringLiteral("d. M. yyyy")).toString() == QStringLiteral("."));
+    CHECK(call(general, "separatorOf", QStringLiteral("yy. M. d.")).toString() == QStringLiteral("."));
+    CHECK(call(general, "separatorOf", QStringLiteral("d\u200F/M\u200F/y")).toString() == QStringLiteral("/"));
+
     // Opened on a service that is not the open one, on General.
     call(settings, "openFor", id, false);
     QTest::qWait(30);
@@ -1107,7 +1138,7 @@ TEST_CASE("Service Settings: General keeps a service's title, date, time and tag
 
     // Nothing is kept until Save.
     REQUIRE(general->setProperty("draftName", QStringLiteral("Good Friday Vespers")));
-    REQUIRE(general->setProperty("draftDate", QStringLiteral("2026-04-02")));
+    REQUIRE(general->setProperty("draftDay", QStringLiteral("02")));
     REQUIRE(general->setProperty("draftTimeText", QStringLiteral("6:15 PM")));
     // A tag typed into the field (found through the items, not as QObject
     // children).
@@ -1139,12 +1170,32 @@ TEST_CASE("Service Settings: General keeps a service's title, date, time and tag
     CHECK(settings->property("errorText").toString().contains(QStringLiteral("not a time")));
     CHECK(stored().name == "Good Friday Vespers");
 
+    // So is a date that is not one.
+    REQUIRE(general->setProperty("draftTimeText", QString()));
+    REQUIRE(general->setProperty("draftDay", QStringLiteral("30")));
+    REQUIRE(general->setProperty("draftMonth", QStringLiteral("02")));
+    CHECK(general->property("draftDate").isNull());
+    call(settings, "save");
+    CHECK(settings->property("open").toBool());
+    CHECK(settings->property("errorText").toString().contains(QStringLiteral("not a date")));
+    CHECK(stored().name == "Good Friday Vespers");
+
+    // And one with a field left empty.
+    REQUIRE(general->setProperty("draftDay", QStringLiteral("03")));
+    REQUIRE(general->setProperty("draftYear", QString()));
+    call(settings, "save");
+    CHECK(settings->property("open").toBool());
+    CHECK(settings->property("errorText").toString().contains(QStringLiteral("day, month and year")));
+    CHECK(stored().name == "Good Friday Vespers");
+
     // Cancel drops the drafts; no date clears when it is held.
     call(settings, "close");
     call(settings, "openFor", id, false);
     CHECK(general->property("draftName").toString() == QStringLiteral("Good Friday Vespers"));
     call(general, "removeTag", 0);
-    REQUIRE(general->setProperty("draftDate", QString()));
+    for (const char* part : {"draftDay", "draftMonth", "draftYear"}) {
+        REQUIRE(general->setProperty(part, QString()));
+    }
     call(settings, "save");
     CHECK(stored().service_at.empty());
     CHECK(stored().tags == std::vector<std::string>{"Holy Week"});
@@ -1179,6 +1230,86 @@ void type_into(QQuickWindow* window, QQuickItem* field, const std::string& text)
 }
 
 }  // namespace
+
+// The date is typed in three fields in the locale's order: a full one, or a
+// separator, moves on to the next, which is selected so typing replaces it.
+TEST_CASE("Service Settings: General's date is typed in three fields, each moving on to the next",
+          "[ui][services]")
+{
+    seventhslide::test::ensure_qt_application();
+    const seventhslide::test::TempDir dir;
+    SessionFacade facade;
+    REQUIRE(facade.open_database(dir.path / "library.db"));
+    const auto lib = seventhslide::test::fill_sample_library(facade);
+    OperatorUi ui(facade);
+    QObject* settings = ui.find_component("ServiceSettingsDialog");
+    REQUIRE(settings != nullptr);
+    QObject* general = qml_object(settings, "ServiceGeneralState");
+    REQUIRE(general != nullptr);
+    call(settings, "openFor", QVariant::fromValue<qint64>(lib.other_service), false);
+    QTest::qWait(30);
+    REQUIRE(general->property("draftDate").toString() == QStringLiteral("2026-04-03"));
+
+    auto* root = qobject_cast<QQuickItem*>(settings);
+    const QString order = general->property("dateOrder").toString();
+    REQUIRE(order.size() == 3);
+    const auto field = [&](QChar part) {
+        QQuickItem* item = visible_named(root, QStringLiteral("serviceDate") + part);
+        REQUIRE(item != nullptr);
+        return item;
+    };
+    const auto shown = [&](QChar part) { return field(part)->property("text").toString(); };
+    CHECK(shown(QLatin1Char('D')) == QStringLiteral("03"));
+    CHECK(shown(QLatin1Char('M')) == QStringLiteral("04"));
+    CHECK(shown(QLatin1Char('Y')) == QStringLiteral("2026"));
+    const auto type = [&](const std::string& text) {
+        for (const char c : text) {
+            QTest::keyClick(ui.window(), c);
+        }
+    };
+    const auto typed = [&](const char* day, const char* month, const char* year) {
+        std::string out;
+        for (const QChar c : order) {
+            if (!out.empty()) {
+                out += '/';
+            }
+            out += c == QLatin1Char('D') ? day : c == QLatin1Char('M') ? month : year;
+        }
+        return out;
+    };
+
+    // Straight through, a separator ending each short part; tidied on leaving.
+    REQUIRE(QMetaObject::invokeMethod(field(order.at(0)), "focusInput"));
+    REQUIRE(QMetaObject::invokeMethod(field(order.at(0)), "selectAll"));
+    type(typed("3", "4", "26"));
+    QTest::keyClick(ui.window(), Qt::Key_Tab);
+    QTest::qWait(10);
+    CHECK(general->property("draftDate").toString() == QStringLiteral("2026-04-03"));
+    CHECK(shown(QLatin1Char('D')) == QStringLiteral("03"));
+    CHECK(shown(QLatin1Char('M')) == QStringLiteral("04"));
+    CHECK(shown(QLatin1Char('Y')) == QStringLiteral("2026"));
+    CHECK_FALSE(call(general, "hasChanges").toBool());
+
+    // Full parts move on by themselves, each replacing what the next held.
+    REQUIRE(QMetaObject::invokeMethod(field(order.at(0)), "focusInput"));
+    REQUIRE(QMetaObject::invokeMethod(field(order.at(0)), "selectAll"));
+    std::string digits;
+    for (const QChar c : order) {
+        digits += c == QLatin1Char('D') ? "06" : c == QLatin1Char('M') ? "05" : "2027";
+    }
+    type(digits);
+    QTest::qWait(10);
+    CHECK(general->property("draftDate").toString() == QStringLiteral("2027-05-06"));
+
+    // Emptied, there is no date, and no time to set.
+    for (const QChar c : order) {
+        type_into(ui.window(), field(c), "");
+    }
+    CHECK(general->property("draftDate").toString().isEmpty());
+    CHECK_FALSE(general->property("dateTyped").toBool());
+    INFO(ui.warnings());
+    CHECK(ui.warnings().empty());
+}
 
 TEST_CASE("Service Settings: General sets the service's audio fades, each empty for the outputs'",
           "[ui][services][audio]")

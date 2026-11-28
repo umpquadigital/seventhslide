@@ -114,13 +114,12 @@ void ServiceBrowser::setSearch(const QString& search)
     rebuild();
 }
 
-void ServiceBrowser::setToday(const QDate& today)
+void ServiceBrowser::set_today(const QDate& today)
 {
     if (today_ == today) {
         return;
     }
     today_ = today;
-    emit todayChanged();
     rebuild();
 }
 

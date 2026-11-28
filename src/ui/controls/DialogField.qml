@@ -19,6 +19,8 @@ import SeventhSlide
 // leave the field so the dialog shell receives the next key, where otherwise
 // Escape goes straight to the dialog. ``stepsKeys`` hands Up and Down to
 // ``stepped`` (-1, 1), for a field that steps through a list under it.
+// ``nextKeys`` names characters that emit ``nextTyped`` rather than being
+// typed, for one of a row of fields (a date's "/" moves on to the next part).
 //
 // A text field outside the control kit is one of these, so they have one
 // height, one face and one focus edge. The few with a part of their own are
@@ -34,6 +36,8 @@ Rectangle {
     property bool escapeClearsFocus: false
     /// Up and Down emit ``stepped`` rather than move the caret.
     property bool stepsKeys: false
+    /// Characters that emit ``nextTyped`` rather than being typed.
+    property string nextKeys: ""
     /// What the field takes (a number's range), as TextInput's.
     property alias validator: input.validator
     property alias inputMethodHints: input.inputMethodHints
@@ -49,6 +53,8 @@ Rectangle {
     signal escaped()
     /// Up (-1) or Down (1) was pressed (``stepsKeys`` only).
     signal stepped(int by)
+    /// One of ``nextKeys`` was typed.
+    signal nextTyped()
 
     // True while ``edited`` runs: a ``text`` change then is the caller's
     // answer to the keystroke, not news.
@@ -95,6 +101,13 @@ Rectangle {
         onActiveFocusChanged: {
             if (!activeFocus && text !== field.text)
                 text = field.text
+        }
+        Keys.onPressed: function (event) {
+            if (field.nextKeys.length && event.text.length === 1
+                    && field.nextKeys.indexOf(event.text) >= 0) {
+                event.accepted = true
+                field.nextTyped()
+            }
         }
         Keys.onEscapePressed: function (event) {
             if (!field.escapeClearsFocus) {

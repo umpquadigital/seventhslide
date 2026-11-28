@@ -42,9 +42,6 @@ class ServiceBrowser : public QAbstractListModel, public QQmlParserStatus {
     Q_PROPERTY(QStringList filterTags READ filterTags WRITE setFilterTags NOTIFY filterTagsChanged)
     /// Services whose name or a tag contains this (any case).
     Q_PROPERTY(QString search READ search WRITE setSearch NOTIFY searchChanged)
-    /// The day marked today, and before which days are past: the current
-    /// date, as of the last rebuild or refresh(), unless set (tests set it).
-    Q_PROPERTY(QDate today READ today WRITE setToday NOTIFY todayChanged)
     /// "date" (the default: by day, then time) or "name".
     Q_PROPERTY(QString sortKey READ sortKey WRITE setSortKey NOTIFY sortChanged)
     /// A to Z, or oldest day first; the default, false, is newest first.
@@ -90,8 +87,11 @@ public:
     void setFilterTags(const QStringList& tags);
     [[nodiscard]] QString search() const { return search_; }
     void setSearch(const QString& search);
+    /// The day marked today, and before which days are past: the current
+    /// date, unless set (tests set it). A list built marks the day it was
+    /// built on until the next rebuild or refresh().
     [[nodiscard]] QDate today() const;
-    void setToday(const QDate& today);
+    void set_today(const QDate& today);
     [[nodiscard]] QString sortKey() const { return sort_key_; }
     void setSortKey(const QString& key);
     [[nodiscard]] bool sortAscending() const noexcept { return sort_ascending_; }
@@ -119,7 +119,6 @@ signals:
     void servicesChanged();
     void filterTagsChanged();
     void searchChanged();
-    void todayChanged();
     void sortChanged();
     void changed();
 

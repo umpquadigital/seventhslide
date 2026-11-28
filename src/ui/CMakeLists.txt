@@ -159,7 +159,6 @@ qt_add_qml_module(seventhslide_ui
         editors/slide/RibbonSwatch.qml
         controls/AppMenu.qml
         controls/ChecklistField.qml
-        controls/DateField.qml
         controls/FormRow.qml
         controls/GroupHeading.qml
         controls/GroupList.qml

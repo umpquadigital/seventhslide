@@ -62,7 +62,7 @@ struct Fixture {
             service(6, "Prayer Meeting", "2026-03-04T19:00:00"),
         });
         list.set_open_service_id(2);
-        browser.setToday(QDate(2026, 3, 7));
+        browser.set_today(QDate(2026, 3, 7));
         browser.setServices(&list);
     }
 };
