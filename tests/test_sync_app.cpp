@@ -500,10 +500,15 @@ TEST_CASE("A file on its way says so at both ends: nothing is up to date yet", "
 
     // The words follow by themselves, once it has come.
     let_go = true;
-    REQUIRE(wait_until([&] {
+    const bool followed = wait_until([&] {
         return laptop.state().value(QStringLiteral("state")).toString() == QStringLiteral("uptodate")
                && church.state().value(QStringLiteral("state")).toString() == QStringLiteral("uptodate");
-    }, 30000));
+    }, 30000);
+    INFO("laptop: " << laptop.state().value(QStringLiteral("text")).toString().toStdString()
+                    << ", " << laptop.text("SELECT COUNT(*) FROM sync_media") << " sync_media row(s)");
+    INFO("church: " << church.state().value(QStringLiteral("text")).toString().toStdString()
+                    << ", " << church.text("SELECT COUNT(*) FROM sync_media") << " sync_media row(s)");
+    REQUIRE(followed);
     settle(church, laptop);
     CHECK(laptop.text("SELECT COUNT(*) FROM sync_media") == "1");
     CHECK(church.text("SELECT COUNT(*) FROM sync_media") == "1");
