@@ -45,6 +45,7 @@ set(SEVENTHSLIDE_APP_SOURCES
     export_controller.cpp
     freeform_import_controller.cpp
     ytdlp_updater.cpp
+    app_updater.cpp
     download_controller.cpp
     service_item_model.cpp
     service_list_model.cpp

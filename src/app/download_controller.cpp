@@ -28,7 +28,7 @@ namespace {
 namespace fs = std::filesystem;
 
 constexpr const char* k_no_ytdlp =
-    "Downloading needs yt-dlp, which is not installed. See Settings › Tools.";
+    "Downloading needs yt-dlp, which is not installed. See Settings › Updates & Tools.";
 
 /// The line of yt-dlp's stderr that says what went wrong: its last ERROR,
 /// without the word, else its last line.

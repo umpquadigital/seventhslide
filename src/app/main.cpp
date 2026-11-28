@@ -1,3 +1,4 @@
+#include "app_updater.hpp"
 #include "gui_thread.hpp"
 #include "image_providers.hpp"
 #include "library_registry_controller.hpp"
@@ -236,6 +237,9 @@ int main(int argc, char* argv[])
     // Sound to this computer's speakers. Tests never make this call, so they
     // run the mixer silently on its timer.
     session.start_listen_device();
+    // A minute after starting, then once a day: a newer SeventhSlide on
+    // GitHub. Tests never make this call, so they never go online.
+    session.updates()->start();
 
     // Audience windows are independent QQuickWindows. Closing the operator UI
     // would otherwise leave them open and keep the process alive

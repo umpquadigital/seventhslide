@@ -216,6 +216,7 @@ seventhslide_add_tests(core LIBS SeventhSlide::devsupport SOURCES
         test_title_slides.cpp
         test_tools_locate.cpp
         test_transition.cpp
+        test_update_releases.cpp
         test_version.cpp
         test_word_wrap.cpp
         test_zip.cpp
@@ -274,6 +275,7 @@ seventhslide_add_tests(app APP
     LIBS SeventhSlide::devsupport SeventhSlide::ffmpeg seventhslide_qrcodegen
     SOURCES
         test_app_list_models.cpp
+        test_app_updater.cpp
         test_author_list_model.cpp
         test_convert_controller.cpp
         test_destination_format.cpp

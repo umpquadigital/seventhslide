@@ -271,6 +271,7 @@ Window {
                 onSettingsRequested: root.settings().openDialog()
                 onSyncRequested: root.settings().openPage("sync")
                 onFontsRequested: root.settings().openPage("fonts")
+                onUpdatesRequested: root.settings().openPage("tools")
             }
         }
     }
@@ -411,6 +412,16 @@ Window {
         target: root.session
         function onErrorOccurred(message) {
             operationErrorDialog.ask(message)
+        }
+    }
+
+    // The Windows installer or the macOS disk image is open, and replaces the
+    // app only once it has quit: the window closes as it does when the user
+    // closes it.
+    Connections {
+        target: root.session ? root.session.updates : null
+        function onQuitForInstall() {
+            root.close()
         }
     }
 

@@ -69,6 +69,8 @@ add_library(seventhslide_core STATIC
     library/library.cpp
     library/machine_store.cpp
 
+    update/releases.cpp
+
     model/app_settings.cpp
     model/audio_fades.cpp
     model/author.cpp

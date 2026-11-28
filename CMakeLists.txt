@@ -67,6 +67,17 @@ elseif(SEVENTHSLIDE_PACKAGE STREQUAL "exe")
     set(SEVENTHSLIDE_PACKAGE_FILE "SeventhSlide-Windows-x64-Setup.exe")
 endif()
 
+# The app checks GitHub once a day for a newer release, and can download and
+# install its own package's file (SEVENTHSLIDE_PACKAGE_FILE) from it. Turn
+# this off for a build whose updates come from elsewhere: a distribution's
+# package or a Flatpak.
+option(SEVENTHSLIDE_UPDATE_CHECK "Check GitHub for newer versions of SeventhSlide" ON)
+if(SEVENTHSLIDE_UPDATE_CHECK)
+    set(SEVENTHSLIDE_UPDATE_CHECK_CXX true)
+else()
+    set(SEVENTHSLIDE_UPDATE_CHECK_CXX false)
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)

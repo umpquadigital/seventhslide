@@ -23,7 +23,7 @@ import sys
 TIERS = [
     ["util"],
     ["json", "geom", "platform", "media", "crypto"],
-    ["fonts", "library"],
+    ["fonts", "library", "update"],
     ["model"],
     ["parse"],
     ["canvas"],

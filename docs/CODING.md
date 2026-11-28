@@ -52,10 +52,11 @@ this in CI, so if you change the list, change it there and here together.
    dependencies. `platform/paths` uses only `std::filesystem`. `crypto` is
    the only place that calls OpenSSL. It covers signing keys, SHA-256 and the
    passphrase-locked box.
-3. `fonts` and `library`. `fonts` reads font files and works out which file a
-   family name refers to. `library` is the registry of libraries on disk,
-   along with each library's output destinations and its audio mixer levels
-   on this computer.
+3. `fonts`, `library` and `update`. `fonts` reads font files and works out
+   which file a family name refers to. `library` is the registry of
+   libraries on disk, along with each library's output destinations and its
+   audio mixer levels on this computer. `update` reads the app's releases on
+   GitHub and decides which one to offer.
 4. `model`: the data types and their JSON codecs (nlohmann/json, no Qt).
 5. `parse`: parsing of lyrics, Bibles and song files (pugixml, no Qt). Every
    kind of song file comes in through `parse::read_song_file`
@@ -360,6 +361,37 @@ The app runs some programs alongside itself (ffmpeg, ffprobe, yt-dlp).
 asked, so creating a session starts no process. A conversion or a download is
 written under a staging name and then taken into the library through
 `MediaController::adopt_staged`.
+
+### Updates
+
+`AppUpdater` (`session.updates`) checks GitHub for a newer release of
+SeventhSlide. It reads the repository's list of releases, and
+`update/releases.hpp` in core decides which release to offer: the newest one
+on the chosen channel (stable or beta) that is newer than the running version.
+It checks a minute after the app starts and then once a day, but only after
+`main` calls `start`, so a session made in a test never goes online. A check
+that fails changes only its status line. Nothing opens by itself during a
+service.
+
+Only one check, download or install runs at a time. While one runs, the
+channel cannot change, and the release being downloaded is recorded when the
+download starts, so a later check cannot change it.
+
+A packaged build knows which file of each release is its own
+(`package_file()`, from `SEVENTHSLIDE_PACKAGE_FILE`). The updater downloads
+that file and keeps it only if its SHA-256 matches the digest GitHub reports,
+then checks it again just before installing it. On Windows and macOS it asks
+first, because installing closes the app: it opens the installer or the disk
+image and asks the window to close. On Linux it installs the deb or rpm with
+`/usr/bin/pkexec` and `/usr/bin/apt-get` or `/usr/bin/dnf`, named by full path
+so that nothing in the user's `PATH` runs as root, and then offers to restart.
+Every link it follows must point into the repository's releases on
+github.com, and release notes are shown as plain text. A build configured
+with `SEVENTHSLIDE_UPDATE_CHECK` off never checks.
+
+The digest comes from GitHub, along with the file. It catches a damaged or
+altered download, but not a release published by someone who has taken over
+the repository; code signing the packages would.
 
 ### Export and import
 
