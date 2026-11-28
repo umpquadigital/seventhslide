@@ -1456,16 +1456,22 @@ TEST_CASE("The song editor's verse pane shows its scrollbar only for a long vers
     REQUIRE(bar != nullptr);
     QTest::qWait(50);
 
+    // Whether the verse overflows is known once the pane is laid out, which
+    // on a busy computer can be well after a short wait.
     const auto select = [&](int verse) {
         REQUIRE(QMetaObject::invokeMethod(state, "selectVerse", Q_ARG(QVariant, verse)));
         QTest::qWait(50);
+        if (auto* item = qobject_cast<QQuickItem*>(pane)) {
+            seventhslide::test::laid_out(item->window());
+        }
     };
+    const auto shown = [&] { return bar->property("barShown").toBool(); };
     select(0);
-    CHECK_FALSE(bar->property("barShown").toBool());
+    CHECK_FALSE(shown());
     select(1);
-    CHECK(bar->property("barShown").toBool());
+    CHECK(QTest::qWaitFor(shown, 5000));
     select(0);
-    CHECK_FALSE(bar->property("barShown").toBool());
+    CHECK(QTest::qWaitFor([&] { return !shown(); }, 5000));
     INFO(ui.warnings());
     CHECK(ui.warnings().empty());
 }

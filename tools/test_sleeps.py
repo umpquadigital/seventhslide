@@ -52,7 +52,7 @@ ALLOWED = {
     "test_ffmpeg_live_input.cpp": (2, "a rate in pictures a second, and an input held open while it blocks"),
     "test_library_sync.cpp": (4, "the join's wait while files keep coming, a pause that must hold, and "
                                  "snapshots looked at as they are written"),
-    "test_link.cpp": (73, "a raw peer reads what comes for a while (RawPeer::run), what must not be "
+    "test_link.cpp": (72, "a raw peer reads what comes for a while (RawPeer::run), what must not be "
                           "asked for or come, connections let in, limited and timed out on the link's "
                           "own clock, and the hidden benches"),
     "test_ndi_output.cpp": (1, "the keepalive ticks of a real NDI sender, which say nothing"),
@@ -66,6 +66,8 @@ ALLOWED = {
     "test_throttle.cpp": (2, "a call that must not come, and a rate over a second"),
     "test_video_player.cpp": (2, "a paused clock that must not move, and four seconds of play, each call "
                                  "timed"),
+    "test_video_with_sound.cpp": (6, "stretches of play over which lip sync is measured, each as long as "
+                                     "it says"),
     "test_webengine.cpp": (3, "what Chromium must not draw over the page, in the hidden tests CI's "
                               "webengine job runs"),
 }

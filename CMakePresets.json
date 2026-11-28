@@ -139,6 +139,15 @@
       }
     },
     {
+      "name": "windows-ci",
+      "displayName": "Windows CI (MSYS2 UCRT64, Release, warnings are errors)",
+      "inherits": "windows-mingw",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "SEVENTHSLIDE_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
       "name": "windows-exe",
       "displayName": "The Windows installer (MSYS2 UCRT64, Release)",
       "description": "What the release workflow packages, from the MSYS2 UCRT64 shell: packaging/windows/deploy.sh gathers the program and every DLL it needs, and packaging/windows/seventhslide.iss (Inno Setup) makes the installer.",
@@ -159,6 +168,7 @@
     {"name": "macos", "configurePreset": "macos", "jobs": 2},
     {"name": "windows-msvc", "configurePreset": "windows-msvc", "jobs": 2},
     {"name": "windows-mingw", "configurePreset": "windows-mingw", "jobs": 2},
+    {"name": "windows-ci", "configurePreset": "windows-ci"},
     {"name": "ubuntu-24.04-deb", "configurePreset": "ubuntu-24.04-deb"},
     {"name": "ubuntu-26.04-deb", "configurePreset": "ubuntu-26.04-deb"},
     {"name": "fedora-rpm", "configurePreset": "fedora-rpm"},
@@ -191,6 +201,7 @@
     },
     {"name": "macos", "inherits": "base", "configurePreset": "macos"},
     {"name": "windows-msvc", "inherits": "base", "configurePreset": "windows-msvc"},
-    {"name": "windows-mingw", "inherits": "base", "configurePreset": "windows-mingw"}
+    {"name": "windows-mingw", "inherits": "base", "configurePreset": "windows-mingw"},
+    {"name": "windows-ci", "inherits": "base", "configurePreset": "windows-ci"}
   ]
 }

@@ -162,17 +162,17 @@ These are the options you are most likely to need:
 ### Platforms and presets
 
 The CMake build supports Linux, Windows and macOS. Day-to-day development
-happens on Linux first; for macOS, see [macOS](#macos). Windows is built only
-by the release workflow (see [CI](#ci)).
+happens on Linux first; for macOS, see [macOS](#macos). Windows is built and
+tested by CI with MSYS2 (see [CI](#ci)).
 
 `CMakePresets.json` defines these presets:
 
 - `linux`, `macos`, `windows-msvc` and `windows-mingw`: Debug builds in
   `build`. Each has a configure, a build and a test preset.
-- `linux-ci` and `macos-ci`: Release builds with warnings treated as errors,
-  as CI builds them. `linux-ci` has build and test presets. `macos-ci` is a
-  configure preset only, so build with `cmake --build build` and test with
-  `ctest --test-dir build`.
+- `linux-ci`, `macos-ci` and `windows-ci`: Release builds with warnings
+  treated as errors, as CI builds them. `linux-ci` and `windows-ci` have
+  build and test presets. `macos-ci` is a configure preset only, so build
+  with `cmake --build build` and test with `ctest --test-dir build`.
 - `linux-asan`: the core, media and sync tests under AddressSanitizer and
   UBSan, built in a separate directory, `build-asan`.
 - `ubuntu-24.04-deb`, `ubuntu-26.04-deb`, `fedora-rpm`, `macos-dmg` and
@@ -319,7 +319,7 @@ for i in 1 2 3 4 5 6 7 8 9; do sudo ifconfig lo0 alias "127.0.1.$i" up; done
 
 ## CI
 
-There are three workflows in `.github/workflows`.
+There are four workflows in `.github/workflows`.
 
 `linux.yml` runs on every push and pull request. It runs on Ubuntu 24.04
 with Qt 6.8.3 installed by aqt (`.github/actions/linux-deps`), and has these
@@ -341,8 +341,15 @@ packages. It runs some of the Python checks and builds with the `macos-ci`
 preset. This is the only build that compiles the `.mm` files, and it also
 compiles the WebEngine code, because Homebrew's `qt` includes Qt WebEngine.
 It then runs the tests with the loopback addresses described in
-[macOS](#macos), but not the `[webengine]` tests. Finally, it builds the
-`macos_app` disk image and keeps it as an artifact of the run.
+[macOS](#macos), but not the `[webengine]` tests. If the tests fail, it
+prints the stack of any test program that crashed, from macOS's crash
+reports. Finally, it builds the `macos_app` disk image and keeps it as an
+artifact of the run.
+
+`windows.yml` runs on every push and pull request, on Windows Server 2025
+with MSYS2's UCRT64 packages, as the release builds the installer with. It
+builds with the `windows-ci` preset and runs `ctest --preset windows-ci`.
+The browser tests skip there, as it has no Node.
 
 `release.yml` runs when a tag is pushed, or when you start it by hand. It
 builds the five packages (see [Releases](#releases)), each from its packaging
@@ -350,8 +357,8 @@ preset in `build-package`, with the tests turned off and
 `SEVENTHSLIDE_PACKAGE` set. It also sets `SEVENTHSLIDE_DEB_FOR` and, for
 Ubuntu 24.04, `SEVENTHSLIDE_BUNDLE_QT`. These variables are read by
 `cmake/SeventhSlidePackaging.cmake` and by the install rules in the
-top-level `CMakeLists.txt`. This workflow is the only build of the Windows
-code, which is listed in the "Platforms" section of docs/CODING.md.
+top-level `CMakeLists.txt`. With `windows.yml`, this workflow builds the
+Windows code, which is listed in the "Platforms" section of docs/CODING.md.
 
 ### Running clang-tidy locally
 

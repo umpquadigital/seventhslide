@@ -520,8 +520,7 @@ TEST_CASE("a repeat video frame does not re-deliver to a destination", "[render]
     QImage next(k_canvas_w, k_canvas_h, QImage::Format_ARGB32_Premultiplied);
     next.fill(Qt::blue);
     sink.set_source_frames(video_picture(next));
-    run_events_for(80);
-    REQUIRE(sink.changed_deliveries() > changed_after_first);
+    REQUIRE(seventhslide::test::wait_until([&] { return sink.changed_deliveries() > changed_after_first; }, 5000));
 }
 
 TEST_CASE("destinations sharing an output are given a video frame once", "[render][offscreen][video]")

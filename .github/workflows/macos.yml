@@ -47,6 +47,32 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: ctest --test-dir build --output-on-failure --timeout 300 --parallel 3
 
+      # A test program that crashed says only SIGSEGV. macOS keeps a report
+      # of each crash, with the crashed thread's stack: print those stacks.
+      - name: Stacks of the test programs that crashed
+        if: failure()
+        run: |
+          /usr/bin/python3 - <<'EOF'
+          import glob, json, os
+          reports = sorted(glob.glob(os.path.expanduser(
+              "~/Library/Logs/DiagnosticReports/seventhslide_tests_*.ips")))
+          if not reports:
+              print("No test program crashed.")
+          for path in reports:
+              with open(path) as f:
+                  f.readline()  # the report's header
+                  body = json.loads(f.read())
+              images = body.get("usedImages", [])
+              print("==", os.path.basename(path), body.get("exception", {}))
+              for thread in body.get("threads", []):
+                  if not thread.get("triggered"):
+                      continue
+                  for frame in thread.get("frames", [])[:60]:
+                      index = frame.get("imageIndex", -1)
+                      image = images[index].get("name", "?") if 0 <= index < len(images) else "?"
+                      print("  %s  %s" % (image, frame.get("symbol", hex(frame.get("imageOffset", 0)))))
+          EOF
+
       # SeventhSlide.app with Qt and the Homebrew libraries inside it, signed
       # ad hoc (no Developer ID): what another Mac runs.
       - name: Package

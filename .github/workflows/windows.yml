@@ -1,0 +1,42 @@
+name: Windows
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # MSYS2's UCRT64 toolchain and libraries, as the release workflow builds
+  # the installer with (the windows-mingw preset), with the tests.
+  build-and-test:
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      # The shell scripts keep their LF line ends; bash takes no CR.
+      - name: Keep line ends as they are
+        shell: pwsh
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: git
+          pacboy: >-
+            gcc:p cmake:p ninja:p pkgconf:p
+            qt6-base:p qt6-declarative:p qt6-httpserver:p qt6-websockets:p
+            qt6-svg:p qt6-shadertools:p qt6-tools:p
+            mpv:p ffmpeg:p openssl:p
+
+      - name: Configure
+        run: cmake --preset windows-ci
+
+      - name: Build
+        run: cmake --build --preset windows-ci --parallel
+
+      - name: Test
+        run: ctest --preset windows-ci --timeout 300 --parallel 4

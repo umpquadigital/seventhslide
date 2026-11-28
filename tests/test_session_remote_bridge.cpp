@@ -1499,15 +1499,18 @@ TEST_CASE("Bridge: reading the Live tab looks for sources for a while",
     CHECK(bridge.library_page(q)["rows"].size() == 1);
 
     // The lease runs out unless read again; the console's tab keeps its own.
+    // Its timer fires when the event loop next gets to it, which on a busy
+    // computer can be well past its millisecond.
     live->keep_searching_for(std::chrono::milliseconds(1));
-    QTest::qWait(20);
-    CHECK_FALSE(live->searching());
+    CHECK(QTest::qWaitFor([&] { return !live->searching(); }, 5000));
     live->setSearching(true);
     live->keep_searching_for(std::chrono::milliseconds(1));
     QTest::qWait(20);
     CHECK(live->searching());
+    // With neither, it rests: at once, or once a lease the event loop has
+    // not got to yet runs out.
     live->setSearching(false);
-    CHECK_FALSE(live->searching());
+    CHECK(QTest::qWaitFor([&] { return !live->searching(); }, 5000));
 }
 
 TEST_CASE("Bridge: audio, a web page and a live source play on the remote's tab",

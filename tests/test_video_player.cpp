@@ -106,6 +106,16 @@ long waits_so_far()
 #endif
 }
 
+/// The longest a call may take. Where waits are told apart, a wait of 50 ms
+/// is one too long. Elsewhere a call set aside on a busy computer counts as
+/// well (53 ms for a load on CI's Windows runner), so it is given twice that,
+/// still well short of a wait on mpv's start (350 ms on macOS, once).
+#ifdef __linux__
+constexpr double k_longest_ms = 50.0;
+#else
+constexpr double k_longest_ms = 100.0;
+#endif
+
 }  // namespace
 
 // The window's thread asks the player on every tick and paints every output:
@@ -114,6 +124,13 @@ long waits_so_far()
 TEST_CASE("No player call waits on mpv while a video starts, seeks or loops", "[media][mpv]")
 {
     seventhslide::test::ensure_qt_application();
+    // The first mpv in a program loads and readies its libraries: once, and
+    // on macOS a tenth of a second or more (measured on CI's runners, where
+    // later ones start in a hundredth). Not what this times.
+    {
+        MpvMediaPlayer first;
+        REQUIRE(first.load(SEVENTHSLIDE_FIXTURES_DIR "/video/solid_3366cc_64x36.mp4", false));
+    }
     MpvMediaPlayer p;
     double slowest = 0.0;
     std::string slowest_call;
@@ -156,7 +173,7 @@ TEST_CASE("No player call waits on mpv while a video starts, seeks or loops", "[
     timed("pause", [&] { p.pause(); });
     timed("unload", [&] { p.unload(); });
     INFO("slowest: " << slowest_call << ", " << slowest << " ms");
-    CHECK(slowest < 50.0);
+    CHECK(slowest < k_longest_ms);
 }
 
 TEST_CASE("A player loaded at a place starts there, and loops round to the file's start",

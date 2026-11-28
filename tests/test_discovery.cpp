@@ -376,7 +376,10 @@ TEST_CASE("An address that answers with another key is tried again only after a 
     // 0.3 s, then 0.6, 1.2: four tries at most in 2.5 s, not one each check.
     CHECK(wrong >= 2);
     CHECK(wrong <= 4);
-    CHECK(laptop.link.peer_with(pretend.key()) == nullptr);
+    // Never connected to it. A try still on its way when the time is up (a
+    // handshake can take a while on a busy computer) is not a connection.
+    const auto* to_pretend = laptop.link.peer_with(pretend.key());
+    CHECK((to_pretend == nullptr || !to_pretend->ready()));
 }
 
 TEST_CASE("An address that never answers is given up, for the computer's others", "[discovery]")
@@ -884,14 +887,17 @@ TEST_CASE("Addresses further off wait for the network at the start, and give way
     SECTION("at the start")
     {
         auto options = quick_reach();
-        options.startup_wait_ms = 800;
+        // Long enough that the church, reached at once, is ready before it
+        // ends on a busy computer too (a handshake there can take most of a
+        // second).
+        options.startup_wait_ms = 2000;
         Reach reach(laptop.link, {}, options);
         reach.start();
         // On this network: reached at once. Further off: not yet.
-        REQUIRE(wait_until([&] { return ready_peers(laptop) == 1; }, 500));
+        REQUIRE(wait_until([&] { return ready_peers(laptop) == 1; }, 1800));
         CHECK(laptop.link.peer_with(church.key()) != nullptr);
         CHECK(laptop.link.peer_with(far.key()) == nullptr);
-        run_events_for(1200);
+        run_events_for(2400);
         CHECK_FALSE(laptop.closed.size() + laptop.link.peers().size() == 1);  // tried by now
     }
     SECTION("an attempt further off, once it is heard here")

@@ -22,8 +22,12 @@
 #include <seventhslide/render/output_window_host.hpp>
 #include <seventhslide/stream/stream_settings.hpp>
 
+#include <QCoreApplication>
+#include <QEvent>
+#include <QGuiApplication>
 #include <QPointer>
 #include <QQuickItem>
+#include <QQuickWindow>
 #include <QRectF>
 #include <QSignalSpy>
 #include <QString>
@@ -33,6 +37,9 @@
 #include <QVariantMap>
 
 #include <algorithm>
+#include <optional>
+#include <sstream>
+#include <string>
 
 using seventhslide::app::SessionFacade;
 using seventhslide::test::OperatorUi;
@@ -67,6 +74,75 @@ QQuickItem* into_view(QQuickItem* item)
     }
     return item;
 }
+
+/// What a click on a picker did, for a failure to say: where the picker
+/// was, which items the press and the release went to, whether the picker
+/// said it was clicked and its menu began to show or hide, and whether it
+/// had a destination to open for.
+class ClickProbe : public QObject {
+public:
+    explicit ClickProbe(QQuickItem* picker)
+        : picker_(picker)
+        , clicked_(picker, SIGNAL(clicked()))
+        , shows_(menu_of(picker), SIGNAL(aboutToShow()))
+        , hides_(menu_of(picker), SIGNAL(aboutToHide()))
+    {
+        const QRectF at = picker->mapRectToScene(picker->boundingRect());
+        std::ostringstream out;
+        out << "picker at " << at.x() << "," << at.y() << " " << at.width() << "x" << at.height();
+        if (QQuickWindow* window = picker->window()) {
+            out << " in a " << window->width() << "x" << window->height() << " window"
+                << (window->isExposed() ? "" : ", not exposed")
+                << (QGuiApplication::focusWindow() == window ? "" : ", not the focus window");
+        }
+        out << (picker->property("dest").isNull() ? ", no destination" : "")
+            << (picker->property("open").toBool() ? ", open already" : "");
+        before_ = out.str();
+        QCoreApplication::instance()->installEventFilter(this);
+    }
+    ~ClickProbe() override { QCoreApplication::instance()->removeEventFilter(this); }
+    ClickProbe(const ClickProbe&) = delete;
+    ClickProbe& operator=(const ClickProbe&) = delete;
+
+    bool eventFilter(QObject* to, QEvent* event) override
+    {
+        const auto type = event->type();
+        if ((type == QEvent::MouseButtonPress || type == QEvent::MouseButtonRelease
+             || type == QEvent::MouseButtonDblClick)
+            && qobject_cast<QQuickItem*>(to) != nullptr) {
+            got_ << (type == QEvent::MouseButtonPress     ? " press:"
+                     : type == QEvent::MouseButtonRelease ? " release:"
+                                                          : " double click:")
+                 << to->metaObject()->className();
+        }
+        return false;
+    }
+
+    [[nodiscard]] std::string report() const
+    {
+        std::ostringstream out;
+        out << before_ << ";" << (got_.str().empty() ? " no item had the mouse" : got_.str())
+            << "; clicked " << clicked_.count() << ", menu began to show " << shows_.count()
+            << " and to hide " << hides_.count() << "; open now: "
+            << picker_->property("open").toBool();
+        return out.str();
+    }
+
+private:
+    static QObject* menu_of(QQuickItem* picker)
+    {
+        QObject* menu = qml_object(picker, "OutputDestinationMenu");
+        REQUIRE(menu != nullptr);
+        return menu;
+    }
+
+    QQuickItem* picker_;
+    QSignalSpy clicked_;
+    QSignalSpy shows_;
+    QSignalSpy hides_;
+    std::string before_;
+    std::ostringstream got_;
+};
 
 /// ``object.method(args...)``, as QML calls it.
 template <class... Args>
@@ -203,7 +279,10 @@ TEST_CASE("Each destination kind shows its own pickers and opens its own menu",
         QQuickItem* picker = picker_of(field);
         REQUIRE(picker != nullptr);
         CHECK_FALSE(picker->property("open").toBool());
+        std::optional<ClickProbe> probe(std::in_place, picker);
         click(w, centre_of(field));
+        INFO(probe->report());
+        probe.reset();
         QObject* menu = DestinationsTab::menu_of(picker);
         REQUIRE(menu->property("visible").toBool());
         CHECK(menu->property("kind").toString() == QLatin1String(kind));
@@ -338,7 +417,9 @@ TEST_CASE("Each destination setter reports a refusal and reloads or says it was 
         REQUIRE_FALSE(id.isEmpty());
 
         QTest::qWait(20);
+        const ClickProbe probe(tab.picker("display"));
         click(ui.window(), centre_of(tab.picker("display")));
+        INFO(probe.report());
         REQUIRE(tab.menu_open());
         reported.clear();
         call(tab.dests, "setDestinationName", id, QStringLiteral("Stage"));
@@ -380,7 +461,9 @@ TEST_CASE("A destination's menu lists its kind's targets and picks one",
     QQuickItem* menu = nullptr;
     const auto open = [&](const char* kind) {
         QQuickItem* picker = tab.picker(kind);
+        const ClickProbe probe(picker);
         click(ui.window(), centre_of(picker));
+        INFO(probe.report());
         REQUIRE(tab.menu_open());
         menu = DestinationsTab::menu_of(picker)->property("contentItem").value<QQuickItem*>();
         REQUIRE(menu != nullptr);
@@ -553,7 +636,9 @@ TEST_CASE("A destination's menu closes with its page, Escape, another destinatio
     const auto open = [&] {
         picker = tab.picker("display");
         menu = DestinationsTab::menu_of(picker);
+        const ClickProbe probe(picker);
         click(w, centre_of(picker));
+        INFO(probe.report());
         REQUIRE(menu->property("visible").toBool());
         REQUIRE(picker->property("open").toBool());
     };

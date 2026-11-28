@@ -8,6 +8,7 @@
 #include <seventhslide/audio/audio_file_player.hpp>
 #include <seventhslide/render/mpv_media_player.hpp>
 
+#include <QElapsedTimer>
 #include <QTest>
 
 #include <cmath>
@@ -82,18 +83,22 @@ struct SyncRig {
                              video.loop());
     }
 
-    /// As the app does: pull a frame and keep in step every 33 ms. Returns
-    /// the drift from where a picture in step sits (half a frame back, at
-    /// 25 fps), averaged over the last half second.
+    /// As the app does: pull a frame and keep in step every 33 ms, for
+    /// ``ms`` by the clock. Returns the drift from where a picture in step
+    /// sits (half a frame back, at 25 fps), averaged over the last half
+    /// second. Timed by the clock, not by counting ticks: on a busy computer
+    /// a tick takes longer, and counted ones played on past the file's end.
     double run_for(int ms)
     {
         constexpr double half_frame = 0.5 / 25.0;
         double sum = 0.0;
         int n = 0;
-        for (int t = 0; t < ms; t += 33) {
+        QElapsedTimer clock;
+        clock.start();
+        while (clock.elapsed() < ms) {
             (void)picture.current_frame();
             video.keep_in_step();
-            if (t >= ms - 500 && !video.sound_waiting()) {
+            if (clock.elapsed() >= ms - 500 && !video.sound_waiting()) {
                 sum += drift() + half_frame;
                 ++n;
             }

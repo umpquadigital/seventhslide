@@ -1159,12 +1159,17 @@ TEST_CASE("RemoteServer draws waiting thumbnails first asked first drawn", "[rem
         return std::make_unique<PendingGet>(
             fx.base() + QStringLiteral("/api/preview/Main?w=320&slide=%1&r=%1").arg(i));
     };
-    run_events_for(300);
     std::vector<std::unique_ptr<PendingGet>> gets;
     gets.push_back(slide(0));
     REQUIRE(wait_until([&drawn] { return drawn.size() == 1; }));
-    gets.push_back(slide(1));  // waits; its timer runs about 1.3 s from the start
-    wait_until([&clock] { return clock.elapsed() >= 1150; }, 2000);
+    // The budget earns its next draw a second from the start; the second
+    // slide's timer runs a second after it is asked for. Asked at 0.6 s, it
+    // leaves half a second between the two for the third, which a busy
+    // computer's event loop can be late into.
+    wait_until([&clock] { return clock.elapsed() >= 600; }, 2000);
+    gets.push_back(slide(1));  // waits; its timer runs at about 1.6 s
+    wait_until([&clock] { return clock.elapsed() >= 1100; }, 2000);
+    INFO("the third asked at " << clock.elapsed() << " ms");
     REQUIRE(drawn.size() == 1);
     gets.push_back(slide(2));
     for (const auto& get : gets) {

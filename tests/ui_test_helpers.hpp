@@ -11,10 +11,12 @@
 #include <QObject>
 #include <QPoint>
 #include <QPointF>
+#include <QPointer>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QString>
 #include <QTest>
+#include <QtQuickTest/quicktest.h>
 
 namespace seventhslide::test {
 
@@ -130,9 +132,24 @@ inline QQuickItem* list_view_of(QObject* root, const QObject* model)
     return nullptr;
 }
 
-/// Row ``index`` of ``view`` (from list_view_of), which must be laid out.
+/// Wait until ``window`` has laid out what changed. A Column, a Row or a
+/// Layout places its items on the window's next frame, not as they change:
+/// until then an item just shown stands where it last was, perhaps over
+/// another, and a click sent there reaches the wrong one. On a busy
+/// computer that frame can come well after a short wait.
+inline void laid_out(const QQuickWindow* window)
+{
+    if (window != nullptr) {
+        (void)QQuickTest::qWaitForPolish(window, 2000);
+    }
+}
+
+/// Row ``index`` of ``view`` (from list_view_of), once its window is laid
+/// out: a view makes, moves and lets go of its rows as it lays out, so a row
+/// looked up before that may be gone after.
 inline QQuickItem* row_of(QQuickItem* view, int index)
 {
+    laid_out(view->window());
     QQuickItem* item = nullptr;
     const char* method = view->inherits("QQuickRepeater") ? "itemAt" : "itemAtIndex";
     REQUIRE(QMetaObject::invokeMethod(view, method, Q_RETURN_ARG(QQuickItem*, item),
@@ -142,14 +159,22 @@ inline QQuickItem* row_of(QQuickItem* view, int index)
     return item;
 }
 
+/// The middle of ``item`` in its window's scene, once the window is laid out.
+/// An item a view can let go of (a row) is looked up after the layout, with
+/// row_of, or it may be gone by the time this reads it.
 inline QPoint centre_of(QQuickItem* item)
 {
+    const QPointer<QQuickItem> alive(item);
+    laid_out(item->window());
+    INFO("an item went away as its window was laid out: look it up after the change, with row_of");
+    REQUIRE(alive != nullptr);
     return item->mapToScene(QPointF(item->width() / 2, item->height() / 2)).toPoint();
 }
 
-/// Click at ``at`` with ``modifiers`` held.
+/// Click at ``at`` with ``modifiers`` held, once the window is laid out.
 inline void click(QQuickWindow* window, QPoint at, Qt::KeyboardModifiers modifiers = {})
 {
+    laid_out(window);
     QTest::mouseClick(window, Qt::LeftButton, modifiers, at);
     QTest::qWait(10);
 }
@@ -158,6 +183,7 @@ inline void click(QQuickWindow* window, QPoint at, Qt::KeyboardModifiers modifie
 inline void drag(QQuickWindow* window, QPoint from, QPoint to,
                  Qt::KeyboardModifiers modifiers = {})
 {
+    laid_out(window);
     QTest::mousePress(window, Qt::LeftButton, modifiers, from);
     constexpr int steps = 8;
     for (int i = 1; i <= steps; ++i) {

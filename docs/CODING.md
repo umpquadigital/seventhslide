@@ -787,14 +787,15 @@ built. Nothing in `src/core` may depend on it.
 
 ## Platforms
 
-Only the release workflow (`release.yml`) builds the Windows code, and it runs
-no tests, so the Windows code may not build between releases. The Windows code
-is:
+CI's Windows job (`windows.yml`) builds the Windows code with MSYS2's GCC and
+runs the tests on every push, as the release workflow (`release.yml`) builds
+the installer. No CI job builds it with MSVC, so the `MSVC` branches may not
+build. The Windows code is:
 
 - `src/app/pointer_confinement_windows.cpp`
 - `cmake/SeventhSlideWindows.cmake`
 - `packaging/windows`
-- the `windows-msvc`, `windows-mingw` and `windows-exe` presets
+- the `windows-msvc`, `windows-mingw`, `windows-ci` and `windows-exe` presets
 - the `WIN32`, `MSVC` and `MINGW` branches of the CMake files
 - the `_WIN32` and `Q_OS_WIN` branches of the sources
   (`grep -rln '_WIN32\|Q_OS_WIN' src`)

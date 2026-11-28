@@ -592,7 +592,15 @@ TEST_CASE("The stage reads a slide's picture at the size it shows, off the windo
     auto* picture = w.dialog->findChild<QQuickItem*>(QStringLiteral("stageBackgroundImage"));
     REQUIRE(picture != nullptr);
     const auto status = [&] { return picture->property("status").toInt(); };
-    const auto ready = [&] { return QTest::qWaitFor([&] { return status() == k_ready; }, 10000); };
+    // Read, and if not, what it was given and how far it got (0 none,
+    // 2 loading, 3 an error), for the check after to say.
+    const auto ready = [&] {
+        const bool read = QTest::qWaitFor([&] { return status() == k_ready; }, 10000);
+        UNSCOPED_INFO("picture status " << status() << ", source '"
+                      << picture->property("source").toUrl().toString().toStdString() << "', "
+                      << picture->width() << "x" << picture->height());
+        return read;
+    };
     REQUIRE(w.edit()->slides()->setBackground(QStringLiteral("image"), QStringLiteral("big.png")).isEmpty());
     CHECK(picture->property("asynchronous").toBool());
     REQUIRE(ready());
@@ -2257,9 +2265,10 @@ void check_sidebar_fields(EditorWindow& w)
 /// checked for one hairline between each two and none over the first.
 void check_sidebar_rules(EditorWindow& w)
 {
-    // Every section open; the rows lay out on the next polish.
+    // Every section open; the rows lay out on the next polish, which on a
+    // busy computer can come well after a short wait.
     w.state->setProperty("sectionClosed", QVariantMap{});
-    QTest::qWait(50);
+    seventhslide::test::laid_out(qobject_cast<QQuickWindow*>(w.window));
     int sections = 0;
     for (QObject* o : w.dialog->findChildren<QObject*>()) {
         auto* section = qobject_cast<QQuickItem*>(o);
