@@ -22,8 +22,10 @@
 #include <seventhslide/render/output_window_host.hpp>
 #include <seventhslide/stream/stream_settings.hpp>
 
+#include <QGuiApplication>
 #include <QPointer>
 #include <QQuickItem>
+#include <QQuickWindow>
 #include <QRectF>
 #include <QSignalSpy>
 #include <QString>
@@ -33,6 +35,8 @@
 #include <QVariantMap>
 
 #include <algorithm>
+#include <sstream>
+#include <string>
 
 using seventhslide::app::SessionFacade;
 using seventhslide::test::OperatorUi;
@@ -66,6 +70,46 @@ QQuickItem* into_view(QQuickItem* item)
         QTest::qWait(20);
     }
     return item;
+}
+
+/// The topmost visible item under ``at`` in ``window``'s scene: what a click
+/// there reaches first.
+QQuickItem* item_at(QQuickItem* item, QPointF at)
+{
+    const auto children = item->childItems();
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+        QQuickItem* child = *it;
+        if (!child->isVisible() || child->opacity() <= 0.0) {
+            continue;
+        }
+        if (QQuickItem* hit = item_at(child, at)) {
+            return hit;
+        }
+    }
+    return item->contains(item->mapFromScene(at)) ? item : nullptr;
+}
+
+/// Where a click on ``picker`` went, for a failure to say: the picker's
+/// place, the window's, what was under the click, and whether the picker
+/// thought its menu open already.
+std::string click_on(QQuickItem* picker)
+{
+    QQuickWindow* window = picker->window();
+    const QRectF at = picker->mapRectToScene(picker->boundingRect());
+    QQuickItem* hit = window != nullptr ? item_at(window->contentItem(), at.center()) : nullptr;
+    std::ostringstream out;
+    out << "picker at " << at.x() << "," << at.y() << " " << at.width() << "x" << at.height();
+    if (window != nullptr) {
+        out << " in a " << window->width() << "x" << window->height() << " window"
+            << (window->isExposed() ? "" : ", not exposed")
+            << (QGuiApplication::focusWindow() == window ? "" : ", not the focus window");
+    }
+    out << "; under the click: " << (hit != nullptr ? hit->metaObject()->className() : "nothing");
+    if (hit != nullptr && !hit->objectName().isEmpty()) {
+        out << " '" << hit->objectName().toStdString() << "'";
+    }
+    out << "; picker open: " << picker->property("open").toBool();
+    return out.str();
 }
 
 /// ``object.method(args...)``, as QML calls it.
@@ -338,6 +382,7 @@ TEST_CASE("Each destination setter reports a refusal and reloads or says it was 
         REQUIRE_FALSE(id.isEmpty());
 
         QTest::qWait(20);
+        INFO(click_on(tab.picker("display")));
         click(ui.window(), centre_of(tab.picker("display")));
         REQUIRE(tab.menu_open());
         reported.clear();
@@ -380,6 +425,7 @@ TEST_CASE("A destination's menu lists its kind's targets and picks one",
     QQuickItem* menu = nullptr;
     const auto open = [&](const char* kind) {
         QQuickItem* picker = tab.picker(kind);
+        INFO(click_on(picker));
         click(ui.window(), centre_of(picker));
         REQUIRE(tab.menu_open());
         menu = DestinationsTab::menu_of(picker)->property("contentItem").value<QQuickItem*>();
@@ -553,6 +599,7 @@ TEST_CASE("A destination's menu closes with its page, Escape, another destinatio
     const auto open = [&] {
         picker = tab.picker("display");
         menu = DestinationsTab::menu_of(picker);
+        INFO(click_on(picker));
         click(w, centre_of(picker));
         REQUIRE(menu->property("visible").toBool());
         REQUIRE(picker->property("open").toBool());
