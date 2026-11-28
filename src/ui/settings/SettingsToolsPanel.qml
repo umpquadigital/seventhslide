@@ -4,18 +4,22 @@ import QtQuick
 import QtQuick.Layouts
 import SeventhSlide
 
-// Tools page of Settings: the programs SeventhSlide runs to convert and
-// download media - ffmpeg, ffprobe and yt-dlp - where each was found and
-// which version it is, looked for when the page opens and on Check again;
-// then SeventhSlide's dedicated binary of yt-dlp, installed, kept up to
-// date and uninstalled here. The line under it says whether it is installed
-// and what downloads use without it, then how a check is going or what the
-// last one on this page came to.
-// Nothing waits for Save: the switch and the buttons act at once.
+// Updates & Tools page of Settings. First SeventhSlide itself: the version
+// running, a newer release on GitHub when there is one (its notes, and
+// Download, then Install, or its page for a build that was not packaged),
+// Skip This Version, checking automatically, and the release channel. Then
+// the programs SeventhSlide runs to convert and download media - ffmpeg,
+// ffprobe and yt-dlp - where each was found and which version it is, looked
+// for when the page opens and on Check again; then SeventhSlide's dedicated
+// binary of yt-dlp, installed, kept up to date and uninstalled here. The
+// line under it says whether it is installed and what downloads use without
+// it, then how a check is going or what the last one on this page came to.
+// Nothing waits for Save: the switches and the buttons act at once.
 ScrollPage {
     id: panel
 
     required property SessionFacade session
+    readonly property AppUpdater updates: panel.session.updates
     readonly property ToolsController tools: panel.session.tools
     readonly property YtdlpUpdater ytdlp: panel.tools.ytdlp
     /// A yt-dlp is found somewhere, the app's own or another.
@@ -28,9 +32,28 @@ ScrollPage {
           ? qsTr("Not installed. Downloads use the yt-dlp listed above, which "
                  + "SeventhSlide does not update.")
           : qsTr("Not installed. Downloading needs it.")
+    /// Under the version: what a check is doing or came to, else when the
+    /// last one was.
+    readonly property string updateState: {
+        if (!panel.updates.checks)
+            return qsTr("This copy of SeventhSlide gets its updates from wherever it was "
+                        + "installed from.")
+        if (panel.updates.status.length)
+            return panel.updates.status
+        const last = panel.updates.lastChecked
+        return !isNaN(last.getTime())
+            ? qsTr("Last checked %1.").arg(last.toLocaleString(Qt.locale(), Locale.ShortFormat))
+            : qsTr("Not checked yet.")
+    }
+    /// The newer release's notes, cut to their first lines.
+    readonly property string notesShown: {
+        const lines = panel.updates.notes.split("\n")
+        return lines.length > 8 ? lines.slice(0, 8).join("\n") + "\n…" : lines.join("\n")
+    }
 
     onVisibleChanged: {
         if (panel.visible) {
+            panel.updates.clearStatus()
             panel.ytdlp.clearStatus()
             panel.tools.refresh()
         }
@@ -38,8 +61,133 @@ ScrollPage {
 
     PageHeader {
         width: panel.columnWidth
-        title: qsTr("Tools")
-        text: qsTr("SeventhSlide uses these programs to convert and download media.")
+        title: qsTr("Updates & Tools")
+        text: qsTr("Keep SeventhSlide up to date, and see the programs it uses to convert and "
+                   + "download media.")
+    }
+
+    GroupHeading {
+        text: qsTr("SeventhSlide")
+    }
+    GroupList {
+        width: panel.columnWidth
+
+        GroupRow {
+            FormRow {
+                Layout.fillWidth: true
+                label: qsTr("Version %1").arg(panel.updates.version)
+                hint: panel.updateState
+                hintInk: panel.updates.failed && !panel.updates.busy ? Style.textWarning
+                                                                     : Style.textHint
+                AppButton {
+                    visible: panel.updates.checks
+                    size: "control"
+                    label: qsTr("Check Now")
+                    enabled: !panel.updates.busy
+                    onClicked: panel.updates.checkNow()
+                }
+            }
+        }
+        // A newer release: what can be done with it, then its notes across
+        // the row's whole width.
+        GroupRow {
+            visible: panel.updates.available
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.topMargin: 2
+                Layout.bottomMargin: 6
+                spacing: 6
+                FormRow {
+                    Layout.fillWidth: true
+                    label: qsTr("SeventhSlide %1 is available").arg(panel.updates.latestVersion)
+                    hint: panel.updates.skipped ? qsTr("You chose to skip this version.") : ""
+                    Row {
+                        spacing: 6
+                        ProgressRing {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: panel.updates.downloading
+                            value: panel.updates.progress
+                        }
+                        AppButton {
+                            visible: !panel.updates.skipped && !panel.updates.downloading
+                                     && !panel.updates.installed
+                            size: "control"
+                            label: qsTr("Skip This Version")
+                            enabled: !panel.updates.busy
+                            onClicked: panel.updates.skipVersion()
+                        }
+                        AppButton {
+                            visible: panel.updates.canDownload
+                            size: "control"
+                            label: qsTr("What’s New")
+                            onClicked: Qt.openUrlExternally(panel.updates.releaseUrl)
+                        }
+                        // A build that was not packaged gets the release's
+                        // page, where each package is.
+                        AppButton {
+                            visible: !panel.updates.canDownload
+                            size: "control"
+                            primary: true
+                            label: qsTr("Open Release Page")
+                            onClicked: Qt.openUrlExternally(panel.updates.releaseUrl)
+                        }
+                        AppButton {
+                            visible: panel.updates.canDownload && panel.updates.downloading
+                            size: "control"
+                            label: qsTr("Cancel")
+                            onClicked: panel.updates.cancelDownload()
+                        }
+                        AppButton {
+                            visible: panel.updates.canDownload && !panel.updates.downloading
+                                     && !panel.updates.installed
+                            size: "control"
+                            primary: true
+                            label: panel.updates.downloaded ? qsTr("Install") : qsTr("Download")
+                            enabled: !panel.updates.busy
+                            onClicked: panel.updates.downloaded ? panel.updates.install()
+                                                                : panel.updates.download()
+                        }
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: panel.notesShown.length > 0
+                    text: panel.notesShown
+                    color: Style.textCaption
+                    font.pixelSize: Style.fontSmall
+                    wrapMode: Text.Wrap
+                    textFormat: Text.PlainText
+                }
+            }
+        }
+        SettingRow {
+            visible: panel.updates.checks
+            label: qsTr("Check for updates automatically")
+            ToggleSwitch {
+                checked: panel.updates.autoCheck
+                onToggled: panel.updates.autoCheck = !panel.updates.autoCheck
+            }
+        }
+        SettingRow {
+            visible: panel.updates.checks
+            label: qsTr("Release channel")
+            SegmentedControl {
+                options: [qsTr("Stable"), qsTr("Beta")]
+                current: panel.updates.channel === "beta" ? 1 : 0
+                onChosen: index => panel.updates.channel = index === 1 ? "beta" : "stable"
+            }
+        }
+    }
+
+    Text {
+        width: panel.columnWidth
+        visible: panel.updates.checks
+        topPadding: 10
+        text: qsTr("SeventhSlide asks GitHub, where its releases are published, once a day. "
+                   + "Beta versions come before a release, for trying what is new.")
+        color: Style.textCaption
+        font.pixelSize: Style.fontSmall
+        wrapMode: Text.Wrap
     }
 
     GroupHeading {

@@ -12,6 +12,7 @@
 // machine. What a shot sets up is free to change with the QML (a property
 // renamed, a function moved): what has to stay is the picture.
 
+#include "app_updater.hpp"
 #include "fake_tool.hpp"
 #include "font_controller.hpp"
 #include "font_fixtures.hpp"
@@ -1403,6 +1404,27 @@ std::vector<Scene> scenes()
                      search.path_env = (root / "bin").string();
                      search.tools_dir = root / "tools";
                      facade.tools()->set_search(search);
+                     QObject* dialog = component(ui, "AppSettingsDialog");
+                     call(dialog, "openDialog");
+                     set(dialog, "tab", QStringLiteral("tools"));
+                     REQUIRE(QTest::qWaitFor(
+                         [&facade] {
+                             return facade.tools()->refreshed() && !facade.tools()->probing();
+                         },
+                         5000));
+                 }});
+
+    // A newer release on GitHub, from the saved reply: its notes, and its
+    // buttons beside them. The page's own tools are left as found.
+    s.push_back({"settings_tools_update", [](F& facade, OperatorUi& ui, const L&) {
+                     seventhslide::app::AppUpdater& updates = *facade.updates();
+                     updates.set_build(*seventhslide::update::parse_version("1.3.0"),
+                                       "seventhslide-ubuntu-24.04-amd64.deb");
+                     updates.set_releases_url(QUrl::fromLocalFile(QString::fromStdString(
+                         (fs::path(SEVENTHSLIDE_FIXTURES_DIR) / "updates" / "releases.json")
+                             .string())));
+                     updates.checkNow();
+                     REQUIRE(QTest::qWaitFor([&updates] { return updates.available(); }, 5000));
                      QObject* dialog = component(ui, "AppSettingsDialog");
                      call(dialog, "openDialog");
                      set(dialog, "tab", QStringLiteral("tools"));

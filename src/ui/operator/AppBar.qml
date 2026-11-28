@@ -11,7 +11,8 @@ import SeventhSlide
 // a ring while media imports, exports, converts or downloads (opens the list
 // of them), then Layout ▾ (Edit Mode, which panels show, Reset
 // Layout), Collaboration (while the open library syncs, a dot on its icon for
-// a message not read yet) and Settings.
+// a message not read yet), Update available (while a newer SeventhSlide is
+// out and not skipped; opens Settings › Updates & Tools) and Settings.
 // An output's state is its card's coloured border, not here.
 Rectangle {
     id: bar
@@ -27,6 +28,7 @@ Rectangle {
     signal settingsRequested()
     signal syncRequested()
     signal fontsRequested()
+    signal updatesRequested()
     /// A press on the bar: the window ends a search being typed elsewhere.
     signal interacted()
 
@@ -418,6 +420,23 @@ Rectangle {
 
             Text {
                 text: qsTr("Collaboration")
+                color: Style.textCaption
+                font.pixelSize: Style.fontSmall
+            }
+        }
+        // A newer SeventhSlide. It only waits here: nothing opens by itself
+        // during a service.
+        BarButton {
+            objectName: "updateButton"
+            icon: "import"
+            dot: true
+            visible: !!bar.session && bar.session.updates.available
+                     && !bar.session.updates.skipped && !bar.session.updates.installed
+            enabled: !!bar.session && bar.session.ready
+            onClicked: bar.updatesRequested()
+
+            Text {
+                text: qsTr("Update available")
                 color: Style.textCaption
                 font.pixelSize: Style.fontSmall
             }

@@ -158,6 +158,7 @@ These are the options you are most likely to need:
 | `SEVENTHSLIDE_WEBENGINE`          | `ON`    | Use Qt WebEngine where it is installed (see [Requirements](#requirements)) |
 | `SEVENTHSLIDE_REQUIRE_WEBENGINE`  | `OFF`   | Fail the configure step if Qt WebEngine is not available |
 | `SEVENTHSLIDE_NDI_VERIFY_ABI`     | `OFF`   | Build the NDI ABI check (see [NDI](#ndi))              |
+| `SEVENTHSLIDE_UPDATE_CHECK`       | `ON`    | Check GitHub once a day for a newer release. Turn it off for a build whose updates come from somewhere else, such as a distribution's package or a Flatpak |
 
 ### Platforms and presets
 
@@ -283,6 +284,9 @@ main window's panel layout and the media browsers' view, are stored in Qt's
 settings: `~/.config/SeventhSlide/SeventhSlide.conf` on Linux, the registry
 on Windows, and `~/Library/Preferences` on macOS. To store them as INI files
 in a different directory instead, set `SEVENTHSLIDE_SETTINGS_DIR`.
+
+An update that the app downloads is kept in the `updates` folder of the data
+directory until the next one replaces it.
 
 ## macOS
 

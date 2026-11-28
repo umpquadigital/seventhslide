@@ -139,6 +139,29 @@ enum class Channel {
                                               const Version& running,
                                               const std::optional<Version>& skipped);
 
+/// How a release file is installed, by its kind.
+enum class Installer {
+    /// Not a kind the app installs.
+    none,
+    /// The Windows installer (``.exe``), opened as the user would open it.
+    windows_setup,
+    /// The macOS disk image (``.dmg``), opened in the Finder.
+    disk_image,
+    /// A ``.deb``, installed by apt-get as root.
+    deb,
+    /// An ``.rpm``, installed by dnf as root.
+    rpm,
+};
+
+/// The installer for ``file_name``, by its extension.
+[[nodiscard]] Installer installer_for(std::string_view file_name) noexcept;
+
+/// The command that installs the package at ``path`` as root, through
+/// pkexec (which asks for an administrator's password): apt-get for a deb,
+/// dnf for an rpm. ``path`` must be absolute, so neither reads it as one of
+/// its options. Empty for any other installer, or a relative path.
+[[nodiscard]] std::vector<std::string> install_command(Installer installer, std::string_view path);
+
 /// Release notes as plain text: headings, emphasis, code marks, pictures and
 /// HTML comments are taken out, a link keeps only its text, and a list item
 /// starts with a bullet. Runs of blank lines become one.

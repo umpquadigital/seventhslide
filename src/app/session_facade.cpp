@@ -23,6 +23,7 @@
 #include "media_controller.hpp"
 #include "mixer_controller.hpp"
 #include "tools_controller.hpp"
+#include "app_updater.hpp"
 #include "convert_controller.hpp"
 #include "download_controller.hpp"
 #include "export_controller.hpp"
@@ -86,6 +87,7 @@ SessionFacade::SessionFacade(QObject* parent)
           platform::ToolSearch::from(platform::Paths{},
                                      QCoreApplication::applicationDirPath().toStdString()),
           this))
+    , updates_(std::make_unique<AppUpdater>(this))
     , fonts_(std::make_unique<FontController>(open_library_, previews_, this))
     , service_items_(std::make_unique<ServiceItemModel>(session_, this))
     , outputs_model_(std::make_unique<OutputListModel>(session_, false, this))

@@ -30,7 +30,7 @@ namespace {
 QString no_tools()
 {
     return ConvertController::tr(
-        "Converting needs ffmpeg and ffprobe, which were not found. See Settings › Tools.");
+        "Converting needs ffmpeg and ffprobe, which were not found. See Settings › Updates & Tools.");
 }
 
 QVariantMap probe_map(const media::MediaProbe& probe)

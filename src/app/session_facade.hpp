@@ -63,6 +63,7 @@ Q_MOC_INCLUDE("live_controller.hpp")
 Q_MOC_INCLUDE("media_controller.hpp")
 Q_MOC_INCLUDE("mixer_controller.hpp")
 Q_MOC_INCLUDE("tools_controller.hpp")
+Q_MOC_INCLUDE("app_updater.hpp")
 Q_MOC_INCLUDE("convert_controller.hpp")
 Q_MOC_INCLUDE("download_controller.hpp")
 Q_MOC_INCLUDE("export_controller.hpp")
@@ -116,6 +117,7 @@ class MediaController;
 class MixerController;
 class ServiceThumbs;
 class ToolsController;
+class AppUpdater;
 class FontController;
 class ConvertController;
 class DownloadController;
@@ -214,6 +216,8 @@ class SessionFacade : public QObject,
     /// ffmpeg, ffprobe and yt-dlp: where they are, and the jobs that run
     /// them (see tools_controller.hpp).
     Q_PROPERTY(seventhslide::app::ToolsController* tools READ tools CONSTANT)
+    /// SeventhSlide's own updates from GitHub (see app_updater.hpp).
+    Q_PROPERTY(seventhslide::app::AppUpdater* updates READ updates CONSTANT)
     /// Convert: library files re-encoded into new ones (convert_controller.hpp).
     Q_PROPERTY(seventhslide::app::ConvertController* convert READ convert CONSTANT)
     /// Download from the internet with yt-dlp (download_controller.hpp).
@@ -377,6 +381,7 @@ public:
     [[nodiscard]] ServiceThumbs* serviceThumbs() noexcept { return service_thumbs_.get(); }
     [[nodiscard]] MixerController* mixer() noexcept { return mixer_.get(); }
     [[nodiscard]] ToolsController* tools() noexcept { return tools_.get(); }
+    [[nodiscard]] AppUpdater* updates() noexcept { return updates_.get(); }
     [[nodiscard]] FontController* fonts() noexcept { return fonts_.get(); }
     [[nodiscard]] ConvertController* convert() noexcept { return convert_.get(); }
     /// The fonts and measurer every preview draws with (OverlayTextItem).
@@ -586,6 +591,7 @@ private:
     /// first.
     std::unique_ptr<MixerController> mixer_;
     std::unique_ptr<ToolsController> tools_;
+    std::unique_ptr<AppUpdater> updates_;
     std::unique_ptr<FontController> fonts_;
 
     std::unique_ptr<ServiceItemModel> service_items_;

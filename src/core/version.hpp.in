@@ -15,4 +15,18 @@ namespace seventhslide {
     return "@SEVENTHSLIDE_VERSION@";
 }
 
+/// This build checks GitHub for newer versions (SEVENTHSLIDE_UPDATE_CHECK).
+[[nodiscard]] constexpr bool update_check_enabled() noexcept
+{
+    return @SEVENTHSLIDE_UPDATE_CHECK_CXX@;
+}
+
+/// The file of each release that this build was packaged as
+/// (``seventhslide-ubuntu-24.04-amd64.deb``), and so the one it updates
+/// from; empty for a build that was not packaged.
+[[nodiscard]] constexpr std::string_view package_file() noexcept
+{
+    return "@SEVENTHSLIDE_PACKAGE_FILE@";
+}
+
 } // namespace seventhslide

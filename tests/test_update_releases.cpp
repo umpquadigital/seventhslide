@@ -310,3 +310,27 @@ TEST_CASE("Release notes read as plain text", "[update]")
     CHECK(notes_text("Kept <!-- never closed") == "Kept");
     CHECK(notes_text("<b>Not HTML</b>") == "<b>Not HTML</b>");
 }
+
+TEST_CASE("Each package is installed its own way", "[update]")
+{
+    CHECK(installer_for("SeventhSlide-Windows-x64-Setup.exe") == Installer::windows_setup);
+    CHECK(installer_for("SeventhSlide-macOS-arm64.dmg") == Installer::disk_image);
+    CHECK(installer_for("seventhslide-ubuntu-24.04-amd64.deb") == Installer::deb);
+    CHECK(installer_for("seventhslide-fedora-x86_64.rpm") == Installer::rpm);
+    CHECK(installer_for("SETUP.EXE") == Installer::windows_setup);
+    CHECK(installer_for("SHA2-256SUMS") == Installer::none);
+    CHECK(installer_for(".deb") == Installer::none);
+    CHECK(installer_for("") == Installer::none);
+
+    CHECK(install_command(Installer::deb, "/home/me/.local/share/SeventhSlide/updates/s.deb")
+          == std::vector<std::string>{"pkexec", "apt-get", "install", "--yes",
+                                      "/home/me/.local/share/SeventhSlide/updates/s.deb"});
+    CHECK(install_command(Installer::rpm, "/tmp/s.rpm")
+          == std::vector<std::string>{"pkexec", "dnf", "install", "--assumeyes", "/tmp/s.rpm"});
+    // A relative path could read as an option: "-o..." is apt-get's.
+    CHECK(install_command(Installer::deb, "-oAPT::x=1").empty());
+    CHECK(install_command(Installer::deb, "s.deb").empty());
+    CHECK(install_command(Installer::windows_setup, "/x/Setup.exe").empty());
+    CHECK(install_command(Installer::disk_image, "/x/s.dmg").empty());
+    CHECK(install_command(Installer::none, "/x/s").empty());
+}

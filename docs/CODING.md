@@ -362,6 +362,26 @@ asked, so creating a session starts no process. A conversion or a download is
 written under a staging name and then taken into the library through
 `MediaController::adopt_staged`.
 
+### Updates
+
+`AppUpdater` (`session.updates`) checks GitHub for a newer release of
+SeventhSlide. It reads the repository's list of releases, and
+`update/releases.hpp` in core decides which release to offer: the newest one
+on the chosen channel (stable or beta) that is newer than the running version.
+It checks a minute after the app starts and then once a day, but only after
+`main` calls `start`, so a session made in a test never goes online. A check
+that fails changes only its status line. Nothing opens by itself during a
+service.
+
+A packaged build knows which file of each release is its own
+(`package_file()`, from `SEVENTHSLIDE_PACKAGE_FILE`). The updater downloads
+that file and keeps it only if its SHA-256 matches the digest GitHub reports.
+It then opens the Windows installer or the macOS disk image and asks the
+window to quit, or installs a deb or an rpm through `pkexec`. Every link it
+follows must point into the repository's releases on github.com, and release
+notes are shown as plain text. A build configured with
+`SEVENTHSLIDE_UPDATE_CHECK` off never checks.
+
 ### Export and import
 
 Everything that leaves the library goes through `ExportController`

@@ -285,7 +285,7 @@ FocusScope {
             { id: "remote", label: qsTr("Web Remote"), icon: "phone" },
             { id: "bibles", label: qsTr("Bibles"), icon: "bible" },
             { id: "fonts", label: qsTr("Fonts"), icon: "textBox" },
-            { id: "tools", label: qsTr("Tools"), icon: "hammer" }
+            { id: "tools", label: qsTr("Updates & Tools"), icon: "hammer" }
         ]
         page: root.tab
         onPageActivated: function (id) { root.tab = id }

@@ -395,6 +395,44 @@ const Release* release_to_offer(const std::vector<Release>& releases,
     return newest;
 }
 
+Installer installer_for(std::string_view file_name) noexcept
+{
+    const auto ends = [file_name](std::string_view ext) {
+        return file_name.size() > ext.size() && util::iequals(file_name.substr(file_name.size() - ext.size()), ext);
+    };
+    if (ends(".exe")) {
+        return Installer::windows_setup;
+    }
+    if (ends(".dmg")) {
+        return Installer::disk_image;
+    }
+    if (ends(".deb")) {
+        return Installer::deb;
+    }
+    if (ends(".rpm")) {
+        return Installer::rpm;
+    }
+    return Installer::none;
+}
+
+std::vector<std::string> install_command(Installer installer, std::string_view path)
+{
+    if (!path.starts_with('/')) {
+        return {};
+    }
+    switch (installer) {
+    case Installer::deb:
+        return {"pkexec", "apt-get", "install", "--yes", std::string(path)};
+    case Installer::rpm:
+        return {"pkexec", "dnf", "install", "--assumeyes", std::string(path)};
+    case Installer::none:
+    case Installer::windows_setup:
+    case Installer::disk_image:
+        break;
+    }
+    return {};
+}
+
 std::string notes_text(std::string_view markdown)
 {
     const std::string text = without_comments(markdown);
