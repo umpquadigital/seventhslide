@@ -16,6 +16,11 @@ ScrollBar {
     /// used when it is already smaller (long lists). Prevents a slab handle
     /// when content barely overflows.
     property real maximumSize: 0.28
+    /// Keep a vertical gutter while giving it back would grow the content
+    /// into overflow again (16:9 cards, as tall as they are wide). Off for a
+    /// view whose content does not grow with its width, where it would only
+    /// keep a bar, and a margin to scroll, once all of it fits.
+    property bool stickyGutter: true
     /// The view this bar scrolls. Always attached to a Flickable (ListView and
     /// GridView included); null only while unparented.
     readonly property Flickable flick: control.parent as Flickable
@@ -87,6 +92,11 @@ ScrollBar {
     function syncReserved() {
         const space = Style.scrollSize + control.contentGap
         const flick = control.flick
+        // Without the sticky gutter, a view of no size (a window sized to its
+        // page, closed or not laid out yet) is left as it is: all of its page
+        // overflows it, and the bar would show for a moment once it opened.
+        if (!control.stickyGutter && (!flick || flick.width <= 0 || flick.height <= 0))
+            return
         if (control.orientation === Qt.Vertical) {
             if (overflowing) {
                 setInjectedPad(flick, 0)
@@ -98,7 +108,7 @@ ScrollBar {
             }
             // Keep the gutter if restoring width would grow 16:9 content
             // back into overflow (card height scales with width).
-            if (reservedWidth > 0 && flick && flick.width > 0) {
+            if (control.stickyGutter && reservedWidth > 0 && flick && flick.width > 0) {
                 const extra = reservedWidth * flick.contentHeight / flick.width
                 if (flick.contentHeight + extra > flick.height + 0.5) {
                     const pad = Math.max(

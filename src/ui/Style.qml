@@ -130,6 +130,9 @@ QtObject {
     /// Settings' pages are; as tall as the Output window, for the messages.
     readonly property int collaborationWindowW: 620
     readonly property int collaborationWindowH: 640
+    /// A computer's Edit window, over Settings: no rail, as tall as its
+    /// sections.
+    readonly property int computerWindowW: 560
 
     /// Settings-dialog surfaces (Output / App Settings / Song / Services).
     /// Lifted a few steps above the #0d0d0d dimmer so the sheet reads as a card.

@@ -547,6 +547,7 @@ FocusScope {
     ComputerEditDialog {
         id: computerEdit
         syncState: syncState
+        returnFocusTo: root
     }
 
     AppDialog {

@@ -96,14 +96,14 @@ class SyncController : public QObject {
     /// ``libraryStates``), ``sizeLimit`` (bytes, 0 for none), ``computers``
     /// (``key``, ``machine``, ``name``, ``role``, ``holdsAdminKey``,
     /// ``removed``, ``connected``, ``thisComputer``, ``lastHeard``,
-    /// ``addresses`` (those it gave), ``typedAddresses`` (those typed for it
-    /// here), ``connectedAt`` (where it is connected from, while it is),
-    /// ``lastReachedAt``, ``picture``; then a row for each invite waiting for
-    /// its computer: ``key``, ``invite`` (its id), ``name``, ``role``,
-    /// ``expires``, ``madeBy``, ``holdsAdminKey`` and ``addresses`` (none),
-    /// ``typedAddresses`` (where it is reached out with)) and
-    /// ``sizeUsed`` (bytes
-    /// of media the size limit counts).
+    /// ``joined`` (when it joined, as its entry says; empty when it does not
+    /// say), ``founded`` (the first computer, which founded the library rather
+    /// than joining it), ``addresses`` (those it gave), ``typedAddresses``
+    /// (those typed for it here), ``picture``; then a row for each invite
+    /// waiting for its computer: ``key``, ``invite`` (its id), ``name``,
+    /// ``role``, ``expires``, ``holdsAdminKey`` and ``addresses`` (none),
+    /// ``typedAddresses`` (where it is reached out with)) and ``sizeUsed``
+    /// (bytes of media the size limit counts).
     Q_PROPERTY(QVariantMap openLibrary READ openLibrary NOTIFY stateChanged)
     /// Each synced library's state by registry id: ``state`` ("starting",
     /// "uptodate", "sending", "downloading", "joining", "waiting", "paused",

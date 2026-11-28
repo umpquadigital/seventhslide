@@ -40,6 +40,14 @@ const json& field(const json& j, const char* name)
     return *it;
 }
 
+/// When an entry was written, by its writer's clock; empty when it does not
+/// say. Shown only, so an entry is not refused over it.
+std::string time_of(const json& j)
+{
+    const auto it = j.find("time");
+    return it != j.end() && it->is_string() ? it->get<std::string>() : std::string();
+}
+
 std::string text_of(const json& j, const char* name)
 {
     const auto& v = field(j, name);
@@ -468,6 +476,8 @@ private:
             out_.admin = admin;
             out_.recovery = recovery;
             founder.has_edited = true;
+            founder.joined = time_of(b);
+            founder.founded = true;
             out_.members.emplace(founder.machine, std::move(founder));
             effect.founding = true;
             return;
@@ -726,6 +736,7 @@ private:
         // A viewer from the start has no change files that count.
         joiner.files_kept = joiner.role == Role::Viewer ? 0 : k_all_files;
         joiner.has_edited = joiner.role == Role::Editor;
+        joiner.joined = time_of(p.envelope.body);
         add(std::move(joiner));
         used.push_back(i);
         out_.invites_used.insert(invite.invite.id);

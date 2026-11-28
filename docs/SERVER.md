@@ -196,9 +196,10 @@ invite. Each library needs its own invite.
    (`join CODE`). However, other users of that computer can then see the code,
    and it is saved in the shell's history.
 3. Optionally, to be able to do admin work on the server, select the server in
-   the list of computers on the editor computer, click **Edit…** and tick
-   **Holds the admin key**. If you later untick it, the copy of the key that the
-   server already has stays there until the admin password is changed.
+   the list of computers on the editor computer, click **Edit…**, turn on
+   **Holds the admin key** and click **Save**. If you later turn it off, the copy
+   of the key that the server already has stays there until the admin password
+   is changed.
 
 The invite's secret is in the code and nowhere else. Share the code only with
 the person setting up the server, and make a new invite if anyone else saw it.

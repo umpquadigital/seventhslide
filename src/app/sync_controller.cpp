@@ -24,7 +24,6 @@
 
 #include <QBuffer>
 #include <QDeadlineTimer>
-#include <QHostAddress>
 #include <QImage>
 #include <QLocale>
 #include <QLoggingCategory>
@@ -92,15 +91,6 @@ std::vector<std::string> std_list(const QStringList& strings)
         out.push_back(s.toStdString());
     }
     return out;
-}
-
-/// ``address`` as a person reads it: an IPv4 one as itself, not as the IPv6 a
-/// listener taking both sees it as.
-QString shown_address(const QHostAddress& address)
-{
-    bool v4 = false;
-    const auto ipv4 = address.toIPv4Address(&v4);
-    return v4 ? QHostAddress(ipv4).toString() : address.toString();
 }
 
 /// Why addresses typed for another computer will not do, in words; empty when they will.
@@ -1111,9 +1101,6 @@ QVariantMap SyncController::openLibrary() const
             return p->ready() && p->key() == m.key && p->libraries().contains(held->sync->uid());
         });
         const auto heard = node_->last_heard(m.key);
-        const auto fingerprint = m.key.fingerprint();
-        const auto* peer = on ? node_->link().peer_with(m.key) : nullptr;
-        const auto reached = node_->reach().remembered(fingerprint);
         computers.push_back(QVariantMap{
             {QStringLiteral("key"), q(machine)},
             {QStringLiteral("machine"), q(machine)},
@@ -1124,23 +1111,20 @@ QVariantMap SyncController::openLibrary() const
             {QStringLiteral("connected"), on},
             {QStringLiteral("thisComputer"), machine == me},
             {QStringLiteral("lastHeard"), q(heard)},
+            {QStringLiteral("joined"), q(m.joined)},
+            {QStringLiteral("founded"), m.founded},
             {QStringLiteral("addresses"), q_list(m.addresses)},
             {QStringLiteral("typedAddresses"), q_list(node_->typed_addresses(m))},
-            {QStringLiteral("connectedAt"), peer != nullptr ? shown_address(peer->address()) : QString()},
-            {QStringLiteral("lastReachedAt"), reached.empty() ? QString() : q(reached.front())},
             {QStringLiteral("picture"), picture_map(m.picture)}});
     }
     // Then the invites waiting for their computers, each a row of its own.
     for (const auto& made : sync::waiting_invites(list)) {
-        const bool viewer = made.role == sync::Role::Viewer;
-        const auto* by = list.find(made.made_by);
         computers.push_back(QVariantMap{
             {QStringLiteral("key"), QStringLiteral("invite:") + q(made.id)},
             {QStringLiteral("invite"), q(made.id)},
-            {QStringLiteral("name"), viewer ? tr("Invited viewer") : tr("Invited editor")},
+            {QStringLiteral("name"), tr("Unclaimed Invite")},
             {QStringLiteral("role"), q(std::string(sync::role_name(made.role)))},
             {QStringLiteral("expires"), q(made.expires)},
-            {QStringLiteral("madeBy"), by != nullptr ? q(by->name) : q(made.made_by)},
             {QStringLiteral("holdsAdminKey"), false},
             {QStringLiteral("addresses"), QStringList()},
             {QStringLiteral("typedAddresses"), q_list(node_->reach().invite_addresses(held->sync->uid(), made.id))}});
