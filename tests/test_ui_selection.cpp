@@ -366,8 +366,8 @@ TEST_CASE("Dragging rundown rows reorders the service", "[ui][selection][drag]")
         }
         return out;
     };
+    // Of a row from row_of, which waits for the list's layout.
     const auto lower_half = [](QQuickItem* row) {
-        seventhslide::test::laid_out(row->window());
         return row->mapToScene(QPointF(row->width() / 2, row->height() * 0.8)).toPoint();
     };
     const auto& it = lib.items;
