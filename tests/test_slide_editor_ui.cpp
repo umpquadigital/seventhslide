@@ -592,7 +592,15 @@ TEST_CASE("The stage reads a slide's picture at the size it shows, off the windo
     auto* picture = w.dialog->findChild<QQuickItem*>(QStringLiteral("stageBackgroundImage"));
     REQUIRE(picture != nullptr);
     const auto status = [&] { return picture->property("status").toInt(); };
-    const auto ready = [&] { return QTest::qWaitFor([&] { return status() == k_ready; }, 10000); };
+    // Read, and if not, what it was given and how far it got (0 none,
+    // 2 loading, 3 an error), for the check after to say.
+    const auto ready = [&] {
+        const bool read = QTest::qWaitFor([&] { return status() == k_ready; }, 10000);
+        UNSCOPED_INFO("picture status " << status() << ", source '"
+                      << picture->property("source").toUrl().toString().toStdString() << "', "
+                      << picture->width() << "x" << picture->height());
+        return read;
+    };
     REQUIRE(w.edit()->slides()->setBackground(QStringLiteral("image"), QStringLiteral("big.png")).isEmpty());
     CHECK(picture->property("asynchronous").toBool());
     REQUIRE(ready());
