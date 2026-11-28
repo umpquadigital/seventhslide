@@ -53,7 +53,7 @@ Row {
                 value: tab.dialog.fontFamilyShown()
                 onPicked: function (v) { tab.dialog.commitFontFamily(v) }
             },
-            RibbonField {
+            NumberField {
                 objectName: "ribbonFontSize"
                 fieldWidth: 60
                 minValue: 8

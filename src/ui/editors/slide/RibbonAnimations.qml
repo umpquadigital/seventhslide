@@ -137,7 +137,7 @@ Row {
             }
         ]
         row2: [
-            RibbonField {
+            NumberField {
                 objectName: "ribbonAnimationMs"
                 label: qsTr("Duration")
                 unit: "s"
@@ -151,7 +151,7 @@ Row {
                 value: tab.current ? Number(tab.current.durationMs) : 500
                 onCommit: function (n) { tab.dialog.setAnimationField("duration_ms", n) }
             },
-            RibbonField {
+            NumberField {
                 objectName: "ribbonAnimationDelay"
                 label: qsTr("Delay")
                 unit: "s"

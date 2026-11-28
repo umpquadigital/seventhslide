@@ -95,7 +95,7 @@ struct EditorWindow {
         REQUIRE(found != nullptr);
         return found;
     }
-    /// A RibbonField's commit, as typing a number and Enter.
+    /// A NumberField's commit, as typing a number and Enter.
     void commit(const char* name, double n)
     {
         REQUIRE(QMetaObject::invokeMethod(control(name), "commit", Q_ARG(double, n)));

@@ -90,7 +90,7 @@ Row {
                 value: String(tab.cue.verse_type || "")
                 onPicked: function (v) { tab.dialog.report(tab.cues.setVerse(v, Number(tab.cue.verse_number))) }
             },
-            RibbonField {
+            NumberField {
                 objectName: "ribbonCueVerseNumber"
                 fieldWidth: 56
                 minValue: 1
@@ -101,7 +101,7 @@ Row {
             }
         ]
         row2: [
-            RibbonField {
+            NumberField {
                 objectName: "ribbonCueChapter"
                 label: qsTr("Bible")
                 fieldWidth: 44
@@ -111,7 +111,7 @@ Row {
                 value: Number(tab.cue.chapter)
                 onCommit: function (n) { tab.dialog.report(tab.cues.setScripture(n, Number(tab.cue.verse))) }
             },
-            RibbonField {
+            NumberField {
                 objectName: "ribbonCueVerseRef"
                 fieldWidth: 44
                 stepper: false

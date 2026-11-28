@@ -1209,7 +1209,8 @@ QQuickItem* visible_named(QQuickItem* root, const QString& name)
     return nullptr;
 }
 
-/// Replace what ``field`` (a DialogField) holds with ``text``, typed.
+/// Replace what ``field`` (a DialogField or a NumberField) holds with
+/// ``text``, typed.
 void type_into(QQuickWindow* window, QQuickItem* field, const std::string& text)
 {
     REQUIRE(field != nullptr);
@@ -1247,7 +1248,7 @@ TEST_CASE("Service Settings: General sets the service's audio fades, each empty 
     QQuickItem* fade_out = visible_named(root, QStringLiteral("serviceAudio_fade_out_ms"));
     REQUIRE(fade_out != nullptr);
     CHECK(fade_out->property("text").toString().isEmpty());
-    type_into(ui.window(), fade_out, "1500");
+    type_into(ui.window(), fade_out, "1.5");
     // Play/pause follows the outputs' until it is picked.
     REQUIRE(visible_named(root, QStringLiteral("serviceAudio_on_play_pause")) != nullptr);
     QObject* general = qml_object(settings, "ServiceGeneralState");
@@ -1265,12 +1266,94 @@ TEST_CASE("Service Settings: General sets the service's audio fades, each empty 
     call(settings, "openFor", QVariant::fromValue<qint64>(lib.service), false);
     QTest::qWait(30);
     fade_out = visible_named(root, QStringLiteral("serviceAudio_fade_out_ms"));
-    CHECK(fade_out->property("text").toString() == QStringLiteral("1500"));
+    CHECK(fade_out->property("text").toString() == QStringLiteral("1.5 s"));
     type_into(ui.window(), fade_out, "");
     call(general, "setFade", QStringLiteral("on_play_pause"), QString());
     call(settings, "save");
     CHECK(stored().empty());
     CHECK(main_fades().fade_out_ms == 0);
+    INFO(ui.warnings());
+    CHECK(ui.warnings().empty());
+}
+
+TEST_CASE("A fade's field steps a tenth of a second, is in the Tab order and empties to the "
+          "default",
+          "[ui][services][audio]")
+{
+    seventhslide::test::ensure_qt_application();
+    const seventhslide::test::TempDir dir;
+    SessionFacade facade;
+    REQUIRE(facade.open_database(dir.path / "library.db"));
+    const auto lib = seventhslide::test::fill_sample_library(facade);
+    OperatorUi ui(facade);
+    QObject* settings = ui.find_component("ServiceSettingsDialog");
+    REQUIRE(settings != nullptr);
+    auto* root = qobject_cast<QQuickItem*>(settings);
+    call(settings, "openFor", QVariant::fromValue<qint64>(lib.service), false);
+    QTest::qWait(30);
+    // The page at its foot, where the fades are.
+    QObject* page = qml_object(settings, "ServiceGeneralPage");
+    REQUIRE(page != nullptr);
+    REQUIRE(page->setProperty("contentY",
+                              std::max(0.0, page->property("contentHeight").toReal()
+                                                - page->property("height").toReal())));
+    QTest::qWait(30);
+    QObject* general = qml_object(settings, "ServiceGeneralState");
+    const auto draft = [general](const char* key) {
+        return general->property("draftFades").toMap().value(QString::fromLatin1(key)).toString();
+    };
+    const auto text_of = [](QQuickItem* field) { return field->property("text").toString(); };
+    QQuickItem* fade_in = visible_named(root, QStringLiteral("serviceAudio_fade_in_ms"));
+    QQuickItem* fade_out = visible_named(root, QStringLiteral("serviceAudio_fade_out_ms"));
+    REQUIRE(fade_in != nullptr);
+    REQUIRE(fade_out != nullptr);
+    auto* up = fade_in->findChild<QQuickItem*>(QStringLiteral("stepUp"));
+    auto* down = fade_in->findChild<QQuickItem*>(QStringLiteral("stepDown"));
+    REQUIRE(up != nullptr);
+    REQUIRE(down != nullptr);
+
+    // + from empty is a tenth of a second, and each step another.
+    CHECK(text_of(fade_in).isEmpty());
+    click(ui.window(), centre_of(up));
+    CHECK(draft("fade_in_ms") == QStringLiteral("100"));
+    CHECK(text_of(fade_in) == QStringLiteral("0.1 s"));
+    click(ui.window(), centre_of(up));
+    click(ui.window(), centre_of(up));
+    click(ui.window(), centre_of(down));
+    CHECK(draft("fade_in_ms") == QStringLiteral("200"));
+    CHECK(text_of(fade_in) == QStringLiteral("0.2 s"));
+    // Up and Down in the field step it too.
+    REQUIRE(QMetaObject::invokeMethod(fade_in, "focusInput"));
+    QTest::keyClick(ui.window(), Qt::Key_Up);
+    CHECK(draft("fade_in_ms") == QStringLiteral("300"));
+    CHECK(text_of(fade_in) == QStringLiteral("0.3 s"));
+
+    // Tab goes on to the next fade.
+    QTest::keyClick(ui.window(), Qt::Key_Tab);
+    REQUIRE(ui.window()->activeFocusItem() != nullptr);
+    CHECK(fade_out->isAncestorOf(ui.window()->activeFocusItem()));
+
+    // The number deleted, the unit left, it is the outputs' again.
+    REQUIRE(QMetaObject::invokeMethod(fade_in, "focusInput"));
+    QTest::keyClick(ui.window(), Qt::Key_Home);
+    for (int i = 0; i < 3; ++i) {
+        QTest::keyClick(ui.window(), Qt::Key_Delete);
+    }
+    CHECK(text_of(fade_in) == QStringLiteral(" s"));
+    CHECK(draft("fade_in_ms").isEmpty());
+    QTest::keyClick(ui.window(), Qt::Key_Tab);
+    CHECK(text_of(fade_in).isEmpty());
+
+    // Past the longest, it is the longest once the caret leaves.
+    type_into(ui.window(), fade_out, "70");
+    CHECK(draft("fade_out_ms") == QStringLiteral("60000"));
+    QTest::keyClick(ui.window(), Qt::Key_Tab);
+    CHECK(text_of(fade_out) == QStringLiteral("60 s"));
+
+    // A length between the tenths shows as it is.
+    call(general, "setFade", QStringLiteral("fade_out_ms"), QStringLiteral("250"));
+    QTest::qWait(10);
+    CHECK(text_of(fade_out) == QStringLiteral("0.25 s"));
     INFO(ui.warnings());
     CHECK(ui.warnings().empty());
 }
@@ -1317,10 +1400,11 @@ TEST_CASE("The Library's Edit on an audio file sets its name and its own fades",
     // A new name and a fade in of its own; the rest left to the service and
     // the outputs.
     type_into(ui.window(), visible_named(card, QStringLiteral("audioFileName")), "Walk in");
-    type_into(ui.window(), visible_named(card, QStringLiteral("audioFile_fade_in_ms")), "800");
+    type_into(ui.window(), visible_named(card, QStringLiteral("audioFile_fade_in_ms")), "0.8");
     REQUIRE(visible_named(card, QStringLiteral("audioFile_on_play_pause")) != nullptr);
     call(dialog, "setFade", QStringLiteral("on_play_pause"), QStringLiteral("off"));
-    REQUIRE(QMetaObject::invokeMethod(dialog, "submit"));
+    // Enter in the fade's field saves, with what was typed.
+    QTest::keyClick(ui.window(), Qt::Key_Return);
     QTest::qWait(30);
     CHECK_FALSE(dialog->property("open").toBool());
     CHECK(facade.media_repo()->get_file(seventhslide::db::MediaKind::Audio, filename)->title()

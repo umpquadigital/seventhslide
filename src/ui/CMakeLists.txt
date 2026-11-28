@@ -154,12 +154,13 @@ qt_add_qml_module(seventhslide_ui
         editors/slide/RibbonGallery.qml
         editors/slide/RibbonShapes.qml
         editors/slide/RibbonAnimations.qml
-        editors/slide/RibbonField.qml
         editors/slide/RibbonDropdown.qml
         editors/slide/RibbonSwatch.qml
         controls/AppMenu.qml
         controls/ChecklistField.qml
         controls/DateField.qml
+        controls/FadeField.qml
+        controls/NumberField.qml
         controls/FormRow.qml
         controls/GroupHeading.qml
         controls/GroupList.qml

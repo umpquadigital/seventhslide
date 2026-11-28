@@ -27,8 +27,6 @@ ALLOWED = {
         "the browser's address bar: its globe, a whole-address first click, a refusal's edge",
     ("src/ui/editors/slide/SlideSorter.qml", "cueRenameInput"):
         "a cue renamed in place on its row, in the row's ink, with no field face",
-    ("src/ui/editors/slide/RibbonField.qml", "input"):
-        "the ribbon's number field: a control of its own, with its stepper and the ribbon's height",
 }
 
 FIELD = re.compile(r"\b(?:TextInput|TextField|TextArea)\s*\{")

@@ -1,14 +1,14 @@
 import QtQuick
 import SeventhSlide
 
-// A number in the sidebar, by its name in the property table: a RibbonField
+// A number in the sidebar, by its name in the property table: a NumberField
 // that shows the value as it paints, holds it to the range C++ gives that
 // name, and writes it back. ``from`` says whose the name is: the selection's
 // (SlideObjectsSession.ranges), a theme setting's
 // (SlideThemeSession.settingRanges), or a paragraph's (the caret's own while
 // text is open, else the box's). ``percent`` shows a share (0 to 1) as a
 // percentage; the field's numbers and its commit are then the percentage.
-RibbonField {
+NumberField {
     id: field
     required property SlideEditState dialog
     required property string prop

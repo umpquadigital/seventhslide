@@ -87,22 +87,11 @@ ScrollPage {
                 id: fadeRow
                 required property var modelData
                 label: fadeRow.modelData.label
-                Row {
-                    spacing: 8
-                    DialogField {
-                        objectName: "serviceAudio_" + fadeRow.modelData.key
-                        width: 70
-                        text: page.dialog.draftFades[fadeRow.modelData.key]
-                        placeholder: qsTr("Output")
-                        validator: IntValidator { bottom: 0; top: 60000 }
-                        onEdited: function (v) { page.dialog.setFade(fadeRow.modelData.key, v) }
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: qsTr("ms")
-                        color: Style.textCaption
-                        font.pixelSize: Style.fontBody
-                    }
+                FadeField {
+                    objectName: "serviceAudio_" + fadeRow.modelData.key
+                    ms: page.dialog.draftFades[fadeRow.modelData.key]
+                    placeholder: qsTr("Output")
+                    onEdited: function (v) { page.dialog.setFade(fadeRow.modelData.key, v) }
                 }
             }
         }

@@ -104,22 +104,12 @@ AppDialog {
                 FormRow {
                     Layout.fillWidth: true
                     label: fadeRow.modelData.label
-                    RowLayout {
-                        spacing: 8
-                        DialogField {
-                            objectName: "audioFile_" + fadeRow.modelData.key
-                            implicitWidth: 70
-                            text: root.fades[fadeRow.modelData.key]
-                            placeholder: qsTr("Default")
-                            validator: IntValidator { bottom: 0; top: 60000 }
-                            onEdited: function (v) { root.setFade(fadeRow.modelData.key, v) }
-                            onSubmitted: root.submit()
-                        }
-                        Text {
-                            text: qsTr("ms")
-                            color: Style.textCaption
-                            font.pixelSize: Style.fontBody
-                        }
+                    FadeField {
+                        objectName: "audioFile_" + fadeRow.modelData.key
+                        ms: root.fades[fadeRow.modelData.key]
+                        placeholder: qsTr("Default")
+                        onEdited: function (v) { root.setFade(fadeRow.modelData.key, v) }
+                        onSubmitted: root.submit()
                     }
                 }
             }

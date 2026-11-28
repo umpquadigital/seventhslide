@@ -208,22 +208,25 @@ TEST_CASE("An output's General tab sets how audio fades on it", "[ui][output-edi
     GeneralTab tab(ui);
     const auto fades = [&facade]() { return facade.session().outputs().front().audio_fades; };
 
-    // All cuts to begin with.
-    CHECK(tab.on_row("Fade in", "DialogField")->property("text").toString() == QStringLiteral("0"));
-    tab.type_into("Fade out", "1200");
-    tab.type_into("Overlap", "500");
+    // All cuts to begin with, in seconds.
+    CHECK(tab.on_row("Fade in", "FadeField")->property("text").toString() == QStringLiteral("0 s"));
+    tab.type_in(tab.on_row("Fade out", "FadeField"), "1.2");
+    tab.type_in(tab.on_row("Overlap", "FadeField"), "0.5");
+    // An output sets every fade: emptied, one keeps the length it had.
+    tab.type_in(tab.on_row("Fade in", "FadeField"), "0.4");
+    tab.type_in(tab.on_row("Fade in", "FadeField"), "");
     CHECK_FALSE(tab.on_row("Fades apply to play/pause", "ToggleSwitch")->property("checked").toBool());
     tab.click_toggle("Fades apply to play/pause");
     CHECK(fades() == seventhslide::model::AudioFades{});
 
     // Saved, the output has them, and they open again as they were left.
     REQUIRE(QMetaObject::invokeMethod(tab.state, "saveGeneral"));
-    CHECK(fades() == seventhslide::model::AudioFades{0, 1200, 500, true});
+    CHECK(fades() == seventhslide::model::AudioFades{400, 1200, 500, true});
     tab.open();
-    CHECK(tab.on_row("Fade out", "DialogField")->property("text").toString()
-          == QStringLiteral("1200"));
-    CHECK(tab.on_row("Overlap", "DialogField")->property("text").toString()
-          == QStringLiteral("500"));
+    CHECK(tab.on_row("Fade out", "FadeField")->property("text").toString()
+          == QStringLiteral("1.2 s"));
+    CHECK(tab.on_row("Overlap", "FadeField")->property("text").toString()
+          == QStringLiteral("0.5 s"));
     CHECK(tab.on_row("Fades apply to play/pause", "ToggleSwitch")->property("checked").toBool());
 
     INFO(ui.warnings());
