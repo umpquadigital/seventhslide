@@ -52,7 +52,7 @@ ALLOWED = {
     "test_ffmpeg_live_input.cpp": (2, "a rate in pictures a second, and an input held open while it blocks"),
     "test_library_sync.cpp": (4, "the join's wait while files keep coming, a pause that must hold, and "
                                  "snapshots looked at as they are written"),
-    "test_link.cpp": (73, "a raw peer reads what comes for a while (RawPeer::run), what must not be "
+    "test_link.cpp": (72, "a raw peer reads what comes for a while (RawPeer::run), what must not be "
                           "asked for or come, connections let in, limited and timed out on the link's "
                           "own clock, and the hidden benches"),
     "test_ndi_output.cpp": (1, "the keepalive ticks of a real NDI sender, which say nothing"),

@@ -1511,7 +1511,13 @@ TEST_CASE("A part not of the size its snapshot names is blamed on its sender", "
     std::set<std::string> sent;
     s.send_parts_asked(raw, sent, [&] { return sent.contains(lied) || s.stored(); });
     REQUIRE(sent.contains(lied));
-    raw.run({&s.laptop});
+    // The laptop reads the part through and checks it before it refuses,
+    // which on a busy computer can take longer than a moment.
+    QElapsedTimer checking;
+    checking.start();
+    while (s.laptop.refused.empty() && checking.elapsed() < 10000) {
+        raw.run({&s.laptop}, 50);
+    }
     REQUIRE_FALSE(s.laptop.refused.empty());
     CHECK_THAT(s.laptop.refused.back().toStdString(), ContainsSubstring("not of the size its snapshot names"));
     const auto here = parts_in(s.laptop.store);
@@ -3900,6 +3906,11 @@ TEST_CASE("The outbox reads no store file while one it read waits to go", "[link
     REQUIRE(run_until([&] { return near.isEncrypted() && listener.accepted && listener.accepted->isEncrypted(); }));
     auto& far = *listener.accepted;
     far.setReadBufferSize(64 * 1024);
+    // The system's own buffers kept small too: Windows lets a loopback
+    // connection take in most of what is written, and the outbox must back
+    // up here.
+    near.setSocketOption(QAbstractSocket::SendBufferSizeSocketOption, 64 * 1024);
+    far.setSocketOption(QAbstractSocket::ReceiveBufferSizeSocketOption, 64 * 1024);
 
     seventhslide::link::PeerShared shared;
     shared.files.setMaxThreadCount(1);
