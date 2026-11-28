@@ -314,7 +314,7 @@ default. They are skipped unless you add the addresses:
 
 ```bash
 sudo ifconfig lo0 alias 127.0.0.2 up
-for i in 1 2 3 4 5 6 7 8; do sudo ifconfig lo0 alias "127.0.1.$i" up; done
+for i in 1 2 3 4 5 6 7 8 9; do sudo ifconfig lo0 alias "127.0.1.$i" up; done
 ```
 
 ## CI

@@ -2517,8 +2517,9 @@ TEST_CASE("Those hanging back from many addresses give way to a real computer", 
     if (!seventhslide::test::link_fixture::loopback_has(QStringLiteral("127.0.1.1"))) {
         SKIP("Needs the loopback address 127.0.1.1 (on macOS: sudo ifconfig lo0 alias 127.0.1.1 up)");
     }
-    if (!seventhslide::test::link_fixture::loopback_has(QStringLiteral("127.0.1.8"))) {
-        SKIP("Needs the loopback address 127.0.1.8 (on macOS: sudo ifconfig lo0 alias 127.0.1.8 up)");
+    // One address for each share of the places, and one more for after.
+    if (!seventhslide::test::link_fixture::loopback_has(QStringLiteral("127.0.1.9"))) {
+        SKIP("Needs the loopback address 127.0.1.9 (on macOS: sudo ifconfig lo0 alias 127.0.1.9 up)");
     }
     Computer church{"church", "Church PC"};
     const auto founded = put_online(church);
@@ -2535,6 +2536,8 @@ TEST_CASE("Those hanging back from many addresses give way to a real computer", 
         run_events_for(50);
     };
     const int addresses = seventhslide::link::k_max_unadmitted / seventhslide::link::k_max_unadmitted_per_address;
+    static_assert(seventhslide::link::k_max_unadmitted / seventhslide::link::k_max_unadmitted_per_address < 9,
+                  "the test binds 127.0.1.1 to 127.0.1.9 (macos.yml adds them)");
     for (int address = 1; address <= addresses; ++address) {
         from(address);
     }
